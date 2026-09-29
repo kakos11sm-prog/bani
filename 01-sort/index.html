@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=17" />
+    <link rel="stylesheet" href="style.css?v=18" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -29,7 +29,7 @@
         <div class="hud-stats">
           <div class="chip">★ <span id="hud-stars">0</span></div>
           <div class="chip fire" id="chip-fire" title="Серия жива, пока не жмёшь Заново">🔥 <span id="hud-streak">0</span></div>
-          <div class="chip">● <span id="hud-coins">0</span></div>
+          <div class="chip coin-chip"><span class="coin" aria-hidden="true"></span><span id="hud-coins">0</span></div>
           <div class="chip">💡 <span id="hud-hints">0</span></div>
           <button class="chip league" id="chip-league" type="button" title="Башня" hidden>
             #<span id="hud-place">—</span>
@@ -197,7 +197,7 @@
         <h2>Закрытая банка</h2>
         <p id="lock-text">Пустое место. Откроешь — будет куда лить, когда тесно.</p>
         <div class="card-actions">
-          <button class="act primary" id="lock-coins" type="button">Открыть ●40</button>
+          <button class="act primary with-coin" id="lock-coins" type="button">Открыть</button>
           <button class="act" id="lock-charge" type="button">Своя колба</button>
           <button class="act" id="lock-ad" type="button">Ролик — открыть</button>
           <button class="act ghost" id="lock-close" type="button">Пока нет</button>
@@ -259,26 +259,26 @@
               <b>Запасная колба</b>
               <span>Откроет закрытую банку без цены уровня</span>
             </div>
-            <button class="act" id="shop-flask" type="button">●90</button>
+            <button class="act with-coin" id="shop-flask" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
               <b>Печать на колбу</b>
               <span>Только монеты башни. Закроет ход игроку выше</span>
             </div>
-            <button class="act" id="shop-seal" type="button">●80</button>
+            <button class="act with-coin" id="shop-seal" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
               <b>Пачка отмен</b>
               <span>Две отмены в карман</span>
             </div>
-            <button class="act" id="shop-undo" type="button">●35</button>
+            <button class="act with-coin" id="shop-undo" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
               <b>Ролик — монеты</b>
-              <span>+40 ● за просмотр</span>
+              <span class="with-coin" id="shop-ad-meta"></span>
             </div>
             <button class="act" id="shop-ad" type="button">Смотреть</button>
           </div>
@@ -309,6 +309,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=17"></script>
+    <script src="game.js?v=18"></script>
   </body>
 </html>

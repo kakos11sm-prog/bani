@@ -230,7 +230,6 @@ function flyLoot(fromBox, count) {
   for (let i = 0; i < count; i += 1) {
     const dot = document.createElement("div");
     dot.className = "loot-fly";
-    dot.style.background = "#f4b942";
     dot.style.left = x1 + (i - 2) * 8 + "px";
     dot.style.top = y1 + "px";
     dot.style.setProperty("--tx", x2 + "px");
@@ -262,6 +261,22 @@ function seedMotes() {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function coinEl() {
+  const el = document.createElement("span");
+  el.className = "coin";
+  el.setAttribute("aria-hidden", "true");
+  return el;
+}
+
+function fillCoinLabel(el, before, amount, after) {
+  if (!el) return;
+  el.textContent = "";
+  if (before) el.appendChild(document.createTextNode(before));
+  el.appendChild(coinEl());
+  if (amount != null && amount !== "") el.appendChild(document.createTextNode(String(amount)));
+  if (after) el.appendChild(document.createTextNode(after));
 }
 
 function emptyProgress() {
@@ -379,14 +394,14 @@ function paintMenu() {
       progress.unlocked +
       " · ★ " +
       totalStars() +
-      " · ● " +
+      " · монет " +
       progress.coins +
       (state.mode !== "tower" && state.tubes.length ? " · партия ждёт" : "");
   }
   if (towerMeta) {
     const me = huntTarget(towerTable()).me;
     towerMeta.textContent =
-      "● " +
+      "монет " +
       (progress.towerCoins || 0) +
       " · очки " +
       (progress.towerScore || 0) +
@@ -572,10 +587,10 @@ function stageClears() {
 const MILESTONES = [
   { at: 10, kind: "hints", n: 7, text: "7 подсказок" },
   { at: 20, kind: "skin", id: "ribbed", text: "Скин «Рефлёные колбы»" },
-  { at: 30, kind: "coins", n: 80, text: "+80 ●" },
+  { at: 30, kind: "coins", n: 80, text: "+80 монет" },
   { at: 40, kind: "boost", mult: 2, hours: 24, text: "×2 монет на 24 часа" },
   { at: 50, kind: "skin", id: "vase", text: "Скин «Вазы»" },
-  { at: 60, kind: "coins", n: 120, text: "+120 ●" },
+  { at: 60, kind: "coins", n: 120, text: "+120 монет" },
   { at: 70, kind: "hints", n: 10, text: "10 подсказок" },
   { at: 80, kind: "skin", id: "mug", text: "Скин «Кружки»" },
   { at: 90, kind: "boost", mult: 10, hours: 2, text: "×10 монет на 2 часа" },
@@ -740,7 +755,7 @@ function nextFreeSkin() {
 function skinMark(item) {
   if (progress.skin === item.id) return "надет";
   if (ownsSkin(item.id)) return "твой";
-  if (item.premium) return "●" + item.price;
+  if (item.premium) return String(item.price);
   return "сундук";
 }
 
@@ -769,7 +784,7 @@ function buySkin(id) {
     return;
   }
   if (progress.coins < item.price) {
-    showPassToast("Нужно ●" + item.price);
+    showPassToast("Нужно " + item.price + " монет");
     return;
   }
   progress.coins -= item.price;
@@ -800,7 +815,7 @@ function paintSkins() {
       owned +
       " / 20. Премиум " +
       premiumOwned +
-      " / 12. Монет ●" +
+      " / 12. Монет " +
       progress.coins +
       ".";
   }
@@ -820,7 +835,8 @@ function paintSkins() {
       item.id +
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
-      "</b><small>" +
+      "</b><small class=\"with-coin\">" +
+      (item.premium && !ownsSkin(item.id) ? "<span class=\"coin\" aria-hidden=\"true\"></span>" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1093,7 +1109,7 @@ function paintHunt() {
         (progress.towerScore || 0) +
         " · #" +
         (me ? me.place : "—") +
-        ". Закрой банки, открывай свои ходы за ●.";
+        ". Закрой банки, открывай свои ходы за монеты.";
     } else {
       huntEl.textContent = "";
     }
@@ -1102,7 +1118,7 @@ function paintHunt() {
     const hz = hinderLocks();
     hinderEl.textContent =
       state.mode === "tower"
-        ? "Он закрыл тебе ходы. Свои открываешь за ●, чужие — печатью."
+        ? "Он закрыл тебе ходы. Свои открываешь за монеты, чужие — печатью."
         : hz && state.level > 5
           ? "Помеха недели: закрыто " + hz + (hz === 1 ? " колба." : " колбы.")
           : "";
@@ -1234,13 +1250,17 @@ function paintTower() {
 }
 
 function paintShop() {
+  fillCoinLabel(document.getElementById("shop-flask"), "", FLASK_PRICE, "");
+  fillCoinLabel(document.getElementById("shop-seal"), "", SEAL_PRICE, "");
+  fillCoinLabel(document.getElementById("shop-undo"), "", UNDO_PACK, "");
+  fillCoinLabel(document.getElementById("shop-ad-meta"), "+", AD_COINS, " за просмотр");
   if (shopLead) {
-    shopLead.textContent =
-      "У тебя " +
-      progress.coins +
-      " ● и " +
-      progress.bottleCharges +
-      " запасных колб. Игра мешает — магазин отвечает.";
+    shopLead.textContent = "";
+    shopLead.appendChild(document.createTextNode("У тебя "));
+    shopLead.appendChild(coinEl());
+    shopLead.appendChild(
+      document.createTextNode(" " + progress.coins + " и " + progress.bottleCharges + " запасных колб.")
+    );
   }
 }
 
@@ -1343,7 +1363,7 @@ async function buyAdCoins() {
   paintShop();
   if (btn) btn.textContent = "Смотреть";
   state.busy = false;
-  showPassToast("+" + AD_COINS + " ●");
+  showPassToast("+" + AD_COINS + " монет");
 }
 
 function openLeague() {
@@ -1382,18 +1402,22 @@ function paintHud() {
   document.getElementById("hud-streak").textContent = String(progress.streak);
   document.getElementById("hud-coins").textContent = String(cash());
   document.getElementById("hud-hints").textContent = String(progress.hints);
-  hintBtn.textContent = progress.hints ? "Подсказка" : "Подсказка ●" + HINT_PRICE;
-  undoBtn.textContent = progress.undos ? "Отмена" : "Отмена ●" + UNDO_PRICE;
-  failUndo.textContent = progress.undos ? "Отменить ход" : "Отменить ход ●" + UNDO_PRICE;
-  failJar.textContent = state.locked ? "Открыть банку ●" + nextLockPrice() : "Банки открыты";
+  if (progress.hints) hintBtn.textContent = "Подсказка";
+  else fillCoinLabel(hintBtn, "Подсказка ", HINT_PRICE, "");
+  if (progress.undos) undoBtn.textContent = "Отмена";
+  else fillCoinLabel(undoBtn, "Отмена ", UNDO_PRICE, "");
+  if (progress.undos) failUndo.textContent = "Отменить ход";
+  else fillCoinLabel(failUndo, "Отменить ход ", UNDO_PRICE, "");
+  if (state.locked) fillCoinLabel(failJar, "Открыть банку ", nextLockPrice(), "");
+  else failJar.textContent = "Банки открыты";
   failJar.hidden = !state.locked;
   failJar.disabled = !state.locked;
-  if (lockCoins) lockCoins.textContent = "Открыть ●" + nextLockPrice();
+  fillCoinLabel(lockCoins, "Открыть ", nextLockPrice(), "");
   if (lockCharge) {
     lockCharge.hidden = !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
   }
-  failKeep.textContent = "Заново, серия " + progress.streak + " ●" + KEEP_PRICE;
+  fillCoinLabel(failKeep, "Заново, серия " + progress.streak + " ", KEEP_PRICE, "");
   document.getElementById("skin").textContent = "Скин: " + skinName(progress.skin);
   const me = huntTarget(towerTable()).me;
   if (hudPlace && me) hudPlace.textContent = String(me.place);
@@ -1435,7 +1459,7 @@ function hideFail() {
 }
 
 function lockCountFor(level) {
-  if (level <= 5) return 0;
+  if (level <= 8) return 0;
   let n = level <= 30 ? 1 : 2;
   n += hinderLocks();
   return Math.min(3, n);
@@ -1458,7 +1482,7 @@ function openLockShop() {
         ? "Последняя закрытая. Откроешь — появится пустое место."
         : "Ещё " + state.locked + " закрытых. Сначала одну.";
   }
-  if (lockCoins) lockCoins.textContent = "Открыть ●" + nextLockPrice();
+  fillCoinLabel(lockCoins, "Открыть ", nextLockPrice(), "");
   if (lockCharge) {
     lockCharge.hidden = !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
@@ -1552,7 +1576,7 @@ function render(enter) {
     mark.className = "lock-mark";
     const tag = document.createElement("span");
     tag.className = "lock-tag";
-    tag.textContent = "●" + nextLockPrice();
+    fillCoinLabel(tag, "", nextLockPrice(), "");
     btn.appendChild(frost);
     btn.appendChild(mark);
     btn.appendChild(tag);
@@ -1858,13 +1882,12 @@ async function showWin() {
       winText.textContent += " Обогнал " + before.next.name + ".";
     }
   }
-  winReward.textContent =
-    "+" +
-    reward.coins +
-    " ●  (серия +" +
-    Math.min(progress.streak, 10) * 2 +
-    ")   серия " +
-    progress.streak;
+  fillCoinLabel(
+    winReward,
+    "+",
+    reward.coins,
+    "  (серия +" + Math.min(progress.streak, 10) * 2 + ")   серия " + progress.streak
+  );
   Array.prototype.forEach.call(winStars.children, (el) => el.classList.remove("on"));
   overlay.classList.add("show");
   for (let i = 0; i < stars; i += 1) {
@@ -1904,7 +1927,7 @@ async function doubleReward() {
   state.doubled = true;
   saveProgress();
   paintHud();
-  winReward.textContent = "+" + state.lastCoins * 2 + " ●  удвоено   серия " + progress.streak;
+  fillCoinLabel(winReward, "+", state.lastCoins * 2, "  удвоено   серия " + progress.streak);
   winDouble.textContent = "Удвоено";
   state.busy = false;
 }
@@ -2407,6 +2430,7 @@ if (setReset) {
   });
 }
 paintMenu();
+paintShop();
 syncScreens();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
@@ -2449,7 +2473,7 @@ if (/[?&]win=1/.test(location.search)) {
   progress.streak = Math.max(progress.streak, 3);
   winTitle.textContent = "Есть!";
   winText.textContent = "Ещё 9 до сундука «Первые банки».";
-  winReward.textContent = "+24 ●   серия " + progress.streak;
+  fillCoinLabel(winReward, "+", 24, "   серия " + progress.streak);
   winDouble.disabled = false;
   winDouble.textContent = "Ролик — удвоить";
   overlay.classList.add("show");
