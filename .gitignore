@@ -1,0 +1,10 @@
+ПИЛОТ.md
+СПЕЦИФИКА.md
+СПИСОК.md
+КАРТА-ВИРУС.md
+01-sort/check.js
+01-sort/viral-check.js
+01-sort/generate_levels.js
+01-sort/levels-report.json
+01-sort/make_icon.py
+*.zip

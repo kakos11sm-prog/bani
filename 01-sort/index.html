@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Банки</title>
+    <meta name="theme-color" content="#120e0b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="stylesheet" href="style.css?v=11" />
+  </head>
+  <body>
+    <div class="scene" id="scene" aria-hidden="true">
+      <div class="scene-wash"></div>
+      <div class="scene-tint"></div>
+      <div class="scene-glow" id="scene-glow"></div>
+      <div class="scene-caustic"></div>
+      <div class="scene-motes" id="motes"></div>
+      <div class="scene-shelf"></div>
+      <div class="scene-vignette"></div>
+    </div>
+    <div class="wrap">
+      <div class="hud">
+        <button class="burger" id="btn-burger" type="button" aria-label="Меню" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="hud-stats">
+          <div class="chip">★ <span id="hud-stars">0</span></div>
+          <div class="chip fire" id="chip-fire" title="Серия жива, пока не жмёшь Заново">🔥 <span id="hud-streak">0</span></div>
+          <div class="chip">● <span id="hud-coins">0</span></div>
+          <div class="chip">💡 <span id="hud-hints">0</span></div>
+          <button class="chip league" id="chip-league" type="button" title="Лига недели">
+            #<span id="hud-place">—</span>
+          </button>
+        </div>
+        <div class="level" id="level">1</div>
+      </div>
+      <div class="fly" id="menu-fly" hidden>
+        <button type="button" id="fly-menu">Меню</button>
+        <button type="button" id="fly-tower">Башня</button>
+        <button type="button" id="fly-settings">Настройки</button>
+        <button type="button" id="fly-shop">Магазин</button>
+        <button type="button" id="fly-skins">Скины</button>
+      </div>
+      <div class="mission">
+        <div class="chapter" id="chapter">Первые банки</div>
+        <div class="goal" id="goal">Собери банки — откроешь следующий.</div>
+        <div class="track"><i id="track-fill"></i></div>
+        <div class="track-label" id="track-label">1 / 10 до сундука</div>
+        <div class="duel" id="duel" hidden>
+          <div class="duel-side you">
+            <span class="face" id="duel-you-face">Я</span>
+            <span>Ты</span>
+          </div>
+          <div class="duel-mid">
+            <b>VS</b>
+            <small id="duel-floor">этаж</small>
+          </div>
+          <div class="duel-side them">
+            <span class="face" id="duel-them-face">?</span>
+            <b id="duel-name">Соперник</b>
+            <small id="duel-meta"></small>
+          </div>
+        </div>
+        <div class="hunt" id="hunt"></div>
+        <div class="hinder" id="hinder"></div>
+      </div>
+      <div class="tower-cells" id="tower-peek" aria-label="Башня"></div>
+      <div class="play-row">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="fx" id="fx"></div>
+      <div class="bar">
+        <button class="act" id="undo" type="button">Отмена</button>
+        <button class="act" id="hint" type="button">Подсказка</button>
+        <button class="act" id="restart" type="button">Заново</button>
+      </div>
+      <button class="skin-btn" id="skin" type="button">Скин банки</button>
+      <a class="more" id="more" href="../index.html">Ещё игры — пилот студии</a>
+    </div>
+    <div class="overlay show" id="boot">
+      <div class="card boot-card menu-card">
+        <img class="boot-logo" src="icon.svg" alt="" />
+        <h2>Банки</h2>
+        <p class="menu-stat" id="menu-stat">Собери банки. Игра будет мешать.</p>
+        <div class="menu-actions">
+          <button class="act primary" id="boot-play" type="button">Играть</button>
+          <button class="act" id="boot-tower" type="button">Башня</button>
+          <button class="act" id="boot-league" type="button">Лига</button>
+          <button class="act" id="boot-shop" type="button">Магазин</button>
+          <button class="act" id="boot-skins" type="button">Скины</button>
+          <button class="act" id="boot-settings" type="button">Настройки</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="settings-overlay">
+      <div class="card league-card">
+        <h2>Настройки</h2>
+        <p class="league-lead" id="set-lead">Как тебе удобнее играть.</p>
+        <div class="set-list">
+          <button class="set-row" id="set-sound" type="button">
+            <span>
+              <b>Звук</b>
+              <small>Капли и победа</small>
+            </span>
+            <em id="set-sound-val">Вкл</em>
+          </button>
+          <button class="set-row" id="set-vibe" type="button">
+            <span>
+              <b>Вибрация</b>
+              <small>Отдача в руке</small>
+            </span>
+            <em id="set-vibe-val">Вкл</em>
+          </button>
+          <button class="set-row" id="set-juice" type="button">
+            <span>
+              <b>Эффекты</b>
+              <small>Брызги и вспышки. Выключи, если тормозит</small>
+            </span>
+            <em id="set-juice-val">Вкл</em>
+          </button>
+          <button class="set-row" id="set-hint" type="button">
+            <span>
+              <b>Подсказка на старте</b>
+              <small>Первая банка чуть подпрыгнет</small>
+            </span>
+            <em id="set-hint-val">Вкл</em>
+          </button>
+          <button class="set-row" id="set-skin" type="button">
+            <span>
+              <b>Скин банок</b>
+              <small id="set-skin-name">Стекло</small>
+            </span>
+              <em>Каталог</em>
+          </button>
+        </div>
+        <div class="card-actions">
+          <button class="act primary" id="set-play" type="button">Играть</button>
+          <button class="act ghost" id="set-close" type="button">К игре</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <h2 id="win-title">Собрал</h2>
+        <div class="win-stars" id="win-stars">
+          <span></span><span></span><span></span>
+        </div>
+        <p id="win-text">Дальше больше цветов и длиннее ходы.</p>
+        <p class="reward" id="win-reward"></p>
+        <div class="card-actions">
+          <button class="act primary" id="next" type="button">Дальше</button>
+          <button class="act" id="win-double" type="button">Ролик — удвоить</button>
+          <button class="act" id="win-share" type="button">Показать</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="fail-overlay">
+      <div class="card fail-card">
+        <h2 id="fail-title">Почти</h2>
+        <p id="fail-text">Сам долил до тупика. Ещё ход — и собрал бы.</p>
+        <p class="fail-risk" id="fail-risk"></p>
+        <div class="card-actions">
+          <button class="act primary" id="fail-undo" type="button">Отменить ход</button>
+          <button class="act" id="fail-jar" type="button">Ещё банка</button>
+          <button class="act" id="fail-keep" type="button">Заново, серия жива</button>
+          <button class="act ghost" id="fail-give" type="button">Сдаться — серия сгорит</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="lock-overlay">
+      <div class="card">
+        <h2>Закрытая банка</h2>
+        <p id="lock-text">Пустое место. Откроешь — будет куда лить, когда тесно.</p>
+        <div class="card-actions">
+          <button class="act primary" id="lock-coins" type="button">Открыть ●40</button>
+          <button class="act" id="lock-charge" type="button">Своя колба</button>
+          <button class="act" id="lock-ad" type="button">Ролик — открыть</button>
+          <button class="act ghost" id="lock-close" type="button">Пока нет</button>
+        </div>
+      </div>
+    </div>
+    <div class="pass-toast" id="pass-toast" aria-live="polite"></div>
+    <div class="overlay" id="league-overlay">
+      <div class="card league-card">
+        <h2>Лига недели</h2>
+        <p class="league-lead" id="league-lead">Одни и те же соперники до понедельника. Не онлайн-чат.</p>
+        <div class="league-list" id="league-list"></div>
+        <div class="card-actions">
+          <button class="act primary" id="league-tower" type="button">Башня</button>
+          <button class="act" id="league-shop" type="button">Магазин монет</button>
+          <button class="act" id="league-race" type="button">Забег</button>
+          <button class="act" id="league-close" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="tower-overlay">
+      <div class="card league-card">
+        <h2>Башня</h2>
+        <p class="league-lead" id="tower-lead">Отдельная игра рядом. Монеты — с обычных уровней. Внутри соперник закрывает твои ходы, ты открываешь свои и можешь запечатать его.</p>
+        <div class="tower-cells lobby" id="tower-list"></div>
+        <div class="card-actions">
+          <button class="act primary" id="tower-play" type="button">Войти</button>
+          <button class="act" id="tower-seal" type="button">Запечатать его ход</button>
+          <button class="act" id="tower-close" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="shop-overlay">
+      <div class="card league-card">
+        <h2>Магазин монет</h2>
+        <p class="league-lead" id="shop-lead">Трать на колбы и на помеху другим. Ролик — только если сам включил.</p>
+        <div class="shop-list">
+          <div class="shop-row">
+            <div>
+              <b>Скины банок</b>
+              <span>20 видов. Премиум — за монеты</span>
+            </div>
+            <button class="act" id="shop-skins" type="button">Каталог</button>
+          </div>
+          <div class="shop-row">
+            <div>
+              <b>Запасная колба</b>
+              <span>Откроет закрытую банку без цены уровня</span>
+            </div>
+            <button class="act" id="shop-flask" type="button">●90</button>
+          </div>
+          <div class="shop-row">
+            <div>
+              <b>Печать на колбу</b>
+              <span>Закроет ход игроку выше в лиге. Работает в башне</span>
+            </div>
+            <button class="act" id="shop-seal" type="button">●80</button>
+          </div>
+          <div class="shop-row">
+            <div>
+              <b>Пачка отмен</b>
+              <span>Две отмены в карман</span>
+            </div>
+            <button class="act" id="shop-undo" type="button">●35</button>
+          </div>
+          <div class="shop-row">
+            <div>
+              <b>Ролик — монеты</b>
+              <span>+40 ● за просмотр</span>
+            </div>
+            <button class="act" id="shop-ad" type="button">Смотреть</button>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act ghost" id="shop-close" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="skins-overlay">
+      <div class="card league-card skins-card">
+        <h2>Скины</h2>
+        <p class="league-lead" id="skins-lead">Восемь простых из сундуков. Двенадцать премиум — за монеты.</p>
+        <div class="skin-grid" id="skin-grid"></div>
+        <div class="card-actions">
+          <button class="act ghost" id="skins-close" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="chest-overlay">
+      <div class="card">
+        <div class="chest" id="chest-box">🧰</div>
+        <h2>Сундук главы</h2>
+        <p id="chest-lead">За десять уровней. Вот что внутри.</p>
+        <div class="loot" id="chest-loot"></div>
+        <button class="act" id="chest-ok" type="button">Забрать</button>
+      </div>
+    </div>
+    <script src="levels.js"></script>
+    <script src="pars.js"></script>
+    <script src="game.js?v=11"></script>
+  </body>
+</html>
