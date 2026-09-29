@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=12" />
+    <link rel="stylesheet" href="style.css?v=13" />
   </head>
   <body>
     <div class="scene" id="scene" aria-hidden="true">
@@ -31,17 +31,16 @@
           <div class="chip fire" id="chip-fire" title="Серия жива, пока не жмёшь Заново">🔥 <span id="hud-streak">0</span></div>
           <div class="chip">● <span id="hud-coins">0</span></div>
           <div class="chip">💡 <span id="hud-hints">0</span></div>
-          <button class="chip league" id="chip-league" type="button" title="Лига недели">
+          <button class="chip league" id="chip-league" type="button" title="Башня" hidden>
             #<span id="hud-place">—</span>
           </button>
         </div>
         <div class="level" id="level">1</div>
       </div>
       <div class="fly" id="menu-fly" hidden>
-        <button type="button" id="fly-menu">Меню</button>
-        <button type="button" id="fly-tower">Башня</button>
+        <button type="button" id="fly-menu">На главный</button>
         <button type="button" id="fly-settings">Настройки</button>
-        <button type="button" id="fly-shop">Магазин</button>
+        <button type="button" id="fly-shop">Премиум</button>
         <button type="button" id="fly-skins">Скины</button>
       </div>
       <div class="mission">
@@ -69,10 +68,6 @@
       </div>
       <div class="play-row">
         <div class="board" id="board"></div>
-        <button class="tower-sq" id="tower-sq" type="button" aria-label="Башня">
-          <span class="tower-sq-ico">▲</span>
-          <small>Башня</small>
-        </button>
       </div>
       <div class="fx" id="fx"></div>
       <div class="bar">
@@ -83,15 +78,24 @@
       <button class="skin-btn" id="skin" type="button">Скин банки</button>
       <a class="more" id="more" href="../index.html">Ещё игры — пилот студии</a>
     </div>
-    <div class="overlay show" id="boot">
-      <div class="card boot-card menu-card">
+    <div class="overlay show home" id="boot">
+      <div class="home-screen">
         <img class="boot-logo" src="icon.svg" alt="" />
-        <h2>Банки</h2>
-        <p class="menu-stat" id="menu-stat">Собери банки. Игра будет мешать.</p>
-        <div class="menu-actions">
-          <button class="act primary" id="boot-play" type="button">Играть</button>
-          <button class="act" id="boot-shop" type="button">Купить премиум</button>
-          <button class="act" id="boot-settings" type="button">Настройки</button>
+        <h1>Банки</h1>
+        <p class="home-tag">Два мира. Свои уровни. Свои монеты.</p>
+        <button class="home-tile play" id="boot-play" type="button">
+          <span class="home-kicker">Мир 1</span>
+          <b>Обычная игра</b>
+          <small id="home-play-meta">Уровни, звёзды, свои монеты</small>
+        </button>
+        <button class="home-tile tower" id="boot-tower" type="button">
+          <span class="home-kicker">Мир 2</span>
+          <b>Башня</b>
+          <small id="home-tower-meta">Сложные уровни, свой счёт недели</small>
+        </button>
+        <div class="home-row">
+          <button class="home-mini" id="boot-shop" type="button">Премиум</button>
+          <button class="home-mini" id="boot-settings" type="button">Настройки</button>
         </div>
       </div>
     </div>
@@ -198,8 +202,8 @@
     </div>
     <div class="overlay" id="map-overlay">
       <div class="card league-card">
-        <h2>Уровни</h2>
-        <p class="league-lead" id="map-lead">Пройденные можно сыграть снова. Дальше открыт только текущий.</p>
+        <h2>Обычные уровни</h2>
+        <p class="league-lead" id="map-lead">Звёзды и ходы за каждый. Пройденный можно снова. Дальше — замок.</p>
         <div class="map-grid" id="map-grid"></div>
         <div class="card-actions">
           <button class="act primary" id="map-continue" type="button">Продолжить</button>
@@ -242,7 +246,7 @@
           <div class="shop-row">
             <div>
               <b>Печать на колбу</b>
-              <span>Закроет ход игроку выше в лиге. Работает в башне</span>
+              <span>Только монеты башни. Закроет ход игроку выше</span>
             </div>
             <button class="act" id="shop-seal" type="button">●80</button>
           </div>
@@ -287,6 +291,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=12"></script>
+    <script src="game.js?v=13"></script>
   </body>
 </html>

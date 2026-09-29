@@ -838,13 +838,25 @@ body.quiet .tower-sq {
 .map-cell {
   border: 0;
   border-radius: 12px;
-  min-height: 44px;
+  min-height: 52px;
   background: #2a2118;
   color: inherit;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
   animation: jarIn 0.28s both;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+}
+
+.map-cell small {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .map-cell.now {
@@ -1090,6 +1102,121 @@ button.act:disabled {
 
 #boot {
   z-index: 80;
+  padding: 0;
+  align-items: stretch;
+  justify-content: center;
+}
+
+#boot.show {
+  background: rgba(8, 6, 5, 0.28);
+}
+
+.home-screen {
+  width: min(440px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 36px 18px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  animation: homeIn 0.45s ease;
+}
+
+.home-screen h1 {
+  margin: 0;
+  font-size: 42px;
+  letter-spacing: 0.06em;
+}
+
+.home-tag {
+  margin: 8px 0 22px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.home-tile {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 22px;
+  padding: 20px 18px 16px;
+  margin: 0 0 12px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  animation: jarIn 0.4s both;
+}
+
+.home-tile.play {
+  background: #2a2118;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.home-tile.tower {
+  background: #2a1818;
+  box-shadow: inset 0 0 0 1px #ff8a4a;
+  animation-delay: 0.08s;
+}
+
+.home-tile:active {
+  transform: scale(0.98);
+}
+
+.home-kicker {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.home-tile b {
+  display: block;
+  font-size: 22px;
+}
+
+.home-tile small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.home-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.home-mini {
+  flex: 1;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 10px;
+  background: #2a2118;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.home-mini:active {
+  transform: scale(0.97);
+}
+
+@keyframes homeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 #settings-overlay {
