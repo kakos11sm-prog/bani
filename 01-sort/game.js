@@ -428,6 +428,15 @@ function closeSettings() {
   syncScreens();
 }
 
+function firstLocked(stars, max) {
+  const cap = Math.max(1, max || 100);
+  const list = stars || [];
+  for (let n = 1; n <= cap; n += 1) {
+    if (!(list[n - 1] > 0)) return n;
+  }
+  return cap;
+}
+
 function loadProgress() {
   try {
     const raw = JSON.parse(
@@ -440,7 +449,7 @@ function loadProgress() {
     );
     const base = emptyProgress();
     if (!raw || typeof raw !== "object") return base;
-    base.unlocked = Math.min(LEVELS.length, Math.max(1, Number(raw.unlocked) || 1));
+    base.unlocked = Math.max(1, Number(raw.unlocked) || 1);
     base.coins = Math.max(0, Number(raw.coins) || 0);
     base.streak = Math.max(0, Number(raw.streak) || 0);
     base.hints = Math.max(0, Number(raw.hints) || 0);
@@ -497,6 +506,8 @@ function loadProgress() {
     if (Array.isArray(raw.stars) && raw.stars.length < 200) {
       while (base.stars.length < 200) base.stars.push(0);
     }
+    const cap = (base.stage || 1) >= 2 ? 200 : 100;
+    base.unlocked = firstLocked(base.stars, cap);
     return base;
   } catch (e) {
     return emptyProgress();
@@ -516,6 +527,11 @@ function jarCap() {
 
 function storyLevelCount() {
   return (progress.stage || 1) >= 2 ? 200 : 100;
+}
+
+function syncUnlocked() {
+  progress.unlocked = firstLocked(progress.stars, storyLevelCount());
+  return progress.unlocked;
 }
 
 function packedLevel(n) {
@@ -1078,10 +1094,11 @@ function paintMap() {
   const cont = document.getElementById("map-continue");
   const stop = state.mode === "story" && state.tubes.length ? state.level : progress.unlocked;
   if (lead) {
-    lead.textContent = "Звёзды за каждый. Пройденный — снова. Продолжить — " + stop + ".";
+    lead.textContent = "Пройденные можно снова. Следующий — только после предыдущего.";
   }
   if (cont) cont.textContent = "Продолжить · " + stop;
-  const last = Math.min(storyLevelCount(), Math.max(progress.unlocked + 4, 10));
+  syncUnlocked();
+  const last = Math.min(storyLevelCount(), progress.unlocked + (progress.unlocked < storyLevelCount() ? 1 : 0));
   mapGrid.innerHTML = "";
   for (let n = 1; n <= last; n += 1) {
     const btn = document.createElement("button");
@@ -1126,8 +1143,9 @@ function closeMap() {
 }
 
 function pickLevel(n) {
+  syncUnlocked();
   if (n > progress.unlocked) {
-    showPassToast("Сначала пройди " + progress.unlocked);
+    showPassToast("Сначала пройди уровень " + progress.unlocked);
     return;
   }
   closeMap();
@@ -1374,17 +1392,10 @@ function paintMission() {
   if (duelEl) duelEl.hidden = true;
   levelEl.textContent = String(state.level);
   const done = stageClears();
-  const pack = done % 10 === 0 && done ? 10 : done % 10;
   trackFill.style.width = Math.min(100, done) + "%";
-  if (done >= 100 && (progress.stage || 1) >= 2) {
-    const d2 = progress.stars.slice(100, 200).filter((s) => s > 0).length;
-    trackFill.style.width = d2 + "%";
-    trackLabel.textContent = d2 + " / 100 до сундука этапа";
-  } else {
-    trackLabel.textContent = pack + " / 10 до приза";
-  }
+  trackLabel.textContent = done + " / 100";
   const chest = document.getElementById("track-chest");
-  if (chest) chest.classList.toggle("hot", done >= 90 || ((progress.stage || 1) >= 2 && progress.stars.slice(100, 200).filter((s) => s > 0).length >= 90));
+  if (chest) chest.classList.toggle("hot", done >= 90);
   paintScene();
   paintHunt();
   paintDuel();
@@ -1442,9 +1453,11 @@ function startLevel(level, opts) {
   if (state.busy) return;
   opts = opts || {};
   const tower = !!opts.tower;
+  syncUnlocked();
+  const want = Math.max(1, level);
   const n = tower
-    ? Math.min(LEVELS.length, Math.max(1, level))
-    : Math.min(progress.unlocked, Math.max(1, level));
+    ? Math.min(LEVELS.length, want)
+    : Math.min(progress.unlocked, want);
   const packed = packedLevel(n);
   state.level = n;
   state.mode = tower ? "tower" : "story";
@@ -1674,9 +1687,6 @@ function applyWinRewards(stars) {
   if (!progress.bestMoves[i] || state.moves < progress.bestMoves[i]) {
     progress.bestMoves[i] = state.moves;
   }
-  if (state.level >= progress.unlocked && state.level < storyLevelCount()) {
-    progress.unlocked = state.level + 1;
-  }
   progress.streak += 1;
   progress.maxStreak = Math.max(progress.maxStreak || 0, progress.streak);
   if (state.level === raceLevel()) {
@@ -1693,6 +1703,7 @@ function applyWinRewards(stars) {
   if (stars === 3 && (progress.stage || 1) >= 2) progress.hints += 1;
   const got = gain(coins);
   const prizes = firstClear ? claimMilestones() : [];
+  syncUnlocked();
   saveProgress();
   return { coins: got, firstClear, chapterDone: false, chapter: 0, prizes: prizes };
 }
@@ -1796,15 +1807,11 @@ async function showWin() {
   paintHud();
   await wait(420);
   const last = state.level >= storyLevelCount();
-  const nextChapter = CHAPTERS[Math.min(CHAPTERS.length - 1, chapterIndex(state.level) + 1)];
   winTitle.textContent = reward.tower
     ? "Башня"
     : last
       ? "Корона твоя"
-      : reward.chapterDone
-        ? "Глава закрыта"
-        : "Есть!";
-  const leftInChapter = 10 - chapterPos(state.level);
+      : "Есть!";
   if (reward.tower) {
     const { me, next } = huntTarget(towerTable());
     winText.textContent = next
@@ -1820,12 +1827,8 @@ async function showWin() {
       : "+" + reward.points + " очков. Ты первый на неделе. Сундук твой, если удержишь.";
   } else {
     winText.textContent = last
-      ? "Все 100. Серия " + progress.streak + "."
-      : reward.chapterDone
-        ? "Сундук главы забран. Дальше — «" + nextChapter + "»."
-        : leftInChapter
-          ? "Ещё " + leftInChapter + " до сундука «" + CHAPTERS[chapterIndex(state.level)] + "»."
-          : "Глава уже была твоя. Можно выбить 3 звезды.";
+      ? "Этап закрыт. Серия " + progress.streak + "."
+      : stageClears() + " / 100 до сундука.";
     if (before.me && after.me && after.me.place < before.me.place && before.next) {
       winText.textContent += " Обогнал " + before.next.name + ".";
     }
@@ -2196,7 +2199,10 @@ if (mapGrid) {
   mapGrid.addEventListener("click", (event) => {
     const btn = event.target.closest(".map-cell");
     if (!btn || btn.classList.contains("lock")) {
-      if (btn && btn.classList.contains("lock")) shake(btn);
+      if (btn && btn.classList.contains("lock")) {
+        shake(btn);
+        showPassToast("Сначала пройди уровень " + progress.unlocked);
+      }
       return;
     }
     pickLevel(Number(btn.dataset.level));
@@ -2224,8 +2230,10 @@ nextBtn.addEventListener("click", () => {
     playTowerFloor();
     return;
   }
-  if (state.level >= LEVELS.length) {
-    startLevel(1);
+  syncUnlocked();
+  if (state.level >= storyLevelCount()) {
+    overlay.classList.remove("show");
+    openMap();
     return;
   }
   startLevel(Math.min(progress.unlocked, state.level + 1));

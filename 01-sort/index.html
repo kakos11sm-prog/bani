@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=15" />
+    <link rel="stylesheet" href="style.css?v=16" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -45,10 +45,16 @@
       </div>
       <div class="mission">
         <div class="track-row">
-          <div class="track"><i id="track-fill"></i></div>
+          <div class="track">
+            <i id="track-fill"></i>
+            <div class="track-ticks" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
           <div class="track-chest" id="track-chest" aria-hidden="true">🧰</div>
         </div>
-        <div class="track-label" id="track-label">0 / 10 до приза</div>
+        <div class="track-label" id="track-label">0 / 100</div>
         <div class="chapter" id="chapter" hidden></div>
         <div class="goal" id="goal" hidden></div>
         <div class="duel" id="duel" hidden>
@@ -208,7 +214,7 @@
     <div class="overlay screen" id="map-overlay">
       <div class="card league-card">
         <h2>Обычные уровни</h2>
-        <p class="league-lead" id="map-lead">Звёзды и ходы за каждый. Пройденный можно снова. Дальше — замок.</p>
+        <p class="league-lead" id="map-lead">Пройденные можно снова. Следующий — только после предыдущего.</p>
         <div class="map-grid" id="map-grid"></div>
         <div class="card-actions">
           <button class="act primary" id="map-continue" type="button">Продолжить</button>
@@ -296,6 +302,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=15"></script>
+    <script src="game.js?v=16"></script>
   </body>
 </html>
