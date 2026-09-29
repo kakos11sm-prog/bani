@@ -347,6 +347,14 @@ function toggleSetting(key) {
   if (key === "vibe" && settings.vibe) feel("pour");
 }
 
+function syncScreens() {
+  const cover = ["boot", "map-overlay", "tower-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+    const el = document.getElementById(id);
+    return el && el.classList.contains("show");
+  });
+  document.body.classList.toggle("screen", cover);
+}
+
 function paintMenu() {
   const playMeta = document.getElementById("home-play-meta");
   const towerMeta = document.getElementById("home-tower-meta");
@@ -385,10 +393,12 @@ function openMenu() {
   if (chestOverlay) chestOverlay.classList.remove("show");
   paintMenu();
   if (boot) boot.classList.add("show");
+  syncScreens();
 }
 
 function closeMenu() {
   if (boot) boot.classList.remove("show");
+  syncScreens();
 }
 
 function openSettings() {
@@ -401,11 +411,13 @@ function openSettings() {
   paintSettings();
   const el = document.getElementById("settings-overlay");
   if (el) el.classList.add("show");
+  syncScreens();
 }
 
 function closeSettings() {
   const el = document.getElementById("settings-overlay");
   if (el) el.classList.remove("show");
+  syncScreens();
 }
 
 function loadProgress() {
@@ -700,11 +712,13 @@ function openSkins() {
   paintSkins();
   const el = document.getElementById("skins-overlay");
   if (el) el.classList.add("show");
+  syncScreens();
 }
 
 function closeSkins() {
   const el = document.getElementById("skins-overlay");
   if (el) el.classList.remove("show");
+  syncScreens();
 }
 
 function hashStr(text) {
@@ -1020,10 +1034,12 @@ function openMap() {
   closeSkins();
   paintMap();
   if (mapOverlay) mapOverlay.classList.add("show");
+  syncScreens();
 }
 
 function closeMap() {
   if (mapOverlay) mapOverlay.classList.remove("show");
+  syncScreens();
 }
 
 function pickLevel(n) {
@@ -1101,10 +1117,12 @@ function openTower() {
   closeMap();
   paintTower();
   towerOverlay.classList.add("show");
+  syncScreens();
 }
 
 function closeTower() {
   towerOverlay.classList.remove("show");
+  syncScreens();
 }
 
 function openShop() {
@@ -1114,10 +1132,12 @@ function openShop() {
   closeMap();
   paintShop();
   shopOverlay.classList.add("show");
+  syncScreens();
 }
 
 function closeShop() {
   shopOverlay.classList.remove("show");
+  syncScreens();
 }
 
 function playTowerFloor() {
@@ -1198,10 +1218,12 @@ function openLeague() {
   closeSkins();
   paintLeague();
   leagueOverlay.classList.add("show");
+  syncScreens();
 }
 
 function closeLeague() {
   leagueOverlay.classList.remove("show");
+  syncScreens();
 }
 
 function clearHook() {
@@ -2256,6 +2278,7 @@ document.getElementById("set-close").addEventListener("click", () => {
   if (!state.tubes.length) openMenu();
 });
 paintMenu();
+syncScreens();
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("./sw.js").catch(function () {});
@@ -2263,6 +2286,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 
 if (skipBoot) {
   if (boot) boot.classList.remove("show");
+  syncScreens();
   startLevel(progress.unlocked);
 } else if (!boot) {
   startLevel(progress.unlocked);

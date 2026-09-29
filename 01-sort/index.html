@@ -9,9 +9,9 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=13" />
+    <link rel="stylesheet" href="style.css?v=14" />
   </head>
-  <body>
+  <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
       <div class="scene-wash"></div>
       <div class="scene-tint"></div>
@@ -78,20 +78,22 @@
       <button class="skin-btn" id="skin" type="button">Скин банки</button>
       <a class="more" id="more" href="../index.html">Ещё игры — пилот студии</a>
     </div>
-    <div class="overlay show home" id="boot">
+    <div class="overlay show home screen" id="boot">
       <div class="home-screen">
-        <img class="boot-logo" src="icon.svg" alt="" />
+        <div class="home-art" aria-hidden="true">
+          <span class="home-jar j1"><i></i><i></i><i></i></span>
+          <span class="home-jar j2"><i></i><i></i></span>
+          <span class="home-jar j3"><i></i><i></i><i></i><i></i></span>
+        </div>
         <h1>Банки</h1>
-        <p class="home-tag">Два мира. Свои уровни. Свои монеты.</p>
+        <p class="home-tag">Перелей цвет. Не оставь себя без хода.</p>
         <button class="home-tile play" id="boot-play" type="button">
-          <span class="home-kicker">Мир 1</span>
-          <b>Обычная игра</b>
-          <small id="home-play-meta">Уровни, звёзды, свои монеты</small>
+          <b>Играть</b>
+          <small id="home-play-meta">Обычные уровни</small>
         </button>
         <button class="home-tile tower" id="boot-tower" type="button">
-          <span class="home-kicker">Мир 2</span>
           <b>Башня</b>
-          <small id="home-tower-meta">Сложные уровни, свой счёт недели</small>
+          <small id="home-tower-meta">Сложные уровни недели</small>
         </button>
         <div class="home-row">
           <button class="home-mini" id="boot-shop" type="button">Премиум</button>
@@ -200,7 +202,7 @@
         </div>
       </div>
     </div>
-    <div class="overlay" id="map-overlay">
+    <div class="overlay screen" id="map-overlay">
       <div class="card league-card">
         <h2>Обычные уровни</h2>
         <p class="league-lead" id="map-lead">Звёзды и ходы за каждый. Пройденный можно снова. Дальше — замок.</p>
@@ -211,7 +213,7 @@
         </div>
       </div>
     </div>
-    <div class="overlay" id="tower-overlay">
+    <div class="overlay screen" id="tower-overlay">
       <div class="card league-card">
         <h2>Башня недели</h2>
         <p class="league-lead" id="tower-lead">Отдельные очки до понедельника. Обогни игроков — лучший сундук.</p>
@@ -291,6 +293,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=13"></script>
+    <script src="game.js?v=14"></script>
   </body>
 </html>

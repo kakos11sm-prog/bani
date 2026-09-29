@@ -1107,9 +1107,64 @@ button.act:disabled {
   justify-content: center;
 }
 
-#boot.show {
-  background: rgba(8, 6, 5, 0.28);
+#boot.show,
+.overlay.screen.show {
+  background:
+    radial-gradient(90vw 70vh at 50% 8%, #4a2a12 0%, transparent 58%),
+    #120e0b;
 }
+
+body.screen .wrap {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home-art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 14px;
+  height: 148px;
+  margin: 0 0 18px;
+}
+
+.home-jar {
+  width: 44px;
+  height: 112px;
+  border-radius: 12px 12px 16px 16px;
+  background: rgba(255, 248, 235, 0.1);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 236, 210, 0.35),
+    0 14px 22px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+  animation: jarIn 0.5s both;
+}
+
+.home-jar.j2 {
+  height: 128px;
+  animation-delay: 0.08s;
+}
+
+.home-jar.j3 {
+  animation-delay: 0.16s;
+}
+
+.home-jar i {
+  display: block;
+  height: 24px;
+}
+
+.home-jar.j1 i:nth-child(1) { background: #e85d4c; }
+.home-jar.j1 i:nth-child(2) { background: #e85d4c; }
+.home-jar.j1 i:nth-child(3) { background: #f4b942; }
+.home-jar.j2 i:nth-child(1) { background: #3ecf8e; }
+.home-jar.j2 i:nth-child(2) { background: #5b8def; }
+.home-jar.j3 i:nth-child(1) { background: #c084fc; }
+.home-jar.j3 i:nth-child(2) { background: #c084fc; }
+.home-jar.j3 i:nth-child(3) { background: #f4b942; }
+.home-jar.j3 i:nth-child(4) { background: #e85d4c; }
 
 .home-screen {
   width: min(440px, 100%);
