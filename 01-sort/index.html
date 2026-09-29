@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=16" />
+    <link rel="stylesheet" href="style.css?v=17" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -148,7 +148,14 @@
               <b>Скин банок</b>
               <small id="set-skin-name">Стекло</small>
             </span>
-              <em>Каталог</em>
+            <em>Каталог</em>
+          </button>
+          <button class="set-row danger" id="set-reset" type="button">
+            <span>
+              <b>Сбросить прогресс</b>
+              <small>Уровни, монеты, скины — сначала</small>
+            </span>
+            <em id="set-reset-val">Стереть</em>
           </button>
         </div>
         <div class="card-actions">
@@ -302,6 +309,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=16"></script>
+    <script src="game.js?v=17"></script>
   </body>
 </html>

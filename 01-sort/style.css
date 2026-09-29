@@ -1413,6 +1413,14 @@ body.screen .wrap {
   font: inherit;
 }
 
+.set-row.danger em {
+  color: #f27a64;
+}
+
+.set-row.danger:active {
+  transform: scale(0.98);
+}
+
 .set-row b {
   display: block;
 }

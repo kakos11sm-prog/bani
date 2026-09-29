@@ -1,5 +1,12 @@
 const COLORS = ["#e85d4c", "#f4b942", "#3ecf8e", "#5b8def", "#c084fc", "#f27a64"];
-const SAVE_KEY = "bani-progress-v5";
+const SAVE_KEY = "bani-progress-v6";
+const OLD_SAVES = [
+  "bani-progress-v5",
+  "bani-progress-v4",
+  "bani-progress-v3",
+  "bani-progress-v2",
+  "bani-progress-v1",
+];
 const SETTINGS_KEY = "bani-settings-v1";
 const TOWER_FLOORS = 5;
 const TOWER_ENTER = 22;
@@ -439,14 +446,7 @@ function firstLocked(stars, max) {
 
 function loadProgress() {
   try {
-    const raw = JSON.parse(
-      localStorage.getItem(SAVE_KEY) ||
-        localStorage.getItem("bani-progress-v4") ||
-        localStorage.getItem("bani-progress-v3") ||
-        localStorage.getItem("bani-progress-v2") ||
-        localStorage.getItem("bani-progress-v1") ||
-        ""
-    );
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
     const base = emptyProgress();
     if (!raw || typeof raw !== "object") return base;
     base.unlocked = Math.max(1, Number(raw.unlocked) || 1);
@@ -516,6 +516,31 @@ function loadProgress() {
 
 function saveProgress() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
+}
+
+function wipeSaves() {
+  [SAVE_KEY].concat(OLD_SAVES).forEach((key) => localStorage.removeItem(key));
+}
+
+function resetProgress() {
+  const fresh = emptyProgress();
+  Object.keys(progress).forEach((key) => {
+    delete progress[key];
+  });
+  Object.assign(progress, fresh);
+  wipeSaves();
+  saveProgress();
+  state.level = 1;
+  state.tubes = [];
+  state.selected = -1;
+  state.history = [];
+  state.moves = 0;
+  state.mode = "story";
+  state.lock = "";
+  state.busy = false;
+  openMenu();
+  paintHud();
+  showPassToast("Прогресс сброшен");
 }
 
 const progress = loadProgress();
@@ -2362,6 +2387,25 @@ document.getElementById("set-close").addEventListener("click", () => {
   closeSettings();
   if (!state.tubes.length) openMenu();
 });
+const setReset = document.getElementById("set-reset");
+const setResetVal = document.getElementById("set-reset-val");
+let resetArmed = false;
+if (setReset) {
+  setReset.addEventListener("click", () => {
+    if (!resetArmed) {
+      resetArmed = true;
+      if (setResetVal) setResetVal.textContent = "Точно?";
+      window.setTimeout(() => {
+        resetArmed = false;
+        if (setResetVal) setResetVal.textContent = "Стереть";
+      }, 3500);
+      return;
+    }
+    resetArmed = false;
+    if (setResetVal) setResetVal.textContent = "Стереть";
+    resetProgress();
+  });
+}
 paintMenu();
 syncScreens();
 
