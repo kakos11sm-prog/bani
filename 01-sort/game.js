@@ -10,6 +10,7 @@ const OLD_SAVES = [
 const SETTINGS_KEY = "bani-settings-v1";
 const TOWER_FLOORS = 5;
 const TOWER_ENTER = 22;
+const TOWER_PASS = 1000;
 const FLASK_PRICE = 90;
 const SEAL_PRICE = 80;
 const UNDO_PACK = 35;
@@ -266,7 +267,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=19";
+  el.src = "coin.svg?v=20";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -301,6 +302,7 @@ function emptyProgress() {
     towerDone: [false, false, false, false, false],
     towerScore: 0,
     towerCoins: 0,
+    towerPassWeek: "",
     bestMoves: Array(200).fill(0),
     stage: 1,
     milestones: Array(10).fill(false),
@@ -380,7 +382,7 @@ function toggleSetting(key) {
 }
 
 function syncScreens() {
-  const cover = ["boot", "map-overlay", "tower-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+  const cover = ["boot", "map-overlay", "tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
     const el = document.getElementById(id);
     return el && el.classList.contains("show");
   });
@@ -401,14 +403,11 @@ function paintMenu() {
       (state.mode !== "tower" && state.tubes.length ? " · партия ждёт" : "");
   }
   if (towerMeta) {
-    const me = huntTarget(towerTable()).me;
-    towerMeta.textContent =
-      "монет " +
-      (progress.towerCoins || 0) +
-      " · очки " +
-      (progress.towerScore || 0) +
-      (me ? " · #" + me.place : "") +
-      " · до понедельника";
+    if (progress.towerPassWeek === weekId()) {
+      towerMeta.textContent = "Пропуск на неделю есть · можно соревноваться";
+    } else {
+      towerMeta.textContent = "Вход 1000 монет · сложные уровни недели";
+    }
   }
 }
 
@@ -419,6 +418,7 @@ function openMenu() {
   closeMap();
   closeSettings();
   closeSkins();
+  closePassGate();
   overlay.classList.remove("show");
   failOverlay.classList.remove("show");
   if (lockOverlay) lockOverlay.classList.remove("show");
@@ -505,6 +505,7 @@ function loadProgress() {
     }
     base.towerScore = Math.max(0, Number(raw.towerScore) || 0);
     base.towerCoins = Math.max(0, Number(raw.towerCoins) || 0);
+    base.towerPassWeek = typeof raw.towerPassWeek === "string" ? raw.towerPassWeek : "";
     base.bestMoves = Array(200).fill(0);
     if (Array.isArray(raw.bestMoves)) {
       raw.bestMoves.forEach((value, i) => {
@@ -838,7 +839,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=19\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=20\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1264,6 +1265,66 @@ function paintShop() {
       document.createTextNode(" " + progress.coins + " и " + progress.bottleCharges + " запасных колб.")
     );
   }
+}
+
+function hasTowerPass() {
+  return progress.towerPassWeek === weekId();
+}
+
+function paintPassGate() {
+  const have = document.getElementById("pass-have");
+  const buy = document.getElementById("pass-buy");
+  const shop = document.getElementById("pass-shop");
+  fillCoinLabel(have, "У тебя ", progress.coins, "");
+  fillCoinLabel(buy, "Купить пропуск ", TOWER_PASS, "");
+  if (shop) shop.hidden = progress.coins >= TOWER_PASS;
+}
+
+function openPassGate() {
+  closeLeague();
+  closeShop();
+  closeTower();
+  closeSkins();
+  closeMap();
+  paintPassGate();
+  const el = document.getElementById("pass-overlay");
+  if (el) el.classList.add("show");
+  syncScreens();
+}
+
+function closePassGate() {
+  const el = document.getElementById("pass-overlay");
+  if (el) el.classList.remove("show");
+  syncScreens();
+}
+
+function buyTowerPass() {
+  const buy = document.getElementById("pass-buy");
+  if (progress.coins < TOWER_PASS) {
+    if (buy) shake(buy);
+    showPassToast("Нужно 1000 монет. Играй уровни — копи.");
+    feel("fail");
+    return;
+  }
+  progress.coins -= TOWER_PASS;
+  progress.towerPassWeek = weekId();
+  saveProgress();
+  paintHud();
+  paintMenu();
+  feel("win");
+  tone(523, 0.12, "sine", 0.04);
+  tone(659, 0.16, "triangle", 0.035);
+  closePassGate();
+  openTower();
+  showPassToast("Пропуск на неделю твой. Можно соревноваться.");
+}
+
+function tryEnterTower() {
+  if (hasTowerPass()) {
+    openTower();
+    return;
+  }
+  openPassGate();
 }
 
 function openTower() {
@@ -2225,14 +2286,14 @@ failKeep.addEventListener("click", () => keepStreakRestart());
 failGive.addEventListener("click", () => giveUp());
 winDouble.addEventListener("click", () => doubleReward());
 winShare.addEventListener("click", () => shareProgress());
-document.getElementById("chip-league").addEventListener("click", () => openTower());
+document.getElementById("chip-league").addEventListener("click", () => tryEnterTower());
 const chipShop = document.getElementById("chip-shop") || document.getElementById("fly-shop");
 if (chipShop) chipShop.addEventListener("click", () => openShop());
 document.getElementById("league-close").addEventListener("click", () => {
   closeLeague();
   backToMenuIfIdle();
 });
-document.getElementById("league-tower").addEventListener("click", () => openTower());
+document.getElementById("league-tower").addEventListener("click", () => tryEnterTower());
 document.getElementById("league-shop").addEventListener("click", () => openShop());
 leagueRace.addEventListener("click", () => {
   closeLeague();
@@ -2244,7 +2305,7 @@ document.getElementById("tower-close").addEventListener("click", () => {
   closeTower();
   backToMenuIfIdle();
 });
-if (towerSq) towerSq.addEventListener("click", () => openTower());
+if (towerSq) towerSq.addEventListener("click", () => tryEnterTower());
 if (mapGrid) {
   mapGrid.addEventListener("click", (event) => {
     const btn = event.target.closest(".map-cell");
@@ -2301,11 +2362,11 @@ function launchGame(where) {
   closeSettings();
   closeMenu();
   if (where === "tower") {
-    openTower();
+    tryEnterTower();
     return;
   }
   if (where === "league") {
-    openTower();
+    tryEnterTower();
     return;
   }
   if (where === "shop") {
@@ -2429,6 +2490,20 @@ if (setReset) {
     resetArmed = false;
     if (setResetVal) setResetVal.textContent = "Стереть";
     resetProgress();
+  });
+}
+const passBuy = document.getElementById("pass-buy");
+if (passBuy) passBuy.addEventListener("click", () => buyTowerPass());
+const passBack = document.getElementById("pass-back");
+if (passBack) passBack.addEventListener("click", () => {
+  closePassGate();
+  openMenu();
+});
+const passShop = document.getElementById("pass-shop");
+if (passShop) {
+  passShop.addEventListener("click", () => {
+    closePassGate();
+    openShop();
   });
 }
 paintMenu();

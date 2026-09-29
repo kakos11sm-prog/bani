@@ -785,9 +785,37 @@ body.quiet .track-chest {
   display: none;
 }
 
+#pass-overlay,
 #tower-overlay,
 #shop-overlay {
   z-index: 59;
+}
+
+.pass-card {
+  text-align: center;
+}
+
+.pass-coin {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 8px;
+}
+
+.pass-coin .coin {
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+  animation: coinShine 1.6s ease-in-out infinite;
+}
+
+.pass-have {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-weight: 800;
+  color: var(--accent);
 }
 
 .shop-list {
