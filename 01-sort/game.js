@@ -1,5 +1,4 @@
 const COLORS = ["#e85d4c", "#f4b942", "#3ecf8e", "#5b8def", "#c084fc", "#f27a64"];
-const CAP = 4;
 const SAVE_KEY = "bani-progress-v5";
 const SETTINGS_KEY = "bani-settings-v1";
 const TOWER_FLOORS = 5;
@@ -44,6 +43,10 @@ const SKINS = [
   { id: "ice", name: "Лёд", premium: false, price: 0 },
   { id: "smoke", name: "Дым", premium: false, price: 0 },
   { id: "foam", name: "Пена", premium: false, price: 0 },
+  { id: "ribbed", name: "Рефлёные", premium: false, price: 0 },
+  { id: "vase", name: "Вазы", premium: false, price: 0 },
+  { id: "mug", name: "Кружки", premium: false, price: 0 },
+  { id: "wide", name: "Широкие", premium: false, price: 0 },
   { id: "gold", name: "Золото", premium: true, price: 120 },
   { id: "honey", name: "Мёд", premium: true, price: 140 },
   { id: "ocean", name: "Океан", premium: true, price: 160 },
@@ -193,6 +196,7 @@ function paintScene() {
   document.documentElement.style.setProperty("--scene", tint);
   document.body.classList.toggle("ember", progress.streak >= 5);
   document.body.classList.toggle("tension", almostCount(state.tubes) >= 2);
+  document.body.classList.toggle("stage2", (progress.stage || 1) >= 2);
   SKINS.forEach((item) => {
     document.body.classList.toggle("skin-" + item.id, progress.skin === item.id);
   });
@@ -256,7 +260,7 @@ function wait(ms) {
 function emptyProgress() {
   return {
     unlocked: 1,
-    stars: Array(LEVELS.length).fill(0),
+    stars: Array(200).fill(0),
     coins: 0,
     streak: 0,
     hints: 1,
@@ -273,7 +277,11 @@ function emptyProgress() {
     towerDone: [false, false, false, false, false],
     towerScore: 0,
     towerCoins: 0,
-    bestMoves: Array(typeof LEVELS !== "undefined" ? LEVELS.length : 100).fill(0),
+    bestMoves: Array(200).fill(0),
+    stage: 1,
+    milestones: Array(10).fill(false),
+    boostUntil: 0,
+    boostMult: 1,
   };
 }
 
@@ -471,11 +479,23 @@ function loadProgress() {
     }
     base.towerScore = Math.max(0, Number(raw.towerScore) || 0);
     base.towerCoins = Math.max(0, Number(raw.towerCoins) || 0);
-    base.bestMoves = Array(LEVELS.length).fill(0);
+    base.bestMoves = Array(200).fill(0);
     if (Array.isArray(raw.bestMoves)) {
       raw.bestMoves.forEach((value, i) => {
         if (i < base.bestMoves.length) base.bestMoves[i] = Math.max(0, Number(value) || 0);
       });
+    }
+    base.stage = Math.max(1, Number(raw.stage) || 1);
+    base.milestones = Array(10).fill(false);
+    if (Array.isArray(raw.milestones)) {
+      raw.milestones.forEach((value, i) => {
+        if (i < 10) base.milestones[i] = !!value;
+      });
+    }
+    base.boostUntil = Math.max(0, Number(raw.boostUntil) || 0);
+    base.boostMult = Math.max(1, Number(raw.boostMult) || 1);
+    if (Array.isArray(raw.stars) && raw.stars.length < 200) {
+      while (base.stars.length < 200) base.stars.push(0);
     }
     return base;
   } catch (e) {
@@ -489,6 +509,64 @@ function saveProgress() {
 
 const progress = loadProgress();
 const settings = loadSettings();
+
+function jarCap() {
+  return (progress.stage || 1) >= 2 ? 5 : 4;
+}
+
+function storyLevelCount() {
+  return (progress.stage || 1) >= 2 ? 200 : 100;
+}
+
+function packedLevel(n) {
+  const src = LEVELS[(n - 1) % LEVELS.length];
+  return src.map((tube) => tube.slice());
+}
+
+function stageClears() {
+  const start = ((progress.stage || 1) - 1) * 100;
+  return progress.stars.slice(start, start + 100).filter((s) => s > 0).length;
+}
+
+const MILESTONES = [
+  { at: 10, kind: "hints", n: 7, text: "7 подсказок" },
+  { at: 20, kind: "skin", id: "ribbed", text: "Скин «Рефлёные колбы»" },
+  { at: 30, kind: "coins", n: 80, text: "+80 ●" },
+  { at: 40, kind: "boost", mult: 2, hours: 24, text: "×2 монет на 24 часа" },
+  { at: 50, kind: "skin", id: "vase", text: "Скин «Вазы»" },
+  { at: 60, kind: "coins", n: 120, text: "+120 ●" },
+  { at: 70, kind: "hints", n: 10, text: "10 подсказок" },
+  { at: 80, kind: "skin", id: "mug", text: "Скин «Кружки»" },
+  { at: 90, kind: "boost", mult: 10, hours: 2, text: "×10 монет на 2 часа" },
+  { at: 100, kind: "stage", text: "Сундук этапа: +100 уровней, широкие колбы" },
+];
+
+function claimMilestones() {
+  const n = stageClears();
+  const got = [];
+  MILESTONES.forEach((item, i) => {
+    if (n < item.at || progress.milestones[i]) return;
+    progress.milestones[i] = true;
+    if (item.kind === "hints") progress.hints += item.n;
+    if (item.kind === "coins") gain(item.n);
+    if (item.kind === "skin" && progress.skins.indexOf(item.id) === -1) {
+      progress.skins.push(item.id);
+      progress.skin = item.id;
+    }
+    if (item.kind === "boost") {
+      progress.boostMult = item.mult;
+      progress.boostUntil = Date.now() + item.hours * 3600 * 1000;
+    }
+    if (item.kind === "stage") {
+      progress.stage = 2;
+      if (progress.skins.indexOf("wide") === -1) progress.skins.push("wide");
+      progress.skin = "wide";
+      if (progress.unlocked < 101) progress.unlocked = 101;
+    }
+    got.push(item.text);
+  });
+  return got;
+}
 
 function cash() {
   return state.mode === "tower" ? progress.towerCoins || 0 : progress.coins;
@@ -506,8 +584,13 @@ function spend(n) {
 }
 
 function gain(n) {
-  if (state.mode === "tower") progress.towerCoins = (progress.towerCoins || 0) + n;
-  else progress.coins += n;
+  let add = n;
+  if (state.mode !== "tower" && progress.boostUntil && Date.now() < progress.boostUntil) {
+    add = n * (progress.boostMult || 1);
+  }
+  if (state.mode === "tower") progress.towerCoins = (progress.towerCoins || 0) + add;
+  else progress.coins += add;
+  return add;
 }
 
 function clone(tubes) {
@@ -519,7 +602,7 @@ function topColor(tube) {
 }
 
 function canPour(from, to) {
-  if (!from.length || to.length >= CAP) return false;
+  if (!from.length || to.length >= jarCap()) return false;
   const color = topColor(from);
   return !to.length || topColor(to) === color;
 }
@@ -527,7 +610,7 @@ function canPour(from, to) {
 function pourAmount(from, to) {
   const color = topColor(from);
   let count = 0;
-  for (let i = from.length - 1; i >= 0 && from[i] === color && to.length + count < CAP; i -= 1) {
+  for (let i = from.length - 1; i >= 0 && from[i] === color && to.length + count < jarCap(); i -= 1) {
     count += 1;
   }
   return count;
@@ -535,7 +618,7 @@ function pourAmount(from, to) {
 
 function pour(from, to) {
   const color = topColor(from);
-  while (from.length && topColor(from) === color && to.length < CAP) {
+  while (from.length && topColor(from) === color && to.length < jarCap()) {
     to.push(from.pop());
   }
 }
@@ -543,16 +626,16 @@ function pour(from, to) {
 function isSolved(tubes) {
   return tubes.every(
     (tube) =>
-      tube.length === 0 || (tube.length === CAP && tube.every((color) => color === tube[0]))
+      tube.length === 0 || (tube.length === jarCap() && tube.every((color) => color === tube[0]))
   );
 }
 
 function isFullJar(tube) {
-  return tube.length === CAP && tube.every((color) => color === tube[0]);
+  return tube.length === jarCap() && tube.every((color) => color === tube[0]);
 }
 
 function isAlmostJar(tube) {
-  return tube.length === CAP - 1 && tube.length > 0 && tube.every((color) => color === tube[0]);
+  return tube.length === jarCap() - 1 && tube.length > 0 && tube.every((color) => color === tube[0]);
 }
 
 function hasLegalMove(tubes) {
@@ -993,12 +1076,12 @@ function paintMap() {
   if (!mapGrid) return;
   const lead = document.getElementById("map-lead");
   const cont = document.getElementById("map-continue");
+  const stop = state.mode === "story" && state.tubes.length ? state.level : progress.unlocked;
   if (lead) {
-    lead.textContent =
-      "Звёзды и ходы за уровень. Сейчас открыт " + progress.unlocked + ". Башня сюда не заходит.";
+    lead.textContent = "Звёзды за каждый. Пройденный — снова. Продолжить — " + stop + ".";
   }
-  if (cont) cont.textContent = "Продолжить · " + progress.unlocked;
-  const last = Math.min(LEVELS.length, Math.max(progress.unlocked + 4, 10));
+  if (cont) cont.textContent = "Продолжить · " + stop;
+  const last = Math.min(storyLevelCount(), Math.max(progress.unlocked + 4, 10));
   mapGrid.innerHTML = "";
   for (let n = 1; n <= last; n += 1) {
     const btn = document.createElement("button");
@@ -1049,6 +1132,14 @@ function pickLevel(n) {
   }
   closeMap();
   startLevel(n);
+}
+
+function continueLevel() {
+  if (state.mode === "story" && state.tubes.length) {
+    closeMap();
+    return;
+  }
+  pickLevel(progress.unlocked);
 }
 
 function paintTower() {
@@ -1268,42 +1359,32 @@ function paintHud() {
 }
 
 function paintMission() {
-  const ch = chapterIndex(state.level);
-  const pos = chapterPos(state.level);
-  const left = 11 - pos;
+  if (chapterEl) chapterEl.hidden = true;
+  if (goalEl) goalEl.hidden = true;
   if (state.mode === "tower") {
     const { me } = huntTarget(towerTable());
-    chapterEl.textContent = "Башня недели";
     levelEl.textContent = String(progress.towerScore || 0);
     trackFill.style.width = me ? Math.max(8, (21 - me.place) * 5) + "%" : "50%";
-    trackLabel.textContent = me ? "#" + me.place + " · очки сбросятся в понедельник" : "Очки башни";
-    goalEl.textContent = "Свои монеты башни. Открой ход или запечатай чужой и набери очки недели.";
+    trackLabel.textContent = me ? "#" + me.place + " · очки до понедельника" : "Очки башни";
     paintScene();
     paintHunt();
     paintDuel();
     return;
   }
   if (duelEl) duelEl.hidden = true;
-  chapterEl.textContent = CHAPTERS[ch];
   levelEl.textContent = String(state.level);
-  trackFill.style.width = pos * 10 + "%";
-  trackLabel.textContent =
-    pos === 10
-      ? "Последний уровень — в сундуке монеты, ходы, отмены или скин"
-      : pos + " / 10 до сундука главы";
-  const needThree = progress.stars[state.level - 1] < 3;
-  if (pos === 10) {
-    goalEl.textContent =
-      "Добей главу «" + CHAPTERS[ch] + "». В сундуке монеты, подсказки, отмены и скин.";
-  } else if (left <= 3) {
-    goalEl.textContent =
-      "Ещё " + left + " — и глава «" + CHAPTERS[ch] + "» твоя. Этот уровень нельзя бросать.";
-  } else if (needThree) {
-    goalEl.textContent = "Собери банки коротко. Три звезды — если почти без лишних переливов.";
+  const done = stageClears();
+  const pack = done % 10 === 0 && done ? 10 : done % 10;
+  trackFill.style.width = Math.min(100, done) + "%";
+  if (done >= 100 && (progress.stage || 1) >= 2) {
+    const d2 = progress.stars.slice(100, 200).filter((s) => s > 0).length;
+    trackFill.style.width = d2 + "%";
+    trackLabel.textContent = d2 + " / 100 до сундука этапа";
   } else {
-    goalEl.textContent =
-      "Серия " + progress.streak + " даёт больше монет. Сдаться — и огоньки сгорят.";
+    trackLabel.textContent = pack + " / 10 до приза";
   }
+  const chest = document.getElementById("track-chest");
+  if (chest) chest.classList.toggle("hot", done >= 90 || ((progress.stage || 1) >= 2 && progress.stars.slice(100, 200).filter((s) => s > 0).length >= 90));
   paintScene();
   paintHunt();
   paintDuel();
@@ -1364,7 +1445,7 @@ function startLevel(level, opts) {
   const n = tower
     ? Math.min(LEVELS.length, Math.max(1, level))
     : Math.min(progress.unlocked, Math.max(1, level));
-  const packed = LEVELS[n - 1];
+  const packed = packedLevel(n);
   state.level = n;
   state.mode = tower ? "tower" : "story";
   state.towerFloor = tower ? opts.floor || 0 : 0;
@@ -1588,32 +1669,32 @@ function applyWinRewards(stars) {
   const i = state.level - 1;
   const better = stars > progress.stars[i];
   const firstClear = progress.stars[i] === 0;
-  const ch = chapterIndex(state.level);
-  const chapterDone = chapterPos(state.level) === 10 && firstClear && !progress.chests[ch];
   progress.stars[i] = Math.max(progress.stars[i], stars);
-  if (!progress.bestMoves) progress.bestMoves = Array(LEVELS.length).fill(0);
+  if (!progress.bestMoves) progress.bestMoves = Array(200).fill(0);
   if (!progress.bestMoves[i] || state.moves < progress.bestMoves[i]) {
     progress.bestMoves[i] = state.moves;
   }
-  if (state.level >= progress.unlocked && state.level < LEVELS.length) {
+  if (state.level >= progress.unlocked && state.level < storyLevelCount()) {
     progress.unlocked = state.level + 1;
   }
   progress.streak += 1;
   progress.maxStreak = Math.max(progress.maxStreak || 0, progress.streak);
   if (state.level === raceLevel()) {
     const race = progress.weekRace;
-    const better =
+    const raceBetter =
       !race.stars ||
       stars > race.stars ||
       (stars === race.stars && state.moves < race.moves);
-    if (better) progress.weekRace = { level: state.level, stars: stars, moves: state.moves };
+    if (raceBetter) progress.weekRace = { level: state.level, stars: stars, moves: state.moves };
   }
   let coins = 6 + stars * 8 + Math.min(progress.streak, 10) * 2;
   if (better) coins += 10;
   if (progress.streak > 0 && progress.streak % 5 === 0) progress.hints += 1;
-  progress.coins += coins;
+  if (stars === 3 && (progress.stage || 1) >= 2) progress.hints += 1;
+  const got = gain(coins);
+  const prizes = firstClear ? claimMilestones() : [];
   saveProgress();
-  return { coins, firstClear, chapterDone, chapter: ch };
+  return { coins: got, firstClear, chapterDone: false, chapter: 0, prizes: prizes };
 }
 
 function shareLine() {
@@ -1714,7 +1795,7 @@ async function showWin() {
   winDouble.textContent = "Ролик — удвоить";
   paintHud();
   await wait(420);
-  const last = state.level >= LEVELS.length;
+  const last = state.level >= storyLevelCount();
   const nextChapter = CHAPTERS[Math.min(CHAPTERS.length - 1, chapterIndex(state.level) + 1)];
   winTitle.textContent = reward.tower
     ? "Башня"
@@ -1771,19 +1852,16 @@ async function showWin() {
       : reward.chapterDone
         ? "Новая глава"
         : "Следующий";
-  if (reward.chapterDone) {
-    const loot = rollChest(reward.chapter);
-    takeLoot(loot);
-    progress.chests[reward.chapter] = true;
-    saveProgress();
-    paintHud();
+  if (reward.prizes && reward.prizes.length) {
     chestLoot.innerHTML = "";
-    loot.forEach((item, i) => {
+    reward.prizes.forEach((text, i) => {
       const row = document.createElement("b");
-      row.textContent = item.text;
+      row.textContent = text;
       row.style.animationDelay = i * 90 + "ms";
       chestLoot.appendChild(row);
     });
+    const chestLead = document.getElementById("chest-lead");
+    if (chestLead) chestLead.textContent = "Приз за " + stageClears() + " уровней.";
     chestOverlay.classList.add("show");
   }
 }
@@ -2034,7 +2112,7 @@ async function onTap(index) {
   }
   const color = topColor(from);
   const count = pourAmount(from, to);
-  const willFill = to.length + count === CAP && (to.length === 0 || to.every((c) => c === color));
+  const willFill = to.length + count === jarCap() && (to.length === 0 || to.every((c) => c === color));
   state.history.push(clone(state.tubes));
   state.busy = true;
   undoBtn.disabled = true;
@@ -2125,7 +2203,7 @@ if (mapGrid) {
   });
 }
 const mapContinue = document.getElementById("map-continue");
-if (mapContinue) mapContinue.addEventListener("click", () => pickLevel(progress.unlocked));
+if (mapContinue) mapContinue.addEventListener("click", () => continueLevel());
 const mapBack = document.getElementById("map-back");
 if (mapBack) mapBack.addEventListener("click", () => {
   closeMap();
@@ -2176,7 +2254,6 @@ function launchGame(where) {
     openShop();
     return;
   }
-  if (state.mode === "story" && state.tubes.length) return;
   openMap();
 }
 

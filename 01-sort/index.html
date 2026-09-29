@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=14" />
+    <link rel="stylesheet" href="style.css?v=15" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -44,10 +44,13 @@
         <button type="button" id="fly-skins">Скины</button>
       </div>
       <div class="mission">
-        <div class="chapter" id="chapter">Первые банки</div>
-        <div class="goal" id="goal">Собери банки — откроешь следующий.</div>
-        <div class="track"><i id="track-fill"></i></div>
-        <div class="track-label" id="track-label">1 / 10 до сундука</div>
+        <div class="track-row">
+          <div class="track"><i id="track-fill"></i></div>
+          <div class="track-chest" id="track-chest" aria-hidden="true">🧰</div>
+        </div>
+        <div class="track-label" id="track-label">0 / 10 до приза</div>
+        <div class="chapter" id="chapter" hidden></div>
+        <div class="goal" id="goal" hidden></div>
         <div class="duel" id="duel" hidden>
           <div class="duel-side you">
             <span class="face" id="duel-you-face">Я</span>
@@ -293,6 +296,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=14"></script>
+    <script src="game.js?v=15"></script>
   </body>
 </html>
