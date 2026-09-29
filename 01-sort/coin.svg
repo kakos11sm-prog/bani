@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <radialGradient id="coinFace" cx="34%" cy="30%">
+      <stop offset="0%" stop-color="#fff7cc"/>
+      <stop offset="38%" stop-color="#ffd24a"/>
+      <stop offset="78%" stop-color="#e09a18"/>
+      <stop offset="100%" stop-color="#a45f0c"/>
+    </radialGradient>
+    <linearGradient id="coinRim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe9a0"/>
+      <stop offset="50%" stop-color="#c47a12"/>
+      <stop offset="100%" stop-color="#7a4308"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="33.5" r="29" fill="#5c3308" opacity="0.35"/>
+  <circle cx="32" cy="32" r="29" fill="url(#coinRim)"/>
+  <circle cx="32" cy="32" r="24.5" fill="url(#coinFace)"/>
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#b56f10" stroke-width="1.8"/>
+  <circle cx="32" cy="32" r="17.5" fill="none" stroke="#ffe7a8" stroke-width="1.1" opacity="0.55"/>
+  <g fill="#8a4e08">
+    <rect x="31" y="9.5" width="2" height="4.2" rx="1"/>
+    <rect x="31" y="50.3" width="2" height="4.2" rx="1"/>
+    <rect x="9.5" y="31" width="4.2" height="2" rx="1"/>
+    <rect x="50.3" y="31" width="4.2" height="2" rx="1"/>
+  </g>
+  <path fill="#8a4e08" d="M32 20.2l2.4 7.2h7.6l-6.1 4.5 2.3 7.2L32 34.7l-6.2 4.4 2.3-7.2-6.1-4.5h7.6z"/>
+</svg>

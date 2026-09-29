@@ -291,33 +291,24 @@ body.celebrate .scene-glow {
   align-items: center;
   justify-content: center;
   gap: 5px;
+  overflow: visible;
+  min-width: 52px;
 }
 
 .coin {
   position: relative;
   display: inline-block;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  flex: 0 0 15px;
-  vertical-align: -3px;
-  background:
-    radial-gradient(circle at 32% 28%, #fff8d2 0 16%, #ffd34a 38%, #e8a41c 68%, #b56f0d 100%);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.8),
-    inset 0 -2px 2px rgba(110, 62, 0, 0.45),
-    0 1px 1px rgba(0, 0, 0, 0.28);
-}
-
-.coin::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  border: 1.4px solid rgba(154, 92, 12, 0.5);
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  vertical-align: -4px;
+  object-fit: contain;
 }
 
 .chip .coin {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
   animation: coinShine 2.2s ease-in-out infinite;
 }
 
@@ -329,20 +320,20 @@ body.quiet .chip .coin {
   0%,
   100% {
     filter: brightness(1);
-    transform: scale(1);
+    transform: rotate(-8deg) scale(1);
   }
   50% {
     filter: brightness(1.18);
-    transform: scale(1.06);
+    transform: rotate(8deg) scale(1.08);
   }
 }
 
 .act .coin,
 .lock-tag .coin,
 .skin-card small .coin {
-  width: 13px;
-  height: 13px;
-  flex-basis: 13px;
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
   margin-right: 4px;
 }
 
@@ -2028,19 +2019,15 @@ button.act.ghost {
 
 .loot-fly {
   position: fixed;
-  width: 16px;
-  height: 16px;
-  margin-left: -8px;
-  margin-top: -8px;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  margin-top: -11px;
+  border-radius: 0;
   pointer-events: none;
   z-index: 45;
-  background:
-    radial-gradient(circle at 32% 28%, #fff8d2 0 16%, #ffd34a 38%, #e8a41c 68%, #b56f0d 100%);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.8),
-    inset 0 -2px 2px rgba(110, 62, 0, 0.45),
-    0 1px 2px rgba(0, 0, 0, 0.3);
+  background: url("coin.svg") center / contain no-repeat;
+  box-shadow: none;
   animation: lootFly 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
 }
 
