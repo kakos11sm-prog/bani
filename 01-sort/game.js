@@ -127,7 +127,10 @@ const duelThemFace = document.getElementById("duel-them-face");
 const duelName = document.getElementById("duel-name");
 const duelMeta = document.getElementById("duel-meta");
 const duelFloor = document.getElementById("duel-floor");
-const towerPeek = document.getElementById("tower-peek");
+const towerPeek = document.getElementById("tower-sq");
+const towerSq = document.getElementById("tower-sq");
+const mapOverlay = document.getElementById("map-overlay");
+const mapGrid = document.getElementById("map-grid");
 const towerOverlay = document.getElementById("tower-overlay");
 const towerLead = document.getElementById("tower-lead");
 const towerList = document.getElementById("tower-list");
@@ -268,6 +271,7 @@ function emptyProgress() {
     bottleCharges: 0,
     seals: {},
     towerDone: [false, false, false, false, false],
+    towerScore: 0,
   };
 }
 
@@ -368,6 +372,7 @@ function openMenu() {
   closeLeague();
   closeShop();
   closeTower();
+  closeMap();
   closeSettings();
   closeSkins();
   overlay.classList.remove("show");
@@ -386,6 +391,7 @@ function openSettings() {
   closeLeague();
   closeShop();
   closeTower();
+  closeMap();
   closeSkins();
   closeMenu();
   paintSettings();
@@ -447,6 +453,7 @@ function loadProgress() {
         if (i < 5) base.towerDone[i] = !!value;
       });
     }
+    base.towerScore = Math.max(0, Number(raw.towerScore) || 0);
     return base;
   } catch (e) {
     return emptyProgress();
@@ -702,6 +709,7 @@ function syncWeek() {
   progress.lastPlace = 0;
   progress.seals = {};
   progress.towerDone = [false, false, false, false, false];
+  progress.towerScore = 0;
   saveProgress();
 }
 
@@ -840,6 +848,21 @@ function leagueTable() {
   });
 }
 
+function rivalTowerScore(name) {
+  const seals = Number(progress.seals[name]) || 0;
+  return Math.max(0, 16 + (hashStr(weekId() + ":tw:" + name) % 96) - seals * 18);
+}
+
+function towerTable() {
+  const rows = RIVALS.map((name) => ({ name: name, score: rivalTowerScore(name), you: false }));
+  rows.push({ name: YOU, score: progress.towerScore || 0, you: true });
+  rows.sort((a, b) => b.score - a.score || (a.you ? -1 : b.you ? 1 : 0));
+  return rows.map((row, i) => {
+    row.place = i + 1;
+    return row;
+  });
+}
+
 function huntTarget(table) {
   const me = table.find((row) => row.you);
   if (!me) return { me: null, next: null };
@@ -892,130 +915,131 @@ function paintLeague() {
 }
 
 function paintHunt() {
-  const { me, next } = huntTarget(leagueTable());
+  const { me, next } = huntTarget(towerTable());
   if (hudPlace && me) hudPlace.textContent = String(me.place);
   if (huntEl) {
     if (state.mode === "tower") {
-      const foe = towerKeeper(state.towerFloor);
-      huntEl.textContent = "Бой с " + foe.name + " · #" + foe.place + " в лиге недели.";
+      huntEl.textContent =
+        "Башня · очки " +
+        (progress.towerScore || 0) +
+        " · #" +
+        (me ? me.place : "—") +
+        ". Закрой банки, открывай свои ходы за ●.";
     } else {
       huntEl.textContent = next
-        ? next.score - me.score <= 28
-          ? "Охота: " + next.name + ", ещё " + (next.score - me.score) + " очков."
-          : "Лига: " + me.place + " место. До " + next.name + " — " + (next.score - me.score) + "."
-        : "Ты первый в лиге недели.";
+        ? "Башня: #" + me.place + ". Обогни " + next.name + " — " + (next.score - me.score) + " очков до сундука."
+        : "Башня: ты первый на неделе. Держи место до сундука.";
     }
   }
   if (hinderEl) {
     const hz = hinderLocks();
-    const foe = state.mode === "tower" ? towerKeeper(state.towerFloor) : null;
     hinderEl.textContent =
       state.mode === "tower"
-        ? foe.name +
-          " закрыл тебе " +
-          state.locked +
-          (state.locked === 1 ? " ход." : " хода.") +
-          " Свои открываешь за ●, его — печатью."
+        ? "Он закрыл тебе ходы. Свои открываешь за ●, чужие — печатью."
         : hz && state.level > 5
-          ? "Помеха недели: башня запечатала тебе " + hz + (hz === 1 ? " колбу." : " колбы.")
+          ? "Помеха недели: закрыто " + hz + (hz === 1 ? " колба." : " колбы.")
           : "";
   }
 }
 
 function paintDuel() {
   if (duelEl) duelEl.hidden = true;
-  paintTowerCells(nextTowerFloor());
 }
 
-function towerCellMark(i, at, allDone) {
-  const price = towerEnterPrice(i);
-  if (progress.towerDone[i]) return "сдан";
-  if (state.mode === "tower" && state.towerFloor === i) return "бой";
-  if (i === at && !allDone) {
-    return progress.coins < price ? "мало ●" : "●" + price;
+function paintMap() {
+  if (!mapGrid) return;
+  const lead = document.getElementById("map-lead");
+  const cont = document.getElementById("map-continue");
+  if (lead) {
+    lead.textContent =
+      "Пройденные можно снова. Сейчас открыт " + progress.unlocked + ". Дальше — замок.";
   }
-  return "ждёт";
-}
-
-function fillTowerCells(root, here) {
-  if (!root) return;
-  const keepers = towerKeepers();
-  const allDone = progress.towerDone.every(Boolean);
-  const at = here == null ? nextTowerFloor() : here;
-  root.hidden = false;
-  root.innerHTML = "";
-  for (let i = 0; i < TOWER_FLOORS; i += 1) {
-    const keeper = keepers[i];
-    const face = faceOf(keeper.name);
-    const price = towerEnterPrice(i);
-    const broke = !progress.towerDone[i] && i === at && !allDone && progress.coins < price;
+  if (cont) cont.textContent = "Продолжить · " + progress.unlocked;
+  const last = Math.min(LEVELS.length, Math.max(progress.unlocked + 4, 10));
+  mapGrid.innerHTML = "";
+  for (let n = 1; n <= last; n += 1) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className =
-      "tower-cell" +
-      (progress.towerDone[i] ? " done" : "") +
-      (i === at && !allDone ? " now" : "") +
-      (i > at && !allDone ? " wait" : "") +
-      (broke ? " broke" : "");
-    btn.dataset.floor = String(i);
-    btn.style.animationDelay = i * 45 + "ms";
-    btn.title = keeper.name + " · вход ●" + price;
-    btn.innerHTML =
-      "<span class=\"pip-num\">" +
-      (i + 1) +
-      "</span><span class=\"face\" style=\"background:" +
-      face.color +
-      "\">" +
-      face.letter +
-      "</span><span class=\"pip-name\">" +
-      keeper.name +
-      "</span><span class=\"pip-mark\">" +
-      towerCellMark(i, at, allDone) +
-      "</span>";
-    root.appendChild(btn);
+    btn.dataset.level = String(n);
+    const done = progress.stars[n - 1] > 0;
+    const now = n === progress.unlocked;
+    const lock = n > progress.unlocked;
+    btn.className = "map-cell" + (done ? " done" : "") + (now ? " now" : "") + (lock ? " lock" : "");
+    btn.style.animationDelay = ((n - 1) % 10) * 18 + "ms";
+    btn.textContent = lock ? "🔒" : done ? n + "★" : String(n);
+    mapGrid.appendChild(btn);
   }
 }
 
-function paintTowerCells(here) {
-  fillTowerCells(towerPeek, here);
+function openMap() {
+  closeMenu();
+  closeTower();
+  closeLeague();
+  closeShop();
+  closeSettings();
+  closeSkins();
+  paintMap();
+  if (mapOverlay) mapOverlay.classList.add("show");
+}
+
+function closeMap() {
+  if (mapOverlay) mapOverlay.classList.remove("show");
+}
+
+function pickLevel(n) {
+  if (n > progress.unlocked) {
+    showPassToast("Сначала пройди " + progress.unlocked);
+    return;
+  }
+  closeMap();
+  startLevel(n);
 }
 
 function paintTower() {
-  const floor = nextTowerFloor();
-  const keepers = towerKeepers();
-  const now = keepers[floor];
-  const price = towerEnterPrice(floor);
+  const table = towerTable();
+  const { me, next } = huntTarget(table);
+  const days = daysToMonday();
   if (towerLead) {
-    towerLead.textContent = progress.towerDone.every(Boolean)
-      ? "Башня недели твоя. Ячейки сменятся в понедельник."
-      : progress.coins < price
-        ? "Сюда заходят только с монетами. Сейчас " +
-          progress.coins +
-          " ●, вход ●" +
-          price +
-          ". Сначала обычные уровни."
-        : now
-          ? "Ячейка " +
-            (floor + 1) +
-            " — бой с " +
-            now.name +
-            ". Вход ●" +
-            price +
-            ". Внутри он закрывает твои ходы, ты открываешь свои и можешь запечатать его."
-          : "Пять ячеек рядом. Монеты с обычной игры.";
+    towerLead.textContent = next
+      ? "Очки башни сбрасываются через " +
+        days +
+        (days === 1 ? " день" : days < 5 ? " дня" : " дней") +
+        ". Обогни " +
+        next.name +
+        " — лучший сундук недели."
+      : "Ты первый. Держи место до понедельника — лучший сундук твой.";
   }
-  const playBtn = document.getElementById("tower-play");
-  if (playBtn) {
-    playBtn.textContent = progress.towerDone.every(Boolean)
-      ? "Башня твоя"
-      : "Войти ●" + price;
+  const scoreEl = document.getElementById("tower-score");
+  if (scoreEl) {
+    scoreEl.textContent =
+      "Твои очки: " + (progress.towerScore || 0) + (me ? " · #" + me.place : "");
   }
   const sealBtn = document.getElementById("tower-seal");
-  const hunt = huntTarget(leagueTable()).next;
   if (sealBtn) {
-    sealBtn.textContent = hunt ? "Запечатать ход " + hunt.name : "Некого печатать";
+    sealBtn.textContent = next ? "Запечатать ход " + next.name : "Некого печатать";
   }
-  fillTowerCells(towerList, floor);
+  if (towerList) {
+    towerList.innerHTML = "";
+    table.slice(0, 8).forEach((row, i) => {
+      const el = document.createElement("div");
+      const face = faceOf(row.name, row.you);
+      el.className = "league-row" + (row.you ? " you" : "");
+      el.style.animationDelay = i * 40 + "ms";
+      el.innerHTML =
+        "<span class=\"place\">" +
+        row.place +
+        "</span><span class=\"face\" style=\"background:" +
+        face.color +
+        "\">" +
+        face.letter +
+        "</span><span class=\"name\">" +
+        row.name +
+        "</span><span class=\"score\">" +
+        row.score +
+        "</span>";
+      towerList.appendChild(el);
+    });
+  }
   paintDuel();
 }
 
@@ -1034,6 +1058,7 @@ function openTower() {
   closeLeague();
   closeShop();
   closeSkins();
+  closeMap();
   paintTower();
   towerOverlay.classList.add("show");
 }
@@ -1046,6 +1071,7 @@ function openShop() {
   closeLeague();
   closeTower();
   closeSkins();
+  closeMap();
   paintShop();
   shopOverlay.classList.add("show");
 }
@@ -1054,42 +1080,17 @@ function closeShop() {
   shopOverlay.classList.remove("show");
 }
 
-function playTowerFloor(floor) {
-  const next = progress.towerDone.every(Boolean) ? 0 : nextTowerFloor();
-  const i = floor == null ? next : Number(floor);
-  if (!progress.towerDone.every(Boolean) && i !== next && !progress.towerDone[i]) {
-    const keeper = towerKeeper(next);
-    showPassToast("Сначала ячейка " + (next + 1) + " · " + keeper.name);
-    return false;
-  }
-  if (progress.towerDone[i] && !progress.towerDone.every(Boolean)) {
-    showPassToast("Эта ячейка уже твоя.");
-    return false;
-  }
-  if (state.mode === "tower" && state.towerFloor === i && state.tubes.length) {
-    closeTower();
-    return true;
-  }
-  const price = towerEnterPrice(i);
-  if (progress.coins < price) {
-    showPassToast("Мало монет. Нужно " + price + " ● — сначала обычные уровни.");
-    const playBtn = document.getElementById("tower-play");
-    if (playBtn) shake(playBtn);
-    if (towerPeek) shake(towerPeek);
-    return false;
-  }
-  progress.coins -= price;
-  saveProgress();
-  paintHud();
+function playTowerFloor() {
   closeTower();
-  const keeper = towerKeeper(i);
-  showPassToast("Вход ●" + price + " · бой с " + keeper.name);
-  startLevel(towerLevel(i), { tower: true, floor: i });
+  closeMap();
+  const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 50));
+  startLevel(towerLevel(heat), { tower: true, floor: heat });
+  showPassToast("Башня · отдельные очки до понедельника");
   return true;
 }
 
 function sealHunt() {
-  const next = huntTarget(leagueTable()).next;
+  const next = huntTarget(towerTable()).next;
   if (!next || next.you) {
     showPassToast("Некого печатать — ты первый.");
     return;
@@ -1106,6 +1107,7 @@ function sealHunt() {
   paintLeague();
   paintShop();
   showPassToast("Запечатал ход " + next.name);
+  paintTower();
   tone(180, 0.16, "sawtooth", 0.035);
 }
 
@@ -1196,7 +1198,7 @@ function paintHud() {
   }
   failKeep.textContent = "Заново, серия " + progress.streak + " ●" + KEEP_PRICE;
   document.getElementById("skin").textContent = "Скин: " + skinName(progress.skin);
-  const me = huntTarget(leagueTable()).me;
+  const me = huntTarget(towerTable()).me;
   if (hudPlace && me) hudPlace.textContent = String(me.place);
 }
 
@@ -1205,14 +1207,12 @@ function paintMission() {
   const pos = chapterPos(state.level);
   const left = 11 - pos;
   if (state.mode === "tower") {
-    const foe = towerKeeper(state.towerFloor);
-    chapterEl.textContent = "Башня · бой: " + foe.name;
-    levelEl.textContent = "Ур. " + state.level;
-    trackFill.style.width = ((state.towerFloor + 1) / TOWER_FLOORS) * 100 + "%";
-    trackLabel.textContent =
-      "Ячейка " + (state.towerFloor + 1) + " / " + TOWER_FLOORS + " · " + foe.name;
-    goalEl.textContent =
-      "Он закрыл твои ходы. Открой свои за ●, запечатай его, поднимись выше.";
+    const { me } = huntTarget(towerTable());
+    chapterEl.textContent = "Башня недели";
+    levelEl.textContent = String(progress.towerScore || 0);
+    trackFill.style.width = me ? Math.max(8, (21 - me.place) * 5) + "%" : "50%";
+    trackLabel.textContent = me ? "#" + me.place + " · очки сбросятся в понедельник" : "Очки башни";
+    goalEl.textContent = "Отдельный счёт. Монеты с уровней — открыть свой ход или запечатать чужой.";
     paintScene();
     paintHunt();
     paintDuel();
@@ -1512,17 +1512,13 @@ function applyWinRewards(stars) {
   if (state.mode === "tower") {
     progress.streak += 1;
     progress.maxStreak = Math.max(progress.maxStreak || 0, progress.streak);
-    progress.stars[state.level - 1] = Math.max(progress.stars[state.level - 1], stars);
-    if (state.level >= progress.unlocked && state.level < LEVELS.length) {
-      progress.unlocked = state.level + 1;
-    }
-    progress.towerDone[state.towerFloor] = true;
-    const coins = 22 + state.towerFloor * 10 + stars * 8;
+    const points = 16 + stars * 8 + Math.max(0, 10 - Math.floor(state.moves / 4));
+    progress.towerScore = (progress.towerScore || 0) + points;
+    const coins = 8 + stars * 4;
     if (progress.streak > 0 && progress.streak % 5 === 0) progress.hints += 1;
     progress.coins += coins;
     saveProgress();
-    paintTowerCells();
-    return { coins: coins, firstClear: false, chapterDone: false, chapter: 0, tower: true };
+    return { coins: coins, firstClear: false, chapterDone: false, chapter: 0, tower: true, points: points };
   }
   const i = state.level - 1;
   const better = stars > progress.stars[i];
@@ -1560,7 +1556,7 @@ function shareLine() {
     " · серия " +
     progress.streak +
     " · лига #" +
-    (huntTarget(leagueTable()).me || {}).place
+    (huntTarget(towerTable()).me || {}).place
   );
 }
 
@@ -1652,7 +1648,7 @@ async function showWin() {
   const last = state.level >= LEVELS.length;
   const nextChapter = CHAPTERS[Math.min(CHAPTERS.length - 1, chapterIndex(state.level) + 1)];
   winTitle.textContent = reward.tower
-    ? "Этаж сдан"
+    ? "Башня"
     : last
       ? "Корона твоя"
       : reward.chapterDone
@@ -1660,11 +1656,18 @@ async function showWin() {
         : "Есть!";
   const leftInChapter = 10 - chapterPos(state.level);
   if (reward.tower) {
-    const left = progress.towerDone.filter((done) => !done).length;
-    const foe = towerKeeper(state.towerFloor);
-    winText.textContent = left
-      ? "Сбил " + foe.name + " в ячейке " + (state.towerFloor + 1) + ". Ещё " + left + " выше."
-      : "Сбил " + foe.name + ". Башня недели твоя. Печати живут до понедельника.";
+    const { me, next } = huntTarget(towerTable());
+    winText.textContent = next
+      ? "+" +
+        reward.points +
+        " очков башни. Ты #" +
+        (me ? me.place : "—") +
+        ". До " +
+        next.name +
+        " ещё " +
+        (next.score - me.score) +
+        "."
+      : "+" + reward.points + " очков. Ты первый на неделе. Сундук твой, если удержишь.";
   } else {
     winText.textContent = last
       ? "Все 100. Серия " + progress.streak + "."
@@ -1693,7 +1696,7 @@ async function showWin() {
   nextBtn.textContent = reward.tower
     ? progress.towerDone.every(Boolean)
       ? "В историю"
-      : "Следующая ячейка"
+      : "Ещё бой"
     : last
       ? "С первого"
       : reward.chapterDone
@@ -2028,7 +2031,7 @@ failKeep.addEventListener("click", () => keepStreakRestart());
 failGive.addEventListener("click", () => giveUp());
 winDouble.addEventListener("click", () => doubleReward());
 winShare.addEventListener("click", () => shareProgress());
-document.getElementById("chip-league").addEventListener("click", () => openLeague());
+document.getElementById("chip-league").addEventListener("click", () => openTower());
 const chipShop = document.getElementById("chip-shop") || document.getElementById("fly-shop");
 if (chipShop) chipShop.addEventListener("click", () => openShop());
 document.getElementById("league-close").addEventListener("click", () => {
@@ -2047,25 +2050,24 @@ document.getElementById("tower-close").addEventListener("click", () => {
   closeTower();
   backToMenuIfIdle();
 });
-if (towerList) {
-  towerList.addEventListener("click", (event) => {
-    const btn = event.target.closest(".tower-cell");
-    if (!btn) return;
-    const i = Number(btn.dataset.floor);
-    if (progress.towerDone[i] && !progress.towerDone.every(Boolean)) {
-      showPassToast("Эта ячейка уже твоя.");
+if (towerSq) towerSq.addEventListener("click", () => openTower());
+if (mapGrid) {
+  mapGrid.addEventListener("click", (event) => {
+    const btn = event.target.closest(".map-cell");
+    if (!btn || btn.classList.contains("lock")) {
+      if (btn && btn.classList.contains("lock")) shake(btn);
       return;
     }
-    if (!playTowerFloor(i)) shake(btn);
+    pickLevel(Number(btn.dataset.level));
   });
 }
-if (towerPeek) {
-  towerPeek.addEventListener("click", (event) => {
-    const btn = event.target.closest(".tower-cell");
-    if (!btn) return;
-    if (!playTowerFloor(Number(btn.dataset.floor))) shake(btn);
-  });
-}
+const mapContinue = document.getElementById("map-continue");
+if (mapContinue) mapContinue.addEventListener("click", () => pickLevel(progress.unlocked));
+const mapBack = document.getElementById("map-back");
+if (mapBack) mapBack.addEventListener("click", () => {
+  closeMap();
+  openMenu();
+});
 document.getElementById("shop-flask").addEventListener("click", () => buyFlask());
 const shopSkins = document.getElementById("shop-skins");
 if (shopSkins) shopSkins.addEventListener("click", () => openSkins());
@@ -2078,11 +2080,7 @@ document.getElementById("shop-close").addEventListener("click", () => {
 });
 nextBtn.addEventListener("click", () => {
   if (state.mode === "tower") {
-    if (progress.towerDone.every(Boolean)) {
-      startLevel(progress.unlocked);
-      return;
-    }
-    if (!playTowerFloor()) startLevel(progress.unlocked);
+    playTowerFloor();
     return;
   }
   if (state.level >= LEVELS.length) {
@@ -2108,17 +2106,15 @@ function launchGame(where) {
     return;
   }
   if (where === "league") {
-    if (!state.tubes.length) startLevel(progress.unlocked);
-    openLeague();
+    openTower();
     return;
   }
   if (where === "shop") {
-    if (!state.tubes.length) startLevel(progress.unlocked);
     openShop();
     return;
   }
   if (state.tubes.length) return;
-  startLevel(progress.unlocked);
+  openMap();
 }
 
 function backToMenuIfIdle() {

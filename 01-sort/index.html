@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=11" />
+    <link rel="stylesheet" href="style.css?v=12" />
   </head>
   <body>
     <div class="scene" id="scene" aria-hidden="true">
@@ -67,9 +67,12 @@
         <div class="hunt" id="hunt"></div>
         <div class="hinder" id="hinder"></div>
       </div>
-      <div class="tower-cells" id="tower-peek" aria-label="Башня"></div>
       <div class="play-row">
         <div class="board" id="board"></div>
+        <button class="tower-sq" id="tower-sq" type="button" aria-label="Башня">
+          <span class="tower-sq-ico">▲</span>
+          <small>Башня</small>
+        </button>
       </div>
       <div class="fx" id="fx"></div>
       <div class="bar">
@@ -87,10 +90,7 @@
         <p class="menu-stat" id="menu-stat">Собери банки. Игра будет мешать.</p>
         <div class="menu-actions">
           <button class="act primary" id="boot-play" type="button">Играть</button>
-          <button class="act" id="boot-tower" type="button">Башня</button>
-          <button class="act" id="boot-league" type="button">Лига</button>
-          <button class="act" id="boot-shop" type="button">Магазин</button>
-          <button class="act" id="boot-skins" type="button">Скины</button>
+          <button class="act" id="boot-shop" type="button">Купить премиум</button>
           <button class="act" id="boot-settings" type="button">Настройки</button>
         </div>
       </div>
@@ -196,15 +196,27 @@
         </div>
       </div>
     </div>
+    <div class="overlay" id="map-overlay">
+      <div class="card league-card">
+        <h2>Уровни</h2>
+        <p class="league-lead" id="map-lead">Пройденные можно сыграть снова. Дальше открыт только текущий.</p>
+        <div class="map-grid" id="map-grid"></div>
+        <div class="card-actions">
+          <button class="act primary" id="map-continue" type="button">Продолжить</button>
+          <button class="act ghost" id="map-back" type="button">В меню</button>
+        </div>
+      </div>
+    </div>
     <div class="overlay" id="tower-overlay">
       <div class="card league-card">
-        <h2>Башня</h2>
-        <p class="league-lead" id="tower-lead">Отдельная игра рядом. Монеты — с обычных уровней. Внутри соперник закрывает твои ходы, ты открываешь свои и можешь запечатать его.</p>
-        <div class="tower-cells lobby" id="tower-list"></div>
+        <h2>Башня недели</h2>
+        <p class="league-lead" id="tower-lead">Отдельные очки до понедельника. Обогни игроков — лучший сундук.</p>
+        <p class="tower-score" id="tower-score">Твои очки: 0</p>
+        <div class="league-list" id="tower-list"></div>
         <div class="card-actions">
-          <button class="act primary" id="tower-play" type="button">Войти</button>
-          <button class="act" id="tower-seal" type="button">Запечатать его ход</button>
-          <button class="act" id="tower-close" type="button">Закрыть</button>
+          <button class="act primary" id="tower-play" type="button">Играть в башню</button>
+          <button class="act" id="tower-seal" type="button">Запечатать чужой ход</button>
+          <button class="act" id="tower-close" type="button">К игре</button>
         </div>
       </div>
     </div>
@@ -275,6 +287,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=11"></script>
+    <script src="game.js?v=12"></script>
   </body>
 </html>
