@@ -792,7 +792,11 @@ body.quiet .home-gear svg,
 body.quiet .coin-heap .coin,
 body.quiet .track-chest,
 body.quiet .chest-pic.big,
-body.quiet .tower-chest {
+body.quiet .tower-chest,
+body.quiet .tower-lock,
+body.quiet .lock-gate-ico,
+body.quiet .lock-gate-title,
+body.quiet .lock-gate-miss {
   animation: none;
 }
 
@@ -826,7 +830,10 @@ body.quiet .tower-chest {
   display: none;
 }
 
-#pass-overlay,
+#pass-overlay {
+  z-index: 90;
+}
+
 #tower-overlay,
 #shop-overlay {
   z-index: 59;
@@ -857,6 +864,119 @@ body.quiet .tower-chest {
   margin: 0 0 12px;
   font-weight: 800;
   color: var(--accent);
+}
+
+.lock-gate {
+  width: min(340px, 100%);
+  padding: 28px 22px 20px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.lock-gate-ico {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  background: #120e0b;
+  box-shadow: 0 0 0 3px #f4b942, 0 0 24px rgba(244, 185, 66, 0.4);
+  animation: lockGatePop 0.55s cubic-bezier(0.2, 1.4, 0.3, 1) both, lockBeat 1.5s ease-in-out 0.55s infinite;
+}
+
+.lock-gate-title {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #fff0a8, #ffd24a, #fff6c4, #ffd24a);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: prizeCall 2.4s linear infinite;
+}
+
+.lock-gate-call {
+  margin: 0 0 18px;
+  color: #ffe08a;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.35;
+  animation: lockGateFade 0.5s ease 0.12s both;
+}
+
+.lock-gate-wallet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #2a2118;
+  box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.35);
+  animation: lockGateFade 0.5s ease 0.2s both;
+}
+
+.lock-gate-wallet span {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.lock-gate-wallet b,
+.lock-gate-wallet #pass-have {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  color: #ffd24a;
+}
+
+.lock-gate-need {
+  margin: 0 0 8px;
+  font-weight: 800;
+  color: #fff6c4;
+  animation: lockGateFade 0.5s ease 0.28s both;
+}
+
+.lock-gate-miss {
+  margin: 0 0 18px;
+  font-weight: 800;
+  font-size: 16px;
+  color: #ff8a6a;
+  animation: lockMiss 1.2s ease-in-out infinite;
+}
+
+.lock-gate-miss.ok {
+  color: #3ecf8e;
+  animation: lockGateFade 0.4s ease both;
+}
+
+.lock-gate-actions {
+  gap: 8px;
+}
+
+.lock-gate-back {
+  width: 100%;
+}
+
+@keyframes lockGatePop {
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes lockGateFade {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes lockMiss {
+  0%,
+  100% { transform: scale(1); text-shadow: 0 0 0 transparent; }
+  50% { transform: scale(1.04); text-shadow: 0 0 12px rgba(255, 120, 90, 0.55); }
 }
 
 .shop-list {
@@ -1678,11 +1798,19 @@ button.act.map-start {
   animation: towerCall 2.2s ease-in-out infinite;
 }
 
+.tower-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 104px;
+}
+
 .tower-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  width: 100%;
 }
 
 .home-tile.tower:active {
@@ -1763,36 +1891,39 @@ body.quiet .home-tile.tower {
   box-shadow: inset 0 0 0 1px rgba(255, 224, 160, 0.25);
 }
 
-.tower-lock {
+.tower-lock-layer {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.home-tile.tower:not(.locked) .tower-lock-layer {
+  display: none;
+}
+
+.tower-lock {
   width: 54px;
   height: 54px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0;
   background: #120e0b;
-  box-shadow: 0 0 0 3px #f4b942;
+  box-shadow: 0 0 0 3px #f4b942, 0 0 18px rgba(244, 185, 66, 0.45);
   font-size: 27px;
-  z-index: 4;
-  animation: lockPulse 1.4s ease-in-out infinite;
+  line-height: 1;
+  animation: lockBeat 1.4s ease-in-out infinite;
 }
 
-.home-tile.tower:not(.locked) .tower-lock {
-  display: none;
-}
-
-@keyframes lockPulse {
+@keyframes lockBeat {
   0%,
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.08);
-  }
+  100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 .tower-copy {

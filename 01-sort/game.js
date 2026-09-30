@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=32";
+  el.src = "coin.svg?v=33";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -410,11 +410,8 @@ function paintMenu() {
   if (towerBtn) towerBtn.classList.toggle("locked", !hasTowerPass());
   paintWeekClocks();
   if (towerMeta) {
-    if (hasTowerPass()) {
-      towerMeta.textContent = "Попробуй удержать первое место";
-    } else {
-      towerMeta.textContent = "Замок. 1000 монет — и ты в бою за сундук.";
-    }
+    towerMeta.hidden = !hasTowerPass();
+    if (hasTowerPass()) towerMeta.textContent = "Попробуй удержать первое место";
   }
 }
 
@@ -846,7 +843,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=32\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=33\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1290,11 +1287,23 @@ function hasTowerPass() {
 
 function paintPassGate() {
   const have = document.getElementById("pass-have");
+  const miss = document.getElementById("pass-miss");
   const buy = document.getElementById("pass-buy");
   const shop = document.getElementById("pass-shop");
-  fillCoinLabel(have, "У тебя ", progress.coins, "");
-  fillCoinLabel(buy, "Купить пропуск ", TOWER_PASS, "");
-  if (shop) shop.hidden = progress.coins >= TOWER_PASS;
+  const short = Math.max(0, TOWER_PASS - progress.coins);
+  fillCoinLabel(have, "", progress.coins, "");
+  if (miss) {
+    miss.hidden = false;
+    miss.textContent = short
+      ? "Не хватает " + short + " монет"
+      : "Монет хватает — можно войти";
+    miss.classList.toggle("ok", !short);
+  }
+  if (buy) {
+    buy.hidden = short > 0;
+    fillCoinLabel(buy, "Купить пропуск ", TOWER_PASS, "");
+  }
+  if (shop) shop.hidden = true;
 }
 
 function openPassGate() {
@@ -1303,6 +1312,7 @@ function openPassGate() {
   closeTower();
   closeSkins();
   closeMap();
+  closeMenu();
   paintPassGate();
   const el = document.getElementById("pass-overlay");
   if (el) el.classList.add("show");
