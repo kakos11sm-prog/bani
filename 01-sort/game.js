@@ -537,7 +537,16 @@ function loadProgress() {
       });
     }
     base.towerScore = Math.max(0, Number(raw.towerScore) || 0);
-    base.towerCoins = Math.max(0, Number(raw.towerCoins) || 0);
+    base.towerCoins = 0;
+    const oldTowerCash = Math.max(0, Number(raw.towerCoins) || 0);
+    if (oldTowerCash) {
+      base.coins += oldTowerCash;
+      try {
+        raw.coins = base.coins;
+        raw.towerCoins = 0;
+        localStorage.setItem(SAVE_KEY, JSON.stringify(raw));
+      } catch (e) {}
+    }
     base.towerPassWeek = typeof raw.towerPassWeek === "string" ? raw.towerPassWeek : "";
     base.bestMoves = Array(200).fill(0);
     if (Array.isArray(raw.bestMoves)) {
@@ -725,15 +734,10 @@ function claimMilestones() {
 }
 
 function cash() {
-  return state.mode === "tower" ? progress.towerCoins || 0 : progress.coins;
+  return progress.coins;
 }
 
 function spend(n) {
-  if (state.mode === "tower") {
-    if ((progress.towerCoins || 0) < n) return false;
-    progress.towerCoins -= n;
-    return true;
-  }
   if (progress.coins < n) return false;
   progress.coins -= n;
   return true;
@@ -848,8 +852,7 @@ function gain(n, skipFire) {
     add = Math.round(n * fireMult());
     add = Math.round(add * boostMultNow());
   }
-  if (state.mode === "tower") progress.towerCoins = (progress.towerCoins || 0) + add;
-  else progress.coins += add;
+  progress.coins += add;
   return add;
 }
 
@@ -1542,7 +1545,7 @@ const HIT_SEAL =
 function hitIcons(name, you) {
   if (you) return "<span class=\"hits\"></span>";
   const bombOff = progress.bombs > 0 ? "" : " dim";
-  const sealOff = (progress.towerCoins || 0) >= SEAL_PRICE ? "" : " dim";
+  const sealOff = progress.coins >= SEAL_PRICE ? "" : " dim";
   return (
     "<span class=\"hits\">" +
     "<button class=\"hit bomb" +
@@ -1900,7 +1903,7 @@ function placeTowerTip(host, kind) {
   text.textContent =
     kind === "bomb"
       ? "Жми бомбу на игроке — рвёшь ему банку. Он падает. Бомбы копятся из звёзд."
-      : "Зачёркнутая банка — печать. Закроет ему ход. Платишь монетами башни.";
+      : "Зачёркнутая банка — печать. Закроет ему ход. Платишь обычными монетами.";
   next.textContent = kind === "bomb" ? "Дальше" : "Понятно";
   const r = host.getBoundingClientRect();
   const pad = 6;
@@ -1973,14 +1976,14 @@ function sealHunt(name, btn) {
     showPassToast("Жми печать на игроке.");
     return;
   }
-  if ((progress.towerCoins || 0) < SEAL_PRICE) {
+  if (progress.coins < SEAL_PRICE) {
     if (btn) shake(btn);
     shake(document.getElementById("shop-seal"));
-    showPassToast("Печать — за монеты башни.");
+    showPassToast("Печать — за монеты.");
     feel("fail");
     return;
   }
-  progress.towerCoins -= SEAL_PRICE;
+  progress.coins -= SEAL_PRICE;
   progress.seals[mark.name] = (Number(progress.seals[mark.name]) || 0) + 1;
   saveProgress();
   paintHud();
