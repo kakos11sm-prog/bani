@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=34";
+  el.src = "coin.svg?v=35";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -410,7 +410,11 @@ function syncScreens() {
 function paintMenu() {
   const towerMeta = document.getElementById("home-tower-meta");
   const towerBtn = document.getElementById("boot-tower");
-  if (towerBtn) towerBtn.classList.toggle("locked", !hasTowerPass());
+  if (towerBtn) {
+    const locked = !hasTowerPass();
+    towerBtn.classList.toggle("locked", locked);
+    towerBtn.classList.toggle("poor", locked && progress.coins < TOWER_PASS);
+  }
   paintWeekClocks();
   paintHud();
   if (towerMeta) {
@@ -847,7 +851,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=34\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=35\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1496,7 +1500,8 @@ function armHook() {
 function paintHud() {
   document.getElementById("hud-stars").textContent = String(totalStars());
   document.getElementById("hud-streak").textContent = String(progress.streak);
-  document.getElementById("hud-coins").textContent = String(cash());
+  const onHome = document.getElementById("boot") && document.getElementById("boot").classList.contains("show");
+  document.getElementById("hud-coins").textContent = String(onHome ? progress.coins : cash());
   document.getElementById("hud-hints").textContent = String(progress.hints);
   if (progress.hints) hintBtn.textContent = "Подсказка";
   else fillCoinLabel(hintBtn, "Подсказка ", HINT_PRICE, "");
@@ -1519,6 +1524,12 @@ function paintHud() {
   if (hudPlace && me) hudPlace.textContent = String(me.place);
   const leagueChip = document.getElementById("chip-league");
   if (leagueChip) leagueChip.hidden = state.mode !== "tower";
+  const towerHome = document.getElementById("boot-tower");
+  if (towerHome) {
+    const locked = !hasTowerPass();
+    towerHome.classList.toggle("locked", locked);
+    towerHome.classList.toggle("poor", locked && progress.coins < TOWER_PASS);
+  }
 }
 
 function paintMission() {
