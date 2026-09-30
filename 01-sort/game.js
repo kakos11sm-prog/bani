@@ -267,7 +267,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=20";
+  el.src = "coin.svg?v=21";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -402,11 +402,14 @@ function paintMenu() {
       progress.coins +
       (state.mode !== "tower" && state.tubes.length ? " · партия ждёт" : "");
   }
+  const towerBtn = document.getElementById("boot-tower");
+  if (towerBtn) towerBtn.classList.toggle("locked", !hasTowerPass());
+  paintWeekClocks();
   if (towerMeta) {
-    if (progress.towerPassWeek === weekId()) {
-      towerMeta.textContent = "Пропуск на неделю есть · можно соревноваться";
+    if (hasTowerPass()) {
+      towerMeta.textContent = "Открыто. Соревнуйся, пока не кончилась неделя.";
     } else {
-      towerMeta.textContent = "Вход 1000 монет · сложные уровни недели";
+      towerMeta.textContent = "Замок. Пропуск 1000 монет — и ты в бою за сундук.";
     }
   }
 }
@@ -839,7 +842,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=20\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=21\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -887,6 +890,32 @@ function daysToMonday() {
   const now = new Date();
   const day = now.getDay() || 7;
   return day === 1 ? 7 : 8 - day;
+}
+
+function nextMonday() {
+  const now = new Date();
+  const add = daysToMonday();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + add, 0, 0, 0, 0);
+}
+
+function weekLeftText() {
+  let ms = Math.max(0, nextMonday().getTime() - Date.now());
+  const d = Math.floor(ms / 86400000);
+  ms -= d * 86400000;
+  const h = Math.floor(ms / 3600000);
+  ms -= h * 3600000;
+  const m = Math.floor(ms / 60000);
+  if (d > 0) return d + "д " + h + "ч";
+  if (h > 0) return h + "ч " + m + "м";
+  return m + " мин";
+}
+
+function paintWeekClocks() {
+  const left = weekLeftText();
+  const home = document.getElementById("home-tower-clock");
+  if (home) home.textContent = left + " до приза";
+  const top = document.getElementById("tower-clock");
+  if (top) top.textContent = "Осталось " + left + " — потом главный сундук";
 }
 
 function syncWeek() {
@@ -1207,16 +1236,15 @@ function continueLevel() {
 function paintTower() {
   const table = towerTable();
   const { me, next } = huntTarget(table);
-  const days = daysToMonday();
+  paintWeekClocks();
   if (towerLead) {
     towerLead.textContent = next
-      ? "Очки башни сбрасываются через " +
-        days +
-        (days === 1 ? " день" : days < 5 ? " дня" : " дней") +
+      ? "Осталось " +
+        weekLeftText() +
         ". Обогни " +
         next.name +
         " — лучший сундук недели."
-      : "Ты первый. Держи место до понедельника — лучший сундук твой.";
+      : "Ты первый. Держи место " + weekLeftText() + " — лучший сундук твой.";
   }
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
@@ -2509,6 +2537,7 @@ if (passShop) {
 paintMenu();
 paintShop();
 syncScreens();
+window.setInterval(paintWeekClocks, 30000);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("./sw.js").catch(function () {});
