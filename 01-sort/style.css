@@ -1437,12 +1437,14 @@ body.map-open .level {
 }
 
 .map-start {
+  flex: 0 0 auto;
   align-self: center;
   width: auto;
-  min-width: 132px;
-  margin: 12px auto 0;
-  min-height: 40px;
-  padding: 10px 22px;
+  min-width: 120px;
+  min-height: 0;
+  margin: 10px auto 0;
+  padding: 6px 16px;
+  font-size: 14px;
 }
 
 .home-art {
