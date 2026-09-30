@@ -19,6 +19,11 @@ const SEAL_HOLD_MS = 9000000;
 const BOMB_HOLD_MS = 18000000;
 const UNDO_PACK = 35;
 const AD_COINS = 40;
+const COIN_PACKS = [
+  { id: "pack200", name: "Старт", uah: 200, coins: 2000, bombs: 10, fire: false },
+  { id: "pack500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false },
+  { id: "pack999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true },
+];
 const YOU = "Ты";
 const RIVALS = [
   "Лера",
@@ -122,6 +127,7 @@ const state = {
   levelSrc: 1,
   towerMark: "",
   towerHitBusy: false,
+  packBusy: false,
 };
 
 const board = document.getElementById("board");
@@ -346,6 +352,7 @@ function emptyProgress() {
     towerNpc: {},
     towerTickAt: 0,
     towerHold: {},
+    fireDouble: false,
   };
 }
 
@@ -454,6 +461,7 @@ function paintMenu() {
 function openMenu() {
   closeLeague();
   closeShop();
+  closePackStore();
   closeTower();
   closeMap();
   closeSettings();
@@ -476,6 +484,7 @@ function closeMenu() {
 function openSettings() {
   closeLeague();
   closeShop();
+  closePackStore();
   closeTower();
   closeMap();
   closeSkins();
@@ -599,6 +608,7 @@ function loadProgress() {
         };
       });
     }
+    base.fireDouble = raw.fireDouble === true;
     if (raw.bombs == null && raw.starPool == null && Array.isArray(raw.stars)) {
       const earned = raw.stars.reduce((sum, n) => sum + Math.max(0, Number(n) || 0), 0);
       base.bombs = Math.floor(earned / BOMB_NEED);
@@ -786,7 +796,8 @@ function prevStamp(id) {
 }
 
 function fireMult() {
-  return 1 + 0.1 * Math.max(0, progress.streak || 0);
+  const base = 1 + 0.1 * Math.max(0, progress.streak || 0);
+  return progress.fireDouble ? base * 2 : base;
 }
 
 function boostMultNow() {
@@ -1082,6 +1093,7 @@ function paintSkins() {
 function openSkins() {
   closeLeague();
   closeShop();
+  closePackStore();
   closeTower();
   closeSettings();
   closeMenu();
@@ -1598,6 +1610,7 @@ function openMap() {
   closeTower();
   closeLeague();
   closeShop();
+  closePackStore();
   closeSettings();
   closeSkins();
   paintMap();
@@ -1914,6 +1927,7 @@ function paintPassGate() {
 function openPassGate() {
   closeLeague();
   closeShop();
+  closePackStore();
   closeTower();
   closeSkins();
   closeMap();
@@ -2077,6 +2091,7 @@ function paintTowerPodium(table, live) {
 function openTower() {
   closeLeague();
   closeShop();
+  closePackStore();
   closeSkins();
   closeMap();
   closeMenu();
@@ -2186,6 +2201,7 @@ function onTowerTipMove() {
 
 function openShop() {
   closeLeague();
+  closePackStore();
   closeTower();
   closeSkins();
   closeMap();
@@ -2197,6 +2213,127 @@ function openShop() {
 function closeShop() {
   shopOverlay.classList.remove("show");
   syncScreens();
+}
+
+function packLootText(pack) {
+  return (
+    pack.coins +
+    " монет · " +
+    pack.bombs +
+    " бомб" +
+    (pack.fire ? " · огонёк ×2" : "")
+  );
+}
+
+let packAdIndex = 0;
+let packAdTimer = 0;
+
+function paintPackAd() {
+  const el = document.getElementById("pack-ad");
+  if (!el) return;
+  const pack = COIN_PACKS[packAdIndex % COIN_PACKS.length];
+  const name = document.getElementById("pack-ad-name");
+  const loot = document.getElementById("pack-ad-loot");
+  const price = document.getElementById("pack-ad-price");
+  const ico = document.getElementById("pack-ad-ico");
+  if (name) name.textContent = pack.name;
+  if (loot) loot.textContent = pack.coins + " + " + pack.bombs + "💣" + (pack.fire ? " +×2" : "");
+  if (price) price.textContent = pack.uah + " грн";
+  if (ico) ico.textContent = pack.fire ? "🔥" : pack.bombs >= 30 ? "💣" : "💰";
+  el.classList.remove("flip");
+  void el.offsetWidth;
+  el.classList.add("flip");
+  el.dataset.pack = pack.id;
+}
+
+function armPackAd() {
+  paintPackAd();
+  window.clearInterval(packAdTimer);
+  packAdTimer = window.setInterval(() => {
+    packAdIndex += 1;
+    paintPackAd();
+  }, 5200);
+}
+
+function paintPackStore() {
+  const grid = document.getElementById("pack-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  COIN_PACKS.forEach((pack) => {
+    const card = document.createElement("button");
+    card.className = "pack-offer" + (pack.fire ? " fat" : "");
+    card.type = "button";
+    card.setAttribute("data-pack", pack.id);
+    card.innerHTML =
+      (pack.fire ? "<i>жирный</i>" : "") +
+      "<b>" +
+      pack.name +
+      "</b>" +
+      "<span class=\"pack-loot\">" +
+      "<em>+" +
+      pack.coins +
+      " монет</em>" +
+      "<em>" +
+      pack.bombs +
+      " бомб</em>" +
+      (pack.fire ? "<em>огонёк ×2 навсегда</em>" : "") +
+      "</span>" +
+      "<strong>" +
+      pack.uah +
+      " грн</strong>";
+    grid.appendChild(card);
+  });
+}
+
+function openPackStore() {
+  closeLeague();
+  closeShop();
+  closeTower();
+  closeSkins();
+  closeMap();
+  closeSettings();
+  if (boot && !state.tubes.length) boot.classList.add("show");
+  paintPackStore();
+  const el = document.getElementById("pack-overlay");
+  if (el) el.classList.add("show");
+  syncScreens();
+}
+
+function closePackStore() {
+  const el = document.getElementById("pack-overlay");
+  if (el) el.classList.remove("show");
+  syncScreens();
+}
+
+async function buyCoinPack(id) {
+  const pack = COIN_PACKS.find((item) => item.id === id);
+  if (!pack || state.packBusy) return;
+  state.packBusy = true;
+  const coinsFrom = progress.coins;
+  const bombsFrom = progress.bombs || 0;
+  progress.coins += pack.coins;
+  progress.bombs = bombsFrom + pack.bombs;
+  if (pack.fire) progress.fireDouble = true;
+  saveProgress();
+  feel("win");
+  tone(392, 0.1, "sine", 0.04);
+  tone(523, 0.14, "sine", 0.045);
+  tone(659, 0.2, "triangle", 0.035);
+  const coinHud = document.getElementById("hud-coins");
+  const bombHud = document.getElementById("hud-bombs");
+  if (coinHud && coinHud.parentElement) coinHud.parentElement.classList.add("catch");
+  if (fireChip && pack.fire) fireChip.classList.add("hot2");
+  try {
+    await Promise.all([
+      countUp(coinHud, coinsFrom, progress.coins, 900),
+      countUp(bombHud, bombsFrom, progress.bombs, 720),
+    ]);
+    paintHud();
+    paintMenu();
+    showPassToast("Набор «" + pack.name + "» твой. В Play Market это будет " + pack.uah + " грн.");
+  } finally {
+    state.packBusy = false;
+  }
 }
 
 function playTowerFloor() {
@@ -2315,6 +2452,7 @@ async function buyAdCoins() {
 
 function openLeague() {
   closeShop();
+  closePackStore();
   closeTower();
   closeSkins();
   paintLeague();
@@ -2346,6 +2484,9 @@ function armHook() {
 
 function paintHud() {
   document.getElementById("hud-streak").textContent = String(progress.streak);
+  const fireX2 = document.getElementById("hud-fire-x2");
+  if (fireX2) fireX2.hidden = !progress.fireDouble;
+  if (fireChip) fireChip.classList.toggle("hot2", !!progress.fireDouble);
   const onHome = document.getElementById("boot") && document.getElementById("boot").classList.contains("show");
   const starHud = document.getElementById("hud-stars");
   const bombHud = document.getElementById("hud-bombs");
@@ -3630,6 +3771,24 @@ if (shopSkins) shopSkins.addEventListener("click", () => openSkins());
 document.getElementById("shop-seal").addEventListener("click", () => sealHunt());
 document.getElementById("shop-undo").addEventListener("click", () => buyUndoPack());
 document.getElementById("shop-ad").addEventListener("click", () => buyAdCoins());
+const shopPacks = document.getElementById("shop-packs");
+if (shopPacks) shopPacks.addEventListener("click", () => openPackStore());
+const packAd = document.getElementById("pack-ad");
+if (packAd) packAd.addEventListener("click", () => openPackStore());
+const packGrid = document.getElementById("pack-grid");
+if (packGrid) {
+  packGrid.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-pack]");
+    if (btn) buyCoinPack(btn.getAttribute("data-pack"));
+  });
+}
+const packClose = document.getElementById("pack-close");
+if (packClose) {
+  packClose.addEventListener("click", () => {
+    closePackStore();
+    backToMenuIfIdle();
+  });
+}
 document.getElementById("shop-close").addEventListener("click", () => {
   closeShop();
   backToMenuIfIdle();
@@ -3661,6 +3820,7 @@ nextBtn.addEventListener("click", async () => {
 seedMotes();
 syncWeek();
 applySettings();
+armPackAd();
 
 const skipBoot = /[?&](stuck|locks|win)=/.test(location.search);
 const boot = document.getElementById("boot");
@@ -3678,7 +3838,7 @@ function launchGame(where) {
     return;
   }
   if (where === "shop") {
-    openShop();
+    openPackStore();
     return;
   }
   openMap();

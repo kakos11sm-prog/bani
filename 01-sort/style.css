@@ -403,6 +403,24 @@ button.chip.league {
   color: #ff8a4a;
 }
 
+.chip.fire em {
+  display: inline;
+  margin-left: 2px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 900;
+  color: #ffe08a;
+}
+
+.chip.fire em[hidden] {
+  display: none;
+}
+
+.chip.fire.hot2 {
+  box-shadow: 0 0 12px rgba(255, 120, 50, 0.65);
+  animation: packGlow 1.2s ease-in-out infinite;
+}
+
 .chip.fire.burned {
   animation: shake 0.4s ease;
   color: #8a6a58;
@@ -2003,6 +2021,190 @@ body.home-open #boot {
   z-index: 40;
   padding-top: 56px;
   justify-content: flex-start;
+}
+
+.pack-ad {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 36%;
+  z-index: 72;
+  width: 86px;
+  padding: 12px 8px 10px;
+  border: 0;
+  border-radius: 16px 0 0 16px;
+  background: linear-gradient(180deg, #6a3a10, #2a1608);
+  color: #fff6c4;
+  box-shadow: -6px 8px 22px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 180, 50, 0.45);
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  animation: packPeek 0.55s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+}
+
+body.home-open .pack-ad,
+body.map-open .pack-ad {
+  display: flex;
+}
+
+body.screen .pack-ad,
+body.tower-open .pack-ad,
+body:has(#pack-overlay.show) .pack-ad {
+  display: none;
+}
+
+.pack-ad-shine {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 240, 180, 0.35) 50%, transparent 65%);
+  animation: packShine 2.4s linear infinite;
+  pointer-events: none;
+}
+
+.pack-ad-ico {
+  font-size: 26px;
+  line-height: 1;
+  animation: packIco 1.1s ease-in-out infinite;
+}
+
+.pack-ad b {
+  font-size: 13px;
+}
+
+.pack-ad small {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffe08a;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.pack-ad em {
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffd24a;
+}
+
+.pack-ad.flip {
+  animation: packFlip 0.42s cubic-bezier(0.2, 1.3, 0.3, 1);
+}
+
+.pack-ad:active {
+  transform: translateX(4px);
+}
+
+#pack-overlay {
+  z-index: 62;
+}
+
+.pack-card {
+  width: min(400px, 100%);
+}
+
+.pack-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.pack-offer {
+  position: relative;
+  border: 0;
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  background: #2a2118;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  animation: jarIn 0.32s both;
+}
+
+.pack-offer:nth-child(2) { animation-delay: 60ms; }
+.pack-offer:nth-child(3) { animation-delay: 120ms; }
+
+.pack-offer.fat {
+  background: linear-gradient(180deg, #6a4a10, #2a1808);
+  box-shadow: 0 0 22px rgba(255, 210, 74, 0.4);
+}
+
+.pack-offer i {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd24a;
+  animation: packGlow 1s ease-in-out infinite;
+}
+
+.pack-offer b {
+  display: block;
+  font-size: 20px;
+}
+
+.pack-loot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 8px;
+}
+
+.pack-loot em {
+  font-style: normal;
+  font-weight: 800;
+  color: #ffe08a;
+}
+
+.pack-offer strong {
+  display: block;
+  font-size: 22px;
+  color: #ffd24a;
+}
+
+.pack-offer:active {
+  transform: scale(0.98);
+}
+
+@keyframes packPeek {
+  from { transform: translateX(70px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes packShine {
+  from { transform: translateX(-80%); }
+  to { transform: translateX(80%); }
+}
+
+@keyframes packIco {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.08); }
+}
+
+@keyframes packFlip {
+  0% { transform: translateX(18px) scale(0.92); opacity: 0.4; }
+  100% { transform: none; opacity: 1; }
+}
+
+@keyframes packGlow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 8px rgba(255, 210, 74, 0.8)); }
+}
+
+body.quiet .pack-ad,
+body.quiet .pack-ad-shine,
+body.quiet .pack-ad-ico,
+body.quiet .chip.fire.hot2,
+body.quiet .pack-offer i {
+  animation: none;
 }
 
 #map-overlay {

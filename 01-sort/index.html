@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=53" />
+    <link rel="stylesheet" href="style.css?v=54" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -37,7 +37,7 @@
             <span>💣 <span id="hud-bombs">0</span></span>
             <small>★ <span id="hud-stars">0/100</span></small>
           </div>
-          <div class="chip fire" id="chip-fire" title="Заходи каждый день. Огонёк умножает выигрыш">🔥 <span id="hud-streak">0</span></div>
+          <div class="chip fire" id="chip-fire" title="Заходи каждый день. Огонёк умножает выигрыш">🔥 <span id="hud-streak">0</span><em id="hud-fire-x2" hidden>×2</em></div>
           <div class="chip coin-chip"><img class="coin" src="coin.svg?v=49" alt="" /><span id="hud-coins">0</span></div>
           <div class="chip hint-chip" id="chip-hints">💡 <span id="hud-hints">0</span></div>
           <button class="chip league" id="chip-league" type="button" title="Башня" hidden>
@@ -140,8 +140,8 @@
         </button>
         <div class="home-row">
           <button class="home-mini premium" id="boot-shop" type="button">
-            <b>Премиум</b>
-            <small>Избавься от рекламы</small>
+            <b>Наборы</b>
+            <small>Монеты и бомбы</small>
           </button>
           <button class="home-gear" id="boot-settings" type="button" aria-label="Настройки">
             <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -319,6 +319,13 @@
         <h2>Магазин монет</h2>
         <p class="league-lead" id="shop-lead">Трать на колбы и на помеху другим. Ролик — только если сам включил.</p>
         <div class="shop-list">
+          <div class="shop-row pack-jump">
+            <div>
+              <b>Наборы за гривны</b>
+              <span>Монеты, бомбы и жирный огонёк</span>
+            </div>
+            <button class="act primary" id="shop-packs" type="button">Витрина</button>
+          </div>
           <div class="shop-row">
             <div>
               <b>Скины банок</b>
@@ -360,6 +367,23 @@
         </div>
       </div>
     </div>
+    <button class="pack-ad" id="pack-ad" type="button">
+      <span class="pack-ad-shine"></span>
+      <span class="pack-ad-ico" id="pack-ad-ico" aria-hidden="true">💰</span>
+      <b id="pack-ad-name">Старт</b>
+      <small id="pack-ad-loot">2000 и 10💣</small>
+      <em id="pack-ad-price">200 грн</em>
+    </button>
+    <div class="overlay" id="pack-overlay">
+      <div class="card pack-card">
+        <h2>Наборы</h2>
+        <p class="league-lead">Как в сторе: жми сбоку — открывается витрина. Живые гривны пойдут через Play Market.</p>
+        <div class="pack-grid" id="pack-grid"></div>
+        <div class="card-actions">
+          <button class="act ghost" id="pack-close" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
     <div class="overlay" id="skins-overlay">
       <div class="card league-card skins-card">
         <h2>Скины</h2>
@@ -387,6 +411,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=53"></script>
+    <script src="game.js?v=54"></script>
   </body>
 </html>
