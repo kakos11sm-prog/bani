@@ -1,4 +1,4 @@
-const CACHE = "bani-pilot-v23";
+const CACHE = "bani-pilot-v24";
 const FILES = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const FILES = [
   "./icon.svg",
   "./coin.svg",
   "./chest.svg",
+  "./coins-heap.svg",
 ];
 
 self.addEventListener("install", (event) => {
