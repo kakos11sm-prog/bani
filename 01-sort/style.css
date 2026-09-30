@@ -1050,8 +1050,8 @@ body.quiet .tower-sq {
 .map-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  max-height: 42vh;
+  gap: 8px;
+  align-content: start;
   overflow: auto;
   margin: 0 0 14px;
 }
@@ -1059,7 +1059,9 @@ body.quiet .tower-sq {
 .map-cell {
   border: 0;
   border-radius: 12px;
-  min-height: 52px;
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 0;
   background: #2a2118;
   color: inherit;
   font: inherit;
@@ -1071,7 +1073,7 @@ body.quiet .tower-sq {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 6px 2px;
+  padding: 4px 2px;
 }
 
 .map-cell small {
@@ -1428,15 +1430,19 @@ body.map-open .level {
 }
 
 #map-overlay .map-grid {
-  flex: 1;
+  flex: 1 1 auto;
   max-height: none;
   min-height: 0;
+  align-content: start;
 }
 
 .map-start {
-  width: 100%;
-  margin-top: 10px;
-  min-height: 48px;
+  align-self: center;
+  width: auto;
+  min-width: 132px;
+  margin: 12px auto 0;
+  min-height: 40px;
+  padding: 10px 22px;
 }
 
 .home-art {
