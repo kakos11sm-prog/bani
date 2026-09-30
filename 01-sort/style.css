@@ -1429,13 +1429,17 @@ body.quiet .map-cell.now {
 .win-fire-pop {
   position: fixed;
   z-index: 140;
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
   font-size: 42px;
   line-height: 1;
   pointer-events: none;
   transition: left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s ease, opacity 0.4s ease;
+}
+
+.win-fire-pop.show {
+  display: flex;
 }
 
 .win-fire-pop em {

@@ -285,7 +285,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=38";
+  el.src = "coin.svg?v=39";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -920,7 +920,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=38\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=39\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2177,12 +2177,9 @@ async function playFireBoost() {
   pop.style.transform = "scale(0.25)";
   pop.style.opacity = "0";
   await wait(420);
-  pop.hidden = true;
   pop.classList.remove("show");
-  pop.style.left = "";
-  pop.style.top = "";
-  pop.style.transform = "";
-  pop.style.opacity = "";
+  pop.hidden = true;
+  pop.removeAttribute("style");
 }
 
 function flyWinCoinsToHud() {
@@ -2197,7 +2194,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=38";
+    ghost.src = pic ? pic.src : "coin.svg?v=39";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2704,6 +2701,12 @@ nextBtn.addEventListener("click", async () => {
   if (overlay.classList.contains("show")) {
     nextBtn.disabled = true;
     settleWinExtra();
+    const leftoverFire = document.getElementById("win-fire-pop");
+    if (leftoverFire) {
+      leftoverFire.classList.remove("show");
+      leftoverFire.hidden = true;
+      leftoverFire.removeAttribute("style");
+    }
     await flyWinCoinsToHud();
     overlay.classList.remove("show");
     state.holdHudCoins = null;
