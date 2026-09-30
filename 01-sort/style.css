@@ -1436,15 +1436,17 @@ body.map-open .level {
   align-content: start;
 }
 
-.map-start {
+button.act.map-start {
   flex: 0 0 auto;
-  align-self: center;
-  width: auto;
-  min-width: 120px;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
-  margin: 10px auto 0;
-  padding: 6px 16px;
-  font-size: 14px;
+  height: 40px;
+  margin: 10px 0 0;
+  padding: 0 16px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .home-art {
