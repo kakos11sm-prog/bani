@@ -11,7 +11,7 @@ const SETTINGS_KEY = "bani-settings-v1";
 const TOWER_FLOORS = 5;
 const TOWER_ENTER = 22;
 const TOWER_PASS = 1000;
-const BOMB_NEED = 10;
+const BOMB_NEED = 100;
 const FLASK_PRICE = 90;
 const SEAL_PRICE = 80;
 const UNDO_PACK = 35;
@@ -105,6 +105,10 @@ const state = {
   moves: 0,
   lastCoins: 0,
   doubled: false,
+  holdHudCoins: null,
+  winBase: 0,
+  winTotal: 0,
+  winExtraDone: false,
   locked: 0,
   openedExtra: 0,
   mode: "story",
@@ -281,7 +285,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=37";
+  el.src = "coin.svg?v=38";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -716,9 +720,9 @@ function addStarsToBomb(delta) {
   return made;
 }
 
-function gain(n) {
+function gain(n, skipFire) {
   let add = n;
-  if (state.mode !== "tower") {
+  if (state.mode !== "tower" && !skipFire) {
     add = Math.round(n * fireMult());
     if (progress.boostUntil && Date.now() < progress.boostUntil) {
       add = Math.round(add * (progress.boostMult || 1));
@@ -916,7 +920,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=37\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=38\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1411,7 +1415,7 @@ const INTRO_STEPS = [
   {
     ico: "💣",
     title: "Звёзды",
-    text: "Собирай звёзды, чтобы получить бомбу. Они наполняют ёмкость — в башне бомбой можно разорвать колбу противнику.",
+    text: "Собирай звёзды, чтобы получить бомбу. Каждые 100 звёзд наполняют ёмкость — в башне бомбой можно разорвать колбу противнику.",
   },
   {
     ico: "🔥",
@@ -1665,7 +1669,9 @@ function paintHud() {
   const bombHud = document.getElementById("hud-bombs");
   if (starHud) starHud.textContent = (progress.starPool || 0) + "/" + BOMB_NEED;
   if (bombHud) bombHud.textContent = String(progress.bombs || 0);
-  document.getElementById("hud-coins").textContent = String(onHome ? progress.coins : cash());
+  const coinShown =
+    state.holdHudCoins != null ? state.holdHudCoins : onHome ? progress.coins : cash();
+  document.getElementById("hud-coins").textContent = String(coinShown);
   document.getElementById("hud-hints").textContent = String(progress.hints);
   if (progress.hints) hintBtn.textContent = "Подсказка";
   else fillCoinLabel(hintBtn, "Подсказка ", HINT_PRICE, "");
@@ -2019,7 +2025,7 @@ function applyWinRewards(stars) {
   let coins = 6 + stars * 8;
   if (better) coins += 10;
   if (stars === 3 && (progress.stage || 1) >= 2) progress.hints += 1;
-  const got = gain(coins);
+  const got = gain(coins, true);
   const prizes = firstClear ? claimMilestones() : [];
   syncUnlocked();
   saveProgress();
@@ -2096,29 +2102,145 @@ async function shareProgress() {
   link.click();
 }
 
+function countUp(el, from, to, ms) {
+  if (!el) return Promise.resolve();
+  if (document.body.classList.contains("quiet") || from === to) {
+    el.textContent = String(to);
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / ms);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(from + (to - from) * eased));
+      if (t < 1) requestAnimationFrame(tick);
+      else resolve();
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+function burstWinConfetti() {
+  const host = document.getElementById("win-fx");
+  if (!host || document.body.classList.contains("quiet")) return;
+  host.innerHTML = "";
+  const colors = ["#e85d4c", "#f4b942", "#3ecf8e", "#5b8def", "#c084fc", "#fff6c4"];
+  for (let i = 0; i < 52; i += 1) {
+    const bit = document.createElement("i");
+    bit.className = "confetti-bit";
+    bit.style.setProperty("--dx", (Math.random() * 160 - 80).toFixed(1) + "px");
+    bit.style.setProperty("--dy", (Math.random() * -220 - 40).toFixed(1) + "px");
+    bit.style.setProperty("--spin", (Math.random() * 720 - 360).toFixed(0) + "deg");
+    bit.style.background = colors[i % colors.length];
+    bit.style.left = 50 + (Math.random() * 24 - 12) + "%";
+    bit.style.animationDelay = (Math.random() * 0.12).toFixed(2) + "s";
+    host.appendChild(bit);
+  }
+  window.setTimeout(() => {
+    host.innerHTML = "";
+  }, 1400);
+}
+
+function settleWinExtra() {
+  if (state.winExtraDone || state.mode === "tower") return;
+  const extra = Math.max(0, (state.winTotal || 0) - (state.winBase || 0));
+  if (extra) progress.coins += extra;
+  state.winExtraDone = true;
+  saveProgress();
+}
+
+async function playFireBoost() {
+  const src = document.getElementById("chip-fire");
+  const pop = document.getElementById("win-fire-pop");
+  const cash = document.getElementById("win-cash");
+  const multEl = document.getElementById("win-fire-mult");
+  if (!src || !pop || !cash) return;
+  if (multEl) multEl.textContent = "×" + fireMult().toFixed(1);
+  const from = src.getBoundingClientRect();
+  const midX = window.innerWidth / 2 - 70;
+  const midY = window.innerHeight * 0.36;
+  pop.hidden = false;
+  pop.classList.add("show");
+  pop.style.left = from.left + "px";
+  pop.style.top = from.top + "px";
+  pop.style.transform = "scale(0.45)";
+  pop.style.opacity = "1";
+  await wait(40);
+  pop.style.left = midX + "px";
+  pop.style.top = midY + "px";
+  pop.style.transform = "scale(1.85)";
+  await wait(720);
+  const to = cash.getBoundingClientRect();
+  pop.style.left = to.left + to.width / 2 - 36 + "px";
+  pop.style.top = to.top - 8 + "px";
+  pop.style.transform = "scale(0.25)";
+  pop.style.opacity = "0";
+  await wait(420);
+  pop.hidden = true;
+  pop.classList.remove("show");
+  pop.style.left = "";
+  pop.style.top = "";
+  pop.style.transform = "";
+  pop.style.opacity = "";
+}
+
+function flyWinCoinsToHud() {
+  const src = document.getElementById("win-cash");
+  const dest = document.querySelector(".chip.coin-chip") || document.getElementById("hud-coins");
+  if (!src || !dest) return Promise.resolve();
+  if (document.body.classList.contains("quiet")) return Promise.resolve();
+  const from = src.getBoundingClientRect();
+  const to = dest.getBoundingClientRect();
+  const n = 7;
+  const pic = dest.querySelector("img");
+  for (let i = 0; i < n; i += 1) {
+    const ghost = document.createElement("img");
+    ghost.className = "fly-coin";
+    ghost.src = pic ? pic.src : "coin.svg?v=38";
+    ghost.alt = "";
+    ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
+    ghost.style.top = from.top + "px";
+    document.body.appendChild(ghost);
+    window.setTimeout(() => {
+      ghost.style.left = to.left + to.width / 2 - 10 + "px";
+      ghost.style.top = to.top + to.height / 2 - 10 + "px";
+      ghost.style.transform = "scale(0.4)";
+      ghost.style.opacity = "0.2";
+    }, 20 + i * 55);
+    window.setTimeout(() => ghost.remove(), 620 + i * 55);
+  }
+  return wait(700);
+}
+
 async function showWin() {
   Array.prototype.forEach.call(board.children, (el, i) => {
     window.setTimeout(() => el.classList.add("won"), i * 50);
   });
   const stars = starCount();
+  const beforeHud = cash();
   const reward = applyWinRewards(stars);
   const after = huntTarget(leagueTable());
   if (after.me) progress.lastPlace = after.me.place;
   saveProgress();
   state.lastStars = stars;
+  state.holdHudCoins = beforeHud;
+  state.winBase = reward.coins;
+  state.winMult = reward.tower ? 1 : fireMult();
+  state.winTotal = reward.tower ? reward.coins : Math.round(reward.coins * state.winMult);
+  state.winExtraDone = reward.tower || state.winTotal <= state.winBase;
+  state.lastCoins = state.winBase;
+  state.doubled = false;
   document.body.classList.add("celebrate");
   window.setTimeout(() => document.body.classList.remove("celebrate"), 900);
-  flyLoot(board.getBoundingClientRect(), 6);
   feel("win");
   tone(392, 0.1, "sine", 0.04);
   tone(523, 0.14, "sine", 0.045);
   tone(659, 0.2, "triangle", 0.035);
-  state.lastCoins = reward.coins;
-  state.doubled = false;
-  winDouble.disabled = false;
+  winDouble.disabled = true;
+  nextBtn.disabled = true;
   winDouble.textContent = "Ролик — удвоить";
   paintHud();
-  await wait(420);
   const last = state.level >= storyLevelCount();
   winTitle.textContent = reward.tower
     ? "Башня"
@@ -2140,22 +2262,31 @@ async function showWin() {
     winText.textContent = last
       ? "Этап закрыт."
       : stageClears() + " / 100 до сундука.";
-    if (reward.bombsMade) winText.textContent += " Собирай звёзды, чтобы получить бомбу — готово!";
+    if (reward.bombsMade) winText.textContent += " Бомба готова!";
   }
-  fillCoinLabel(
-    winReward,
-    "+",
-    reward.coins,
-    "  · огонь ×" +
-      fireMult().toFixed(1) +
-      (reward.bombsMade ? "  · бомба готова" : "")
-  );
+  const cashNum = document.getElementById("win-cash-num");
+  if (cashNum) cashNum.textContent = "0";
+  if (winReward) winReward.hidden = true;
   Array.prototype.forEach.call(winStars.children, (el) => el.classList.remove("on"));
   overlay.classList.add("show");
+  burstWinConfetti();
   for (let i = 0; i < stars; i += 1) {
-    await wait(160);
+    await wait(140);
     winStars.children[i].classList.add("on");
   }
+  await wait(280);
+  await countUp(cashNum, 0, state.winBase, 720);
+  if (!reward.tower && state.winMult > 1 && !document.body.classList.contains("quiet")) {
+    await playFireBoost();
+    settleWinExtra();
+    await countUp(cashNum, state.winBase, state.winTotal, 640);
+  } else if (!reward.tower) {
+    settleWinExtra();
+    if (cashNum) cashNum.textContent = String(state.winTotal);
+  }
+  state.lastCoins = state.winTotal;
+  winDouble.disabled = false;
+  nextBtn.disabled = false;
   nextBtn.textContent = reward.tower
     ? progress.towerDone.every(Boolean)
       ? "В историю"
@@ -2185,11 +2316,14 @@ async function doubleReward() {
   winDouble.disabled = true;
   winDouble.textContent = "Ролик…";
   await wait(1100);
-  progress.coins += state.lastCoins;
+  const from = state.lastCoins;
+  progress.coins += from;
+  state.lastCoins = from * 2;
+  state.winTotal = state.lastCoins;
   state.doubled = true;
   saveProgress();
-  paintHud();
-  fillCoinLabel(winReward, "+", state.lastCoins * 2, "  удвоено   серия " + progress.streak);
+  const cashNum = document.getElementById("win-cash-num");
+  await countUp(cashNum, from, state.lastCoins, 700);
   winDouble.textContent = "Удвоено";
   state.busy = false;
 }
@@ -2569,8 +2703,11 @@ document.getElementById("shop-close").addEventListener("click", () => {
 nextBtn.addEventListener("click", async () => {
   if (overlay.classList.contains("show")) {
     nextBtn.disabled = true;
-    await flyWinStarsToHud();
+    settleWinExtra();
+    await flyWinCoinsToHud();
     overlay.classList.remove("show");
+    state.holdHudCoins = null;
+    paintHud();
     nextBtn.disabled = false;
   }
   if (state.mode === "tower") {

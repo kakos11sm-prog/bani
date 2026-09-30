@@ -358,8 +358,21 @@ button.chip.league {
   color: var(--accent);
 }
 
-.chip.bomb {
+.chip.star-bomb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 6px;
+  line-height: 1.1;
   color: #ff7a4a;
+}
+
+.chip.star-bomb small {
+  font-size: 10px;
+  color: #ffe08a;
+  font-weight: 800;
 }
 
 .chip.fire {
@@ -1370,6 +1383,89 @@ body.quiet .map-cell.now {
   pointer-events: none;
   filter: drop-shadow(0 0 10px rgba(255, 210, 74, 0.8));
   transition: left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s ease, opacity 0.55s ease;
+}
+
+.win-fx {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.confetti-bit {
+  position: absolute;
+  top: 42%;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  animation: confettiBurst 1.15s ease-out forwards;
+}
+
+@keyframes confettiBurst {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--spin));
+    opacity: 0;
+  }
+}
+
+.win-cash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+  font-size: 34px;
+  font-weight: 800;
+  color: #ffd24a;
+}
+
+.win-cash .coin {
+  width: 32px;
+  height: 32px;
+}
+
+.win-fire-pop {
+  position: fixed;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 42px;
+  line-height: 1;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.55s ease, opacity 0.4s ease;
+}
+
+.win-fire-pop em {
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 800;
+  color: #ffe08a;
+  text-shadow: 0 0 12px rgba(255, 210, 74, 0.6);
+}
+
+.fly-coin {
+  position: fixed;
+  z-index: 130;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.25, 0.8, 0.2, 1), top 0.55s cubic-bezier(0.45, 0.1, 0.2, 1), transform 0.55s ease, opacity 0.55s ease;
+}
+
+.overlay#overlay {
+  overflow: hidden;
+}
+
+#overlay .card {
+  position: relative;
+  z-index: 3;
+}
+
+#overlay .win-fx {
+  z-index: 4;
 }
 
 .reward {
