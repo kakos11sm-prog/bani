@@ -3866,6 +3866,10 @@ body.quiet .tower-tip-arrow {
     0 0 18px rgba(232, 93, 76, 0.4);
 }
 
+.jar.wound-paint {
+  cursor: pointer;
+}
+
 .jar.locked.broken-hit::after {
   content: "";
   position: absolute;

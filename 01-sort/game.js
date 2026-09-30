@@ -129,6 +129,7 @@ const state = {
   towerMark: "",
   towerHitBusy: false,
   packBusy: false,
+  paintWounds: [],
 };
 
 const board = document.getElementById("board");
@@ -354,6 +355,7 @@ function emptyProgress() {
     towerTickAt: 0,
     towerHold: {},
     fireDouble: false,
+    youHits: [],
   };
 }
 
@@ -612,6 +614,16 @@ function loadProgress() {
       });
     }
     base.fireDouble = raw.fireDouble === true;
+    base.youHits = Array.isArray(raw.youHits)
+      ? raw.youHits
+          .map((hit) => ({
+            kind: hit && hit.kind === "bomb" ? "bomb" : "freeze",
+            by: hit && typeof hit.by === "string" ? hit.by : "Соперник",
+            paint: !!(hit && hit.paint),
+            idx: hit && hit.idx === hit.idx ? Number(hit.idx) : -1,
+          }))
+          .filter((hit) => hit.by)
+      : [];
     if (raw.bombs == null && raw.starPool == null && Array.isArray(raw.stars)) {
       const earned = raw.stars.reduce((sum, n) => sum + Math.max(0, Number(n) || 0), 0);
       base.bombs = Math.floor(earned / BOMB_NEED);
@@ -953,7 +965,9 @@ function hasLegalMove(tubes) {
 
 function firstMove(tubes) {
   for (let a = 0; a < tubes.length; a += 1) {
+    if (jarWounded(a)) continue;
     for (let b = 0; b < tubes.length; b += 1) {
+      if (jarWounded(b)) continue;
       if (a !== b && canPour(tubes[a], tubes[b])) return { a: a, b: b };
     }
   }
@@ -1178,6 +1192,7 @@ function syncWeek() {
   progress.towerNpc = {};
   progress.towerTickAt = 0;
   progress.towerHold = {};
+  progress.youHits = [];
   saveProgress();
 }
 
@@ -1337,6 +1352,9 @@ function isSlowed(name, at) {
 function holdClass(name, you) {
   const who = you ? YOU : name;
   if (!who) return "";
+  if (you && (progress.youHits || []).length) {
+    return progress.youHits[0].kind === "bomb" ? " slowed" : " frozen";
+  }
   if (isFrozen(who)) return " frozen";
   if (isSlowed(who)) return " slowed";
   return "";
@@ -1357,31 +1375,104 @@ function applyHold(name, kind, by) {
   progress.towerHold[name] = hold;
 }
 
+function jarWounded(index) {
+  return !!(state.paintWounds && state.paintWounds.some((w) => w.idx === index));
+}
+
 function youWound() {
-  if (isFrozen(YOU)) return { kind: "freeze", by: holdOf(YOU).by || "Соперник" };
-  if (isSlowed(YOU)) return { kind: "bomb", by: holdOf(YOU).by || "Соперник" };
+  if (state.paintWounds && state.paintWounds.length) return state.paintWounds[0];
+  const list = progress.youHits || [];
+  const empty = list.find((hit) => !hit.paint);
+  if (empty) return empty;
+  if (list.length) return list[0];
+  if (isFrozen(YOU)) return { kind: "freeze", by: holdOf(YOU).by || "Соперник", paint: false };
+  if (isSlowed(YOU)) return { kind: "bomb", by: holdOf(YOU).by || "Соперник", paint: false };
   return null;
 }
 
+function mustFixWound() {
+  return !!(state.paintWounds && state.paintWounds.length);
+}
+
 function clearYouHold() {
-  if (!progress.towerHold) return;
-  delete progress.towerHold[YOU];
+  if (progress.towerHold) delete progress.towerHold[YOU];
+  progress.youHits = [];
+  state.paintWounds = [];
   saveProgress();
 }
 
-function ensureYouHit() {
-  const have = youWound();
-  if (have) return have;
+function towerHeat(place, total) {
+  const n = Math.max(2, total || 100);
+  return Math.max(0, Math.min(1, (n - place) / (n - 1)));
+}
+
+function hunterPool(table, me) {
+  const band = me.place <= 10 ? 8 : me.place <= 28 ? 5 : 3;
+  return table.filter(
+    (row) => !row.you && (row.place < me.place || Math.abs(row.place - me.place) <= band)
+  );
+}
+
+function rollYouHits() {
   const table = towerTable();
   const me = table.find((row) => row.you);
-  if (!me || me.place <= 1) return null;
-  const above = table.filter((row) => !row.you && row.place < me.place);
-  if (!above.length) return null;
-  const pick = above[hashStr(weekId() + ":youhit:" + Date.now()) % Math.min(8, above.length)];
-  const bomb = hashStr(weekId() + ":youkind:" + pick.name + ":" + (progress.towerScore || 0)) % 2 === 0;
-  applyHold(YOU, bomb ? "bomb" : "freeze", pick.name);
+  if (!me) {
+    progress.youHits = [];
+    saveProgress();
+    return [];
+  }
+  const heat = towerHeat(me.place, table.length);
+  const pool = hunterPool(table, me);
+  if (!pool.length) {
+    progress.youHits = [];
+    saveProgress();
+    return [];
+  }
+  const firstChance = 0.05 + heat * 0.8;
+  if (Math.random() >= firstChance) {
+    progress.youHits = [];
+    saveProgress();
+    return [];
+  }
+  const twoChance = heat > 0.48 ? 0.12 + (heat - 0.48) * 0.72 : 0;
+  const n = Math.random() < twoChance ? 2 : 1;
+  const hits = [];
+  const used = {};
+  for (let i = 0; i < n; i += 1) {
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (used[pick.name]) continue;
+    used[pick.name] = true;
+    const bomb = Math.random() < 0.5;
+    const paint = heat > 0.3 && Math.random() < heat * 0.7;
+    hits.push({ kind: bomb ? "bomb" : "freeze", by: pick.name, paint: paint, idx: -1 });
+  }
+  progress.youHits = hits;
   saveProgress();
-  return youWound();
+  return hits;
+}
+
+function bindPaintWounds(hits) {
+  state.paintWounds = [];
+  const used = [];
+  (hits || []).forEach((hit) => {
+    if (!hit.paint) return;
+    const prefer = [];
+    const any = [];
+    state.tubes.forEach((tube, i) => {
+      if (!tube.length || used.indexOf(i) !== -1) return;
+      any.push(i);
+      if (tube.length < jarCap() && !isFullJar(tube)) prefer.push(i);
+    });
+    const pool = prefer.length ? prefer : any;
+    if (!pool.length) {
+      hit.paint = false;
+      return;
+    }
+    const idx = pool[Math.floor(Math.random() * pool.length)];
+    used.push(idx);
+    hit.idx = idx;
+    state.paintWounds.push({ idx: idx, kind: hit.kind, by: hit.by, paint: true });
+  });
 }
 
 function rivalTowerScoreSeed(name) {
@@ -1732,6 +1823,11 @@ function hitIcons(name, you) {
 function holdBadge(name, you) {
   const who = you ? YOU : name;
   if (!who) return "";
+  if (you && (progress.youHits || []).length) {
+    return progress.youHits[0].kind === "bomb"
+      ? "<span class=\"hold-badge crack\" aria-hidden=\"true\"><span class=\"mini-flask crack\"><i></i><i></i></span></span>"
+      : "<span class=\"hold-badge dead\" aria-hidden=\"true\"><span class=\"mini-flask\"><i></i><i></i></span></span>";
+  }
   if (isFrozen(who)) {
     return "<span class=\"hold-badge dead\" aria-hidden=\"true\"><span class=\"mini-flask\"><i></i><i></i></span></span>";
   }
@@ -2384,7 +2480,11 @@ async function buyCoinPack(id) {
 }
 
 async function playIncomingWound(wound) {
-  const jar = board.querySelector(".jar.locked.wound") || board.querySelector(".jar.locked");
+  let jar = null;
+  if (wound.paint && wound.idx >= 0) {
+    jar = board.querySelector('.jar[data-i="' + wound.idx + '"]');
+  }
+  if (!jar) jar = board.querySelector(".jar.locked.wound") || board.querySelector(".jar.locked");
   if (wound.kind === "bomb") await playBombAnim("", jar);
   else await playSealAnim("", jar);
 }
@@ -2393,17 +2493,21 @@ async function playTowerFloor() {
   if (towerTipOpen()) return false;
   closeTower();
   closeMap();
-  const wound = ensureYouHit();
+  const hits = rollYouHits();
   const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 4));
   startLevel(rollTowerLevel(), { tower: true, floor: heat });
-  if (wound) {
+  if (hits.length) {
     await wait(80);
-    await playIncomingWound(wound);
-    showPassToast(
-      wound.kind === "bomb"
-        ? "У тебя сломана банка. Это " + wound.by
-        : "У тебя заморожена банка. Это " + wound.by
-    );
+    for (let i = 0; i < hits.length; i += 1) {
+      const wound = hits[i];
+      await playIncomingWound(wound);
+      showPassToast(
+        wound.kind === "bomb"
+          ? "У тебя сломана банка. Это " + wound.by
+          : "У тебя заморожена банка. Это " + wound.by
+      );
+      if (i < hits.length - 1) await wait(320);
+    }
     openLockShop();
   }
   return true;
@@ -2633,11 +2737,13 @@ function nextLockPrice() {
 
 function closeLockShop() {
   if (lockOverlay) lockOverlay.classList.remove("show");
+  const closeBtn = document.getElementById("lock-close");
+  if (closeBtn) closeBtn.hidden = false;
   if (state.lock === "shop") state.lock = "";
 }
 
 function openLockShop() {
-  if (!state.locked) return;
+  if (!state.locked && !mustFixWound()) return;
   const wound = state.mode === "tower" ? youWound() : null;
   const title = document.getElementById("lock-title");
   if (title) title.textContent = wound ? (wound.kind === "bomb" ? "Сломанная банка" : "Замороженная банка") : "Закрытая банка";
@@ -2647,6 +2753,7 @@ function openLockShop() {
         wound.kind === "bomb"
           ? "У тебя сломана банка. Это " + wound.by + ". Почини за монеты или ролик."
           : "У тебя заморожена банка. Это " + wound.by + ". Разморозь за монеты или ролик.";
+      if (mustFixWound()) lockText.textContent += " Банка с краской — чинить обязательно.";
     } else {
       lockText.textContent = state.stolenEmpties
         ? "Уровень тесный. Без колбы некуда лить."
@@ -2667,7 +2774,10 @@ function openLockShop() {
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
   }
   const closeBtn = document.getElementById("lock-close");
-  if (closeBtn) closeBtn.textContent = wound ? "Играть так" : "Пока нет";
+  if (closeBtn) {
+    closeBtn.hidden = mustFixWound();
+    closeBtn.textContent = wound && !mustFixWound() ? "Играть так" : "Пока нет";
+  }
   const poor = progress.coins < nextLockPrice() && (wound || !progress.bottleCharges);
   if (lockCoins) lockCoins.classList.toggle("primary", !poor);
   if (lockAd) lockAd.classList.toggle("primary", poor);
@@ -2703,11 +2813,12 @@ function startLevel(level, opts) {
   state.moves = 0;
   state.doubled = false;
   state.stolenEmpties = stolen;
-  const wound = tower ? youWound() : null;
+  if (tower) bindPaintWounds(progress.youHits || []);
+  else state.paintWounds = [];
+  const emptyHits = tower ? (progress.youHits || []).filter((hit) => !hit.paint).length : 0;
   state.locked = tower
-    ? Math.min(4, towerLockCount(opts.floor || 0) + (wound ? 1 : 0) + Math.min(2, progress.towerWounds || 0))
+    ? Math.min(4, towerLockCount(opts.floor || 0) + emptyHits + Math.min(2, progress.towerWounds || 0))
     : Math.min(4, lockCountFor(n) + stolen);
-  if (tower && wound && state.locked < 1) state.locked = 1;
   if (tower && progress.towerWounds) {
     progress.towerWounds = Math.max(0, progress.towerWounds - 1);
     saveProgress();
@@ -2736,7 +2847,7 @@ function markJars() {
 function selectJar(index) {
   state.selected = index;
   Array.prototype.forEach.call(board.children, (el, i) => {
-    if (el.classList.contains("locked")) return;
+    if (el.classList.contains("locked") || el.classList.contains("wound-paint")) return;
     el.classList.toggle("selected", i === index);
   });
 }
@@ -2752,8 +2863,12 @@ function render(enter) {
       progress.skin +
       (enter ? "" : " settled") +
       (state.selected === index ? " selected" : "");
+    const paint = (state.paintWounds || []).find((w) => w.idx === index);
+    if (paint) {
+      btn.className += " wound-paint " + (paint.kind === "bomb" ? "broken-hit" : "frozen-hit");
+    }
     if (enter) btn.style.animationDelay = index * 45 + "ms";
-    btn.setAttribute("aria-label", "банка " + (index + 1));
+    btn.setAttribute("aria-label", paint ? (paint.kind === "bomb" ? "сломанная банка" : "замороженная банка") : "банка " + (index + 1));
     tube.forEach((color) => {
       const layer = document.createElement("span");
       layer.className = "layer";
@@ -2762,16 +2877,16 @@ function render(enter) {
     });
     board.appendChild(btn);
   });
-  const wound = state.mode === "tower" ? youWound() : null;
+  const emptyHits = (progress.youHits || []).filter((hit) => !hit.paint);
   for (let i = 0; i < state.locked; i += 1) {
     const btn = document.createElement("button");
     btn.type = "button";
-    const hit = wound && i === 0;
+    const hit = state.mode === "tower" && emptyHits[i];
     btn.className =
       "jar locked skin-" +
       progress.skin +
       (enter ? "" : " settled") +
-      (hit ? " wound " + (wound.kind === "bomb" ? "broken-hit" : "frozen-hit") : "");
+      (hit ? " wound " + (hit.kind === "bomb" ? "broken-hit" : "frozen-hit") : "");
     if (enter) btn.style.animationDelay = (state.tubes.length + i) * 45 + "ms";
     btn.setAttribute("aria-label", "закрытая банка");
     const frost = document.createElement("span");
@@ -3534,10 +3649,11 @@ async function watchAd() {
 }
 
 async function unlockJar(pay) {
-  if (state.busy || !state.locked) return;
+  if (state.busy) return;
+  if (!state.locked && !mustFixWound()) return;
   const price = nextLockPrice();
   if (pay === "charge") {
-    if (!progress.bottleCharges) {
+    if (mustFixWound() || !progress.bottleCharges) {
       shake(lockCharge);
       return;
     }
@@ -3555,12 +3671,42 @@ async function unlockJar(pay) {
     await watchAd();
     state.busy = false;
   }
-  if (state.mode === "tower" && youWound()) clearYouHold();
+  hideFail();
+  if (mustFixWound()) {
+    const fixed = state.paintWounds.shift();
+    const list = progress.youHits || [];
+    const at = list.findIndex((hit) => hit.paint && (hit.idx === fixed.idx || hit.by === fixed.by));
+    if (at >= 0) list.splice(at, 1);
+    progress.youHits = list;
+    saveProgress();
+    closeLockShop();
+    paintHud();
+    render(false);
+    paintScene();
+    const el = jarEl(fixed.idx);
+    if (el) {
+      el.classList.remove("settled");
+      el.classList.add("arrive", "unlocked");
+    }
+    pulseScene("#f4b942");
+    feel("full");
+    tone(480, 0.1, "triangle", 0.045);
+    tone(640, 0.14, "sine", 0.03);
+    if (mustFixWound()) openLockShop();
+    else if (!(progress.youHits || []).length) {
+      if (progress.towerHold) delete progress.towerHold[YOU];
+      saveProgress();
+    }
+    return;
+  }
+  const emptyAt = (progress.youHits || []).findIndex((hit) => !hit.paint);
+  if (emptyAt >= 0) progress.youHits.splice(emptyAt, 1);
+  if (!(progress.youHits || []).length && progress.towerHold) delete progress.towerHold[YOU];
+  saveProgress();
   state.locked -= 1;
   if (state.stolenEmpties) state.stolenEmpties -= 1;
   state.openedExtra += 1;
   state.tubes.push([]);
-  hideFail();
   closeLockShop();
   paintHud();
   render(false);
@@ -3707,6 +3853,10 @@ function cycleSkin() {
 
 async function onTap(index) {
   if (state.busy || state.lock) return;
+  if (jarWounded(index)) {
+    openLockShop();
+    return;
+  }
   clearHook();
   if (state.selected < 0) {
     if (!state.tubes[index].length) {
@@ -3764,7 +3914,7 @@ document.getElementById("restart").addEventListener("click", () => {
 board.addEventListener("click", (event) => {
   const btn = event.target.closest(".jar");
   if (!btn || !board.contains(btn)) return;
-  if (btn.classList.contains("locked")) {
+  if (btn.classList.contains("locked") || btn.classList.contains("wound-paint")) {
     openLockShop();
     return;
   }
