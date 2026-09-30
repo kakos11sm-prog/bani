@@ -121,6 +121,7 @@ const state = {
   towerFloor: 0,
   levelSrc: 1,
   towerMark: "",
+  towerHitBusy: false,
 };
 
 const board = document.getElementById("board");
@@ -1467,7 +1468,7 @@ function armTowerLive() {
   towerLiveTimer = window.setInterval(() => {
     if (!towerOverlay || !towerOverlay.classList.contains("show")) return;
     const moved = tickTowerLive();
-    if (moved && !towerTipOpen()) paintTower(true);
+    if (moved && !towerTipOpen() && !state.towerHitBusy) paintTower(true);
   }, 3500);
 }
 
@@ -1669,6 +1670,126 @@ function hitIcons(name, you) {
   );
 }
 
+function holdBadge(name, you) {
+  if (you || !name) return "";
+  if (isFrozen(name)) {
+    return "<span class=\"hold-badge dead\" aria-hidden=\"true\"><span class=\"mini-flask\"><i></i><i></i></span></span>";
+  }
+  if (isSlowed(name)) {
+    return "<span class=\"hold-badge crack\" aria-hidden=\"true\"><span class=\"mini-flask crack\"><i></i><i></i></span></span>";
+  }
+  return "";
+}
+
+function towerCardOf(name) {
+  const nodes = document.querySelectorAll("#tower-overlay [data-name]");
+  for (let i = 0; i < nodes.length; i += 1) {
+    if (nodes[i].getAttribute("data-name") === name) {
+      return nodes[i].closest(".league-row, .podium-slot");
+    }
+  }
+  return null;
+}
+
+function towerHitHost() {
+  const el = document.getElementById("tower-hit-fx");
+  if (el) el.innerHTML = "";
+  return el;
+}
+
+function hitAnchor(name, btn) {
+  const card = towerCardOf(name);
+  if (card && card.scrollIntoView) card.scrollIntoView({ block: "nearest", inline: "nearest" });
+  const node = card || btn || document.getElementById("tower-overlay");
+  const r = node ? node.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+  const onScreen = r.height && r.bottom > 70 && r.top < window.innerHeight - 24;
+  if (!onScreen && btn) {
+    const br = btn.getBoundingClientRect();
+    return { card: card, x: br.left + br.width / 2, y: br.top + br.height / 2 };
+  }
+  return { card: card, x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+async function playSealAnim(name, btn) {
+  if (!settings.juice) return;
+  await wait(30);
+  const host = towerHitHost();
+  if (!host) return;
+  const at = hitAnchor(name, btn);
+  if (at.card) {
+    at.card.classList.add("hit-punch");
+    window.setTimeout(() => at.card.classList.remove("hit-punch"), 900);
+  }
+  const scene = document.createElement("div");
+  scene.className = "hit-scene seal-scene";
+  scene.style.left = at.x + "px";
+  scene.style.top = at.y + "px";
+  scene.innerHTML =
+    "<div class=\"hit-mini-jar\">" +
+    "<i class=\"c1\"></i><i class=\"c2\"></i><i class=\"c3\"></i>" +
+    "<span class=\"hit-frost\"></span>" +
+    "<span class=\"hit-lock\"></span>" +
+    "<span class=\"hit-cross\"></span>" +
+    "</div>";
+  host.appendChild(scene);
+  feel("full");
+  tone(420, 0.1, "sine", 0.04);
+  await wait(280);
+  scene.classList.add("slam");
+  feel("fail");
+  tone(180, 0.16, "sawtooth", 0.04);
+  tone(140, 0.2, "triangle", 0.03);
+  await wait(820);
+  host.innerHTML = "";
+}
+
+async function playBombAnim(name, btn) {
+  if (!settings.juice) return;
+  await wait(30);
+  const host = towerHitHost();
+  if (!host) return;
+  const at = hitAnchor(name, btn);
+  const from = document.getElementById("chip-bomb") || btn;
+  const fr = from ? from.getBoundingClientRect() : { left: at.x, top: 80, width: 36, height: 36 };
+  const x1 = fr.left + fr.width / 2;
+  const y1 = fr.top + fr.height / 2;
+  const fly = document.createElement("div");
+  fly.className = "hit-bomb-fly";
+  fly.style.left = x1 + "px";
+  fly.style.top = y1 + "px";
+  fly.style.setProperty("--dx", at.x - x1 + "px");
+  fly.style.setProperty("--dy", at.y - y1 + "px");
+  fly.innerHTML = HIT_BOMB;
+  host.appendChild(fly);
+  if (from) from.classList.add("throw");
+  tone(260, 0.1, "sine", 0.035);
+  await wait(420);
+  fly.remove();
+  if (from) from.classList.remove("throw");
+  if (at.card) {
+    at.card.classList.add("hit-boom");
+    window.setTimeout(() => at.card.classList.remove("hit-boom"), 900);
+  }
+  const scene = document.createElement("div");
+  scene.className = "hit-scene bomb-scene boom";
+  scene.style.left = at.x + "px";
+  scene.style.top = at.y + "px";
+  scene.innerHTML =
+    "<div class=\"hit-flash\"></div>" +
+    "<div class=\"hit-mini-jar crack-now\">" +
+    "<i class=\"c1\"></i><i class=\"c2\"></i><i class=\"c3\"></i>" +
+    "<span class=\"hit-crack\"></span>" +
+    "</div>";
+  host.appendChild(scene);
+  spawnBurst({ left: at.x - 20, top: at.y - 36, width: 40, height: 40 }, "#e85d4c");
+  spawnBurst({ left: at.x - 20, top: at.y - 20, width: 40, height: 40 }, "#f4b942");
+  feel("win");
+  tone(140, 0.18, "sawtooth", 0.045);
+  tone(90, 0.22, "triangle", 0.03);
+  await wait(780);
+  host.innerHTML = "";
+}
+
 function huntRow(name) {
   if (name) {
     return towerTable().find((row) => row.name === name && !row.you) || null;
@@ -1725,6 +1846,7 @@ function paintTower(live) {
         "\">" +
         row.score +
         "</span>" +
+        holdBadge(row.name, row.you) +
         hitIcons(row.name, row.you);
       if (!row.you) {
         el.addEventListener("click", (event) => {
@@ -1941,6 +2063,7 @@ function paintTowerPodium(table, live) {
       "\">" +
       (row ? row.score : "0") +
       "</small>" +
+      holdBadge(row ? row.name : "", !row || row.you) +
       hitIcons(row ? row.name : "", !row || row.you) +
       "<em>" +
       place +
@@ -2086,8 +2209,8 @@ function playTowerFloor() {
   return true;
 }
 
-function sealHunt(name, btn) {
-  if (towerTipOpen()) return;
+async function sealHunt(name, btn) {
+  if (towerTipOpen() || state.towerHitBusy) return;
   const mark = huntRow(name);
   if (!mark || mark.you) {
     showPassToast("Жми печать на игроке.");
@@ -2100,6 +2223,7 @@ function sealHunt(name, btn) {
     feel("fail");
     return;
   }
+  state.towerHitBusy = true;
   progress.coins -= SEAL_PRICE;
   if (!progress.towerHold) progress.towerHold = {};
   const hold = progress.towerHold[mark.name] || {};
@@ -2109,13 +2233,17 @@ function sealHunt(name, btn) {
   paintHud();
   paintLeague();
   paintShop();
-  showPassToast(mark.name + " застыл. Очки не растут, остальные идут дальше.");
-  paintTower();
-  tone(180, 0.16, "sawtooth", 0.035);
+  try {
+    await playSealAnim(mark.name, btn);
+    showPassToast(mark.name + " застыл. Одна банка больше не работает.");
+    paintTower();
+  } finally {
+    state.towerHitBusy = false;
+  }
 }
 
-function bombHunt(name, btn) {
-  if (towerTipOpen()) return;
+async function bombHunt(name, btn) {
+  if (towerTipOpen() || state.towerHitBusy) return;
   const mark = huntRow(name);
   if (!mark || mark.you) {
     showPassToast("Жми бомбу на игроке.");
@@ -2127,6 +2255,7 @@ function bombHunt(name, btn) {
     feel("fail");
     return;
   }
+  state.towerHitBusy = true;
   progress.bombs -= 1;
   if (!progress.towerHold) progress.towerHold = {};
   const hold = progress.towerHold[mark.name] || {};
@@ -2135,10 +2264,13 @@ function bombHunt(name, btn) {
   progress.towerHold[mark.name] = hold;
   saveProgress();
   paintHud();
-  paintTower();
-  showPassToast(mark.name + " тормозит. Уровень сложнее — очки капают реже.");
-  feel("win");
-  tone(140, 0.18, "sawtooth", 0.04);
+  try {
+    await playBombAnim(mark.name, btn);
+    showPassToast(mark.name + " тормозит. Уровень сложнее — очки капают реже.");
+    paintTower();
+  } finally {
+    state.towerHitBusy = false;
+  }
 }
 
 function buyFlask() {
