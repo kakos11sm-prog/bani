@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=31";
+  el.src = "coin.svg?v=32";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -846,7 +846,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=31\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=32\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1071,7 +1071,7 @@ function leagueTable() {
 
 function rivalTowerScore(name) {
   const seals = Number(progress.seals[name]) || 0;
-  return Math.max(0, 16 + (hashStr(weekId() + ":tw:" + name) % 96) - seals * 18);
+  return Math.max(0, 4 + (hashStr(weekId() + ":tw:" + name) % 19) - seals);
 }
 
 function towerTable() {
@@ -1377,7 +1377,7 @@ function closeShop() {
 function playTowerFloor() {
   closeTower();
   closeMap();
-  const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 50));
+  const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 4));
   startLevel(towerLevel(heat), { tower: true, floor: heat });
   showPassToast("Башня · отдельные очки до понедельника");
   return true;
@@ -1800,7 +1800,7 @@ function applyWinRewards(stars) {
   if (state.mode === "tower") {
     progress.streak += 1;
     progress.maxStreak = Math.max(progress.maxStreak || 0, progress.streak);
-    const points = 16 + stars * 8 + Math.max(0, 10 - Math.floor(state.moves / 4));
+    const points = 1;
     progress.towerScore = (progress.towerScore || 0) + points;
     const coins = 8 + stars * 4;
     if (progress.streak > 0 && progress.streak % 5 === 0) progress.hints += 1;
@@ -1944,16 +1944,14 @@ async function showWin() {
   if (reward.tower) {
     const { me, next } = huntTarget(towerTable());
     winText.textContent = next
-      ? "+" +
-        reward.points +
-        " очков башни. Ты #" +
+      ? "Плюс 1 балл. Ты #" +
         (me ? me.place : "—") +
         ". До " +
         next.name +
         " ещё " +
         (next.score - me.score) +
         "."
-      : "+" + reward.points + " очков. Ты первый на неделе. Сундук твой, если удержишь.";
+      : "Плюс 1 балл. Ты первый на неделе. Сундук твой, если удержишь.";
   } else {
     winText.textContent = last
       ? "Этап закрыт. Серия " + progress.streak + "."
