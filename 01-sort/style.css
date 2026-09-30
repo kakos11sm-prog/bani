@@ -667,6 +667,33 @@ body.stage2 .jar {
   animation: wonPop 0.6s ease;
 }
 
+.chest-pic {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(255, 196, 64, 0.85));
+}
+
+.chest-pic.big {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  animation: chestCall 1.1s ease-in-out infinite;
+}
+
+@keyframes chestCall {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 196, 64, 0.7));
+  }
+  50% {
+    transform: translateY(-6px) scale(1.08);
+    filter: drop-shadow(0 0 22px rgba(255, 220, 90, 1));
+  }
+}
+
 .mission {
   background: var(--paper);
   border-radius: 14px;
@@ -721,16 +748,15 @@ body.stage2 .jar {
 }
 
 .track-chest {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  background: #1a1410;
-  box-shadow: 0 0 10px rgba(244, 185, 66, 0.35);
+  background: transparent;
+  box-shadow: none;
   animation: chestGlow 1.4s ease-in-out infinite;
 }
 
@@ -751,7 +777,9 @@ body.stage2 .jar {
   }
 }
 
-body.quiet .track-chest {
+body.quiet .track-chest,
+body.quiet .chest-pic.big,
+body.quiet .tower-chest {
   animation: none;
 }
 
@@ -1450,10 +1478,11 @@ body.quiet .home-tile.tower {
 }
 
 .tower-chest {
-  font-size: 26px;
+  display: block;
+  width: 42px;
+  height: 42px;
   line-height: 1;
   animation: chestGlow 1.3s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px rgba(255, 196, 80, 0.75));
 }
 
 .tower-prize em {
@@ -1536,7 +1565,8 @@ body.quiet .home-tile.tower {
 }
 
 .tower-top .tower-chest {
-  font-size: 28px;
+  width: 48px;
+  height: 48px;
 }
 
 .tower-top b {

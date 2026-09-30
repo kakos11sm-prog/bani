@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a3a12"/>
+      <stop offset="55%" stop-color="#5a220c"/>
+      <stop offset="100%" stop-color="#3a1408"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="35%" stop-color="#ffd24a"/>
+      <stop offset="100%" stop-color="#c47a10"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="28%">
+      <stop offset="0%" stop-color="#ffe08a" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#ff9a2a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff9a2a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="72" rx="22" ry="5" fill="#000" opacity="0.35"/>
+  <circle cx="40" cy="28" r="26" fill="url(#glow)"/>
+  <path d="M14 36h52l-4 8H18z" fill="#ffb020"/>
+  <path d="M12 42c0-2 2-4 6-4h44c4 0 6 2 6 4v22c0 4-3 7-8 7H20c-5 0-8-3-8-7z" fill="url(#wood)"/>
+  <path d="M12 48h56" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M18 42v29" stroke="url(#gold)" stroke-width="3.2"/>
+  <path d="M62 42v29" stroke="url(#gold)" stroke-width="3.2"/>
+  <path d="M16 22c0-8 8-14 24-14s24 6 24 14v16H16z" fill="url(#gold)"/>
+  <path d="M20 24c1-6 7-10 20-10s19 4 20 10" fill="none" stroke="#fff6c4" stroke-width="2" opacity="0.7"/>
+  <circle cx="40" cy="50" r="7" fill="url(#gold)"/>
+  <circle cx="40" cy="50" r="3.2" fill="#6a2a08"/>
+  <circle cx="28" cy="38" r="3.4" fill="#ff4d6d"/>
+  <circle cx="52" cy="36" r="3" fill="#5b8def"/>
+  <circle cx="40" cy="32" r="3.6" fill="#3ecf8e"/>
+  <path d="M22 12l2 5 5 1-4 3 2 5-5-3-5 3 2-5-4-3 5-1z" fill="#fff3b0"/>
+  <path d="M58 10l1.6 4 4.2.8-3.2 2.6 1.4 4.2-4-2.4-4 2.4 1.4-4.2-3.2-2.6 4.2-.8z" fill="#ffe08a"/>
+</svg>
