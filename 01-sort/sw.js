@@ -1,4 +1,4 @@
-const CACHE = "bani-pilot-v35";
+const CACHE = "bani-pilot-v36";
 const FILES = [
   "./",
   "./index.html",

@@ -353,6 +353,10 @@ button.chip.league {
   color: var(--accent);
 }
 
+.chip.bomb {
+  color: #ff7a4a;
+}
+
 .chip.fire {
   color: #ff8a4a;
 }
@@ -830,6 +834,10 @@ body.quiet .lock-gate-miss {
   display: none;
 }
 
+#intro-overlay {
+  z-index: 95;
+}
+
 #pass-overlay {
   z-index: 90;
 }
@@ -977,6 +985,76 @@ body.quiet .lock-gate-miss {
   0%,
   100% { transform: scale(1); text-shadow: 0 0 0 transparent; }
   50% { transform: scale(1.04); text-shadow: 0 0 12px rgba(255, 120, 90, 0.55); }
+}
+
+.intro-card {
+  width: min(360px, 100%);
+  padding: 28px 22px 20px;
+  text-align: center;
+}
+
+.intro-ico {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 14px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  background: #2a2118;
+  box-shadow: 0 0 0 2px rgba(244, 185, 66, 0.45), 0 0 22px rgba(244, 185, 66, 0.25);
+}
+
+.intro-ico.pop {
+  animation: lockGatePop 0.5s cubic-bezier(0.2, 1.4, 0.3, 1);
+}
+
+.intro-title {
+  margin: 0 0 10px;
+  font-size: 26px;
+  background: linear-gradient(90deg, #fff0a8, #ffd24a, #fff6c4);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: prizeCall 2.2s linear infinite;
+}
+
+.intro-text {
+  margin: 0 0 18px;
+  color: #ffe08a;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.intro-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.intro-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5a4a38;
+}
+
+.intro-dots i.on {
+  background: #ffd24a;
+  box-shadow: 0 0 10px rgba(255, 210, 74, 0.7);
+}
+
+.intro-next {
+  width: 100%;
+}
+
+body.quiet .intro-title,
+body.quiet .intro-ico.pop {
+  animation: none;
 }
 
 .shop-list {
