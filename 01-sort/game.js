@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=33";
+  el.src = "coin.svg?v=34";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -396,12 +396,15 @@ function toggleSetting(key) {
 
 function syncScreens() {
   const mapOpen = mapOverlay && mapOverlay.classList.contains("show");
-  const cover = ["boot", "tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+  const home = document.getElementById("boot");
+  const homeOpen = home && home.classList.contains("show");
+  const cover = ["tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
     const el = document.getElementById(id);
     return el && el.classList.contains("show");
   });
   document.body.classList.toggle("screen", cover);
   document.body.classList.toggle("map-open", !!mapOpen);
+  document.body.classList.toggle("home-open", !!homeOpen && !cover);
 }
 
 function paintMenu() {
@@ -409,6 +412,7 @@ function paintMenu() {
   const towerBtn = document.getElementById("boot-tower");
   if (towerBtn) towerBtn.classList.toggle("locked", !hasTowerPass());
   paintWeekClocks();
+  paintHud();
   if (towerMeta) {
     towerMeta.hidden = !hasTowerPass();
     if (hasTowerPass()) towerMeta.textContent = "Попробуй удержать первое место";
@@ -843,7 +847,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=33\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=34\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1300,7 +1304,9 @@ function paintPassGate() {
     miss.classList.toggle("ok", !short);
   }
   if (buy) {
-    buy.hidden = short > 0;
+    buy.hidden = false;
+    buy.classList.toggle("dim", short > 0);
+    buy.classList.toggle("lock-ready", short <= 0);
     fillCoinLabel(buy, "Купить пропуск ", TOWER_PASS, "");
   }
   if (shop) shop.hidden = true;

@@ -1491,19 +1491,23 @@ body.screen .wrap {
   pointer-events: none;
 }
 
-body.map-open .wrap {
+body.map-open .wrap,
+body.home-open .wrap {
   z-index: 60;
   visibility: visible;
   pointer-events: none;
 }
 
 body.map-open .hud,
-body.map-open .fly {
+body.map-open .fly,
+body.home-open .hud,
+body.home-open .fly {
   pointer-events: auto;
   z-index: 70;
 }
 
-body.map-open .fly {
+body.map-open .fly,
+body.home-open .fly {
   z-index: 75;
 }
 
@@ -1513,9 +1517,22 @@ body.map-open .bar,
 body.map-open .skin-btn,
 body.map-open .more,
 body.map-open .fx,
-body.map-open .level {
+body.map-open .level,
+body.home-open .mission,
+body.home-open .play-row,
+body.home-open .bar,
+body.home-open .skin-btn,
+body.home-open .more,
+body.home-open .fx,
+body.home-open .level {
   visibility: hidden;
   pointer-events: none;
+}
+
+body.home-open #boot {
+  z-index: 40;
+  padding-top: 56px;
+  justify-content: flex-start;
 }
 
 #map-overlay {
@@ -1778,6 +1795,25 @@ button.act.map-start {
 .home-tile.play {
   background: #2a2118;
   box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.45);
+  animation: playCall 2s ease-in-out infinite;
+}
+
+@keyframes playCall {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(244, 185, 66, 0.4),
+      0 0 10px rgba(244, 185, 66, 0.12);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #ffd24a,
+      0 0 22px rgba(244, 185, 66, 0.5);
+  }
+}
+
+body.quiet .home-tile.play {
+  animation: none;
 }
 
 .home-tile.tower {
@@ -2296,6 +2332,29 @@ body.quiet .tower-cell.now .face {
 button.act.primary {
   background: var(--accent);
   color: #1a1410;
+}
+
+button.act.primary.lock-ready {
+  animation: buyGlow 1.3s ease-in-out infinite;
+}
+
+button.act.primary.dim {
+  background: #3d372f;
+  color: #8e857a;
+  box-shadow: none;
+  animation: none;
+  filter: grayscale(0.35);
+}
+
+@keyframes buyGlow {
+  0%,
+  100% { box-shadow: 0 0 8px rgba(244, 185, 66, 0.28); }
+  50% { box-shadow: 0 0 22px 4px rgba(244, 185, 66, 0.6); }
+}
+
+body.quiet .home-tile.play,
+body.quiet button.act.primary.lock-ready {
+  animation: none;
 }
 
 button.act.ghost {
