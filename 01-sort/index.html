@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=27" />
+    <link rel="stylesheet" href="style.css?v=28" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -29,7 +29,7 @@
         <div class="hud-stats">
           <div class="chip">★ <span id="hud-stars">0</span></div>
           <div class="chip fire" id="chip-fire" title="Серия жива, пока не жмёшь Заново">🔥 <span id="hud-streak">0</span></div>
-          <div class="chip coin-chip"><img class="coin" src="coin.svg?v=27" alt="" /><span id="hud-coins">0</span></div>
+          <div class="chip coin-chip"><img class="coin" src="coin.svg?v=28" alt="" /><span id="hud-coins">0</span></div>
           <div class="chip">💡 <span id="hud-hints">0</span></div>
           <button class="chip league" id="chip-league" type="button" title="Башня" hidden>
             #<span id="hud-place">—</span>
@@ -52,7 +52,7 @@
               <span></span><span></span><span></span><span></span><span></span>
             </div>
           </div>
-          <div class="track-chest" id="track-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=27" alt="" /></div>
+          <div class="track-chest" id="track-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=28" alt="" /></div>
         </div>
         <div class="track-label" id="track-label">0 / 100</div>
         <div class="chapter" id="chapter" hidden></div>
@@ -99,7 +99,6 @@
         <p class="home-tag">Перелей цвет. Не оставь себя без хода.</p>
         <button class="home-tile play" id="boot-play" type="button">
           <b>Играть</b>
-          <small id="home-play-meta">Обычные уровни</small>
         </button>
         <button class="home-tile tower locked" id="boot-tower" type="button">
           <span class="tower-main">
@@ -109,13 +108,13 @@
             </span>
             <span class="tower-stage">
               <span class="tower-prize">
-                <span class="tower-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=27" alt="" /></span>
+                <span class="tower-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=28" alt="" /></span>
                 <em class="tower-clock-hot" id="home-tower-clock">до приза</em>
               </span>
-              <span class="tower-lock" id="home-tower-lock" aria-hidden="true">🔒</span>
             </span>
           </span>
-          <img class="coin-heap-pic" src="coins-heap.svg?v=27" alt="" />
+          <img class="coin-heap-pic" src="coins-heap.svg?v=28" alt="" />
+          <span class="tower-lock" id="home-tower-lock" aria-hidden="true">🔒</span>
         </button>
         <div class="home-row">
           <button class="home-mini premium" id="boot-shop" type="button">
@@ -239,19 +238,15 @@
       </div>
     </div>
     <div class="overlay screen" id="map-overlay">
-      <div class="card league-card">
-        <h2>Обычные уровни</h2>
-        <p class="league-lead" id="map-lead">Пройденные можно снова. Следующий — только после предыдущего.</p>
+      <div class="map-panel">
+        <p class="map-lead" id="map-lead">Собирай монеты и звёзды для главного сундука в башне тут</p>
         <div class="map-grid" id="map-grid"></div>
-        <div class="card-actions">
-          <button class="act primary" id="map-continue" type="button">Продолжить</button>
-          <button class="act ghost" id="map-back" type="button">В меню</button>
-        </div>
+        <button class="act primary map-start" id="map-continue" type="button">Начать</button>
       </div>
     </div>
     <div class="overlay screen" id="pass-overlay">
       <div class="card league-card pass-card">
-        <div class="pass-coin" aria-hidden="true"><img class="coin" src="coin.svg?v=27" alt="" /></div>
+        <div class="pass-coin" aria-hidden="true"><img class="coin" src="coin.svg?v=28" alt="" /></div>
         <h2>Пропуск в башню</h2>
         <p class="league-lead" id="pass-lead">Сюда ходят соревноваться. Вход на неделю — 1000 монет. Иначе башня закрыта.</p>
         <p class="pass-have" id="pass-have"></p>
@@ -265,7 +260,7 @@
     <div class="overlay screen" id="tower-overlay">
       <div class="card league-card">
         <div class="tower-top">
-          <span class="tower-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=27" alt="" /></span>
+          <span class="tower-chest" aria-hidden="true"><img class="chest-pic" src="chest.svg?v=28" alt="" /></span>
           <div>
             <b class="prize-call">Главный приз недели</b>
             <small id="tower-clock">до понедельника</small>
@@ -340,7 +335,7 @@
     </div>
     <div class="overlay" id="chest-overlay">
       <div class="card">
-        <div class="chest" id="chest-box"><img class="chest-pic big" src="chest.svg?v=27" alt="" /></div>
+        <div class="chest" id="chest-box"><img class="chest-pic big" src="chest.svg?v=28" alt="" /></div>
         <h2>Сундук главы</h2>
         <p id="chest-lead">За десять уровней. Вот что внутри.</p>
         <div class="loot" id="chest-loot"></div>
@@ -349,6 +344,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=27"></script>
+    <script src="game.js?v=28"></script>
   </body>
 </html>

@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=27";
+  el.src = "coin.svg?v=28";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -395,26 +395,17 @@ function toggleSetting(key) {
 }
 
 function syncScreens() {
-  const cover = ["boot", "map-overlay", "tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+  const mapOpen = mapOverlay && mapOverlay.classList.contains("show");
+  const cover = ["boot", "tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
     const el = document.getElementById(id);
     return el && el.classList.contains("show");
   });
   document.body.classList.toggle("screen", cover);
+  document.body.classList.toggle("map-open", !!mapOpen);
 }
 
 function paintMenu() {
-  const playMeta = document.getElementById("home-play-meta");
   const towerMeta = document.getElementById("home-tower-meta");
-  if (playMeta) {
-    playMeta.textContent =
-      "Ур. " +
-      progress.unlocked +
-      " · ★ " +
-      totalStars() +
-      " · монет " +
-      progress.coins +
-      (state.mode !== "tower" && state.tubes.length ? " · партия ждёт" : "");
-  }
   const towerBtn = document.getElementById("boot-tower");
   if (towerBtn) towerBtn.classList.toggle("locked", !hasTowerPass());
   paintWeekClocks();
@@ -855,7 +846,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=27\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=28\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1180,9 +1171,9 @@ function paintMap() {
   const cont = document.getElementById("map-continue");
   const stop = state.mode === "story" && state.tubes.length ? state.level : progress.unlocked;
   if (lead) {
-    lead.textContent = "Пройденные можно снова. Следующий — только после предыдущего.";
+    lead.textContent = "Собирай монеты и звёзды для главного сундука в башне тут";
   }
-  if (cont) cont.textContent = "Продолжить · " + stop;
+  if (cont) cont.textContent = "Начать";
   syncUnlocked();
   const last = Math.min(storyLevelCount(), progress.unlocked + (progress.unlocked < storyLevelCount() ? 1 : 0));
   mapGrid.innerHTML = "";
@@ -1192,7 +1183,7 @@ function paintMap() {
     btn.dataset.level = String(n);
     const stars = progress.stars[n - 1] || 0;
     const moves = (progress.bestMoves && progress.bestMoves[n - 1]) || 0;
-    const now = n === progress.unlocked;
+    const now = n === stop;
     const lock = n > progress.unlocked;
     btn.className = "map-cell" + (stars ? " done" : "") + (now ? " now" : "") + (lock ? " lock" : "");
     btn.style.animationDelay = ((n - 1) % 10) * 18 + "ms";
@@ -2354,11 +2345,6 @@ if (mapGrid) {
 }
 const mapContinue = document.getElementById("map-continue");
 if (mapContinue) mapContinue.addEventListener("click", () => continueLevel());
-const mapBack = document.getElementById("map-back");
-if (mapBack) mapBack.addEventListener("click", () => {
-  closeMap();
-  openMenu();
-});
 document.getElementById("shop-flask").addEventListener("click", () => buyFlask());
 const shopSkins = document.getElementById("shop-skins");
 if (shopSkins) shopSkins.addEventListener("click", () => openSkins());
