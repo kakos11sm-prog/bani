@@ -106,6 +106,7 @@ const state = {
   lastCoins: 0,
   doubled: false,
   holdHudCoins: null,
+  holdHudHints: null,
   winBase: 0,
   winTotal: 0,
   winExtraDone: false,
@@ -285,7 +286,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=41";
+  el.src = "coin.svg?v=42";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -444,7 +445,7 @@ function openMenu() {
   overlay.classList.remove("show");
   failOverlay.classList.remove("show");
   if (lockOverlay) lockOverlay.classList.remove("show");
-  if (chestOverlay) chestOverlay.classList.remove("show");
+  closeChapterChest();
   paintMenu();
   if (boot) boot.classList.add("show");
   syncScreens();
@@ -655,7 +656,7 @@ function claimMilestones() {
       progress.skin = "wide";
       if (progress.unlocked < 101) progress.unlocked = 101;
     }
-    got.push(item.text);
+    got.push({ kind: item.kind, n: item.n || 0, text: item.text });
   });
   return got;
 }
@@ -920,7 +921,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=41\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=42\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1672,7 +1673,9 @@ function paintHud() {
   const coinShown =
     state.holdHudCoins != null ? state.holdHudCoins : onHome ? progress.coins : cash();
   document.getElementById("hud-coins").textContent = String(coinShown);
-  document.getElementById("hud-hints").textContent = String(progress.hints);
+  document.getElementById("hud-hints").textContent = String(
+    state.holdHudHints != null ? state.holdHudHints : progress.hints
+  );
   if (progress.hints) hintBtn.textContent = "Подсказка";
   else fillCoinLabel(hintBtn, "Подсказка ", HINT_PRICE, "");
   if (progress.undos) undoBtn.textContent = "Отмена";
@@ -2122,7 +2125,11 @@ function countUp(el, from, to, ms) {
 }
 
 function burstWinConfetti() {
-  const host = document.getElementById("win-fx");
+  burstConfetti("win-fx");
+}
+
+function burstConfetti(hostId) {
+  const host = document.getElementById(hostId);
   if (!host || document.body.classList.contains("quiet")) return;
   host.innerHTML = "";
   const colors = ["#e85d4c", "#f4b942", "#3ecf8e", "#5b8def", "#c084fc", "#fff6c4"];
@@ -2140,6 +2147,140 @@ function burstWinConfetti() {
   window.setTimeout(() => {
     host.innerHTML = "";
   }, 1400);
+}
+
+function hintWord(n) {
+  const m = n % 100;
+  if (m >= 11 && m <= 14) return "подсказок";
+  const d = n % 10;
+  if (d === 1) return "подсказка";
+  if (d >= 2 && d <= 4) return "подсказки";
+  return "подсказок";
+}
+
+function fillChestBulbs(n) {
+  const host = document.getElementById("chest-bulbs");
+  if (!host) return;
+  host.innerHTML = "";
+  for (let i = 0; i < n; i += 1) {
+    const bulb = document.createElement("span");
+    bulb.className = "chest-bulb";
+    bulb.textContent = "💡";
+    host.appendChild(bulb);
+  }
+}
+
+function openChapterChest(prizes) {
+  const hintN = prizes
+    .filter((item) => item.kind === "hints")
+    .reduce((sum, item) => sum + (item.n || 0), 0);
+  if (hintN) state.holdHudHints = Math.max(0, progress.hints - hintN);
+  paintHud();
+  chestLoot.innerHTML = "";
+  const prizeEl = document.getElementById("chest-prize");
+  const prizeNum = document.getElementById("chest-prize-num");
+  const prizeWord = document.getElementById("chest-prize-word");
+  if (prizeEl && hintN) {
+    prizeEl.hidden = false;
+    if (prizeNum) prizeNum.textContent = "+" + hintN;
+    if (prizeWord) prizeWord.textContent = hintWord(hintN);
+    fillChestBulbs(hintN);
+  } else if (prizeEl) {
+    prizeEl.hidden = true;
+    fillChestBulbs(0);
+  }
+  prizes.forEach((item, i) => {
+    if (item.kind === "hints") return;
+    const row = document.createElement("b");
+    row.textContent = item.text;
+    row.style.animationDelay = i * 90 + "ms";
+    chestLoot.appendChild(row);
+  });
+  const chestLead = document.getElementById("chest-lead");
+  if (chestLead) chestLead.textContent = "Приз за " + stageClears() + " уровней.";
+  const claimBtn = document.getElementById("chest-ok");
+  if (claimBtn) {
+    claimBtn.disabled = false;
+    claimBtn.textContent = "Забрать";
+  }
+  state.chestBusy = false;
+  document.body.classList.add("chest-open");
+  chestOverlay.classList.add("show");
+  burstConfetti("chest-fx");
+  feel("win");
+  tone(392, 0.1, "sine", 0.04);
+  tone(523, 0.14, "sine", 0.045);
+  tone(784, 0.22, "triangle", 0.04);
+}
+
+function closeChapterChest(keepHold) {
+  if (chestOverlay) chestOverlay.classList.remove("show");
+  document.body.classList.remove("chest-open");
+  const fxHost = document.getElementById("chest-fx");
+  if (fxHost) fxHost.innerHTML = "";
+  if (!keepHold) {
+    state.holdHudHints = null;
+    paintHud();
+  }
+}
+
+function flyHintsToHud(n) {
+  const dest = document.getElementById("chip-hints") || document.getElementById("hud-hints");
+  const bulbs = document.querySelectorAll("#chest-bulbs .chest-bulb");
+  const fallback = document.getElementById("chest-prize") || document.getElementById("chest-box");
+  if (!dest || !n) return Promise.resolve();
+  if (document.body.classList.contains("quiet")) return Promise.resolve();
+  const to = dest.getBoundingClientRect();
+  let shown = state.holdHudHints != null ? state.holdHudHints : progress.hints - n;
+  return Promise.all(
+    Array.from({ length: n }, (_, i) => {
+      const src = bulbs[i] || fallback;
+      const from = src ? src.getBoundingClientRect() : to;
+      const ghost = document.createElement("span");
+      ghost.className = "fly-hint";
+      ghost.textContent = "💡";
+      ghost.style.left = from.left + from.width / 2 - 14 + "px";
+      ghost.style.top = from.top + "px";
+      document.body.appendChild(ghost);
+      window.setTimeout(() => {
+        if (bulbs[i]) bulbs[i].style.opacity = "0";
+        ghost.style.left = to.left + to.width / 2 - 12 + "px";
+        ghost.style.top = to.top + to.height / 2 - 12 + "px";
+        ghost.style.transform = "scale(0.35) rotate(-20deg)";
+        ghost.style.opacity = "0.2";
+      }, 20 + i * 70);
+      return new Promise((resolve) => {
+        window.setTimeout(() => {
+          ghost.remove();
+          shown += 1;
+          const hud = document.getElementById("hud-hints");
+          if (hud) hud.textContent = String(shown);
+          dest.classList.add("catch");
+          window.setTimeout(() => dest.classList.remove("catch"), 280);
+          tone(640 + i * 40, 0.08, "sine", 0.03);
+          resolve();
+        }, 560 + i * 70);
+      });
+    })
+  );
+}
+
+async function claimChapterChest() {
+  if (state.chestBusy || !chestOverlay || !chestOverlay.classList.contains("show")) return;
+  state.chestBusy = true;
+  const claimBtn = document.getElementById("chest-ok");
+  if (claimBtn) claimBtn.disabled = true;
+  const add =
+    state.holdHudHints != null ? Math.max(0, progress.hints - state.holdHudHints) : 0;
+  if (add) await flyHintsToHud(add);
+  state.holdHudHints = null;
+  paintHud();
+  closeChapterChest(true);
+  state.chestBusy = false;
+  if (claimBtn) {
+    claimBtn.disabled = false;
+    claimBtn.textContent = "Забрать";
+  }
 }
 
 function settleWinExtra() {
@@ -2190,7 +2331,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=41";
+    ghost.src = pic ? pic.src : "coin.svg?v=42";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2289,18 +2430,7 @@ async function showWin() {
       : reward.chapterDone
         ? "Новая глава"
         : "Следующий";
-  if (reward.prizes && reward.prizes.length) {
-    chestLoot.innerHTML = "";
-    reward.prizes.forEach((text, i) => {
-      const row = document.createElement("b");
-      row.textContent = text;
-      row.style.animationDelay = i * 90 + "ms";
-      chestLoot.appendChild(row);
-    });
-    const chestLead = document.getElementById("chest-lead");
-    if (chestLead) chestLead.textContent = "Приз за " + stageClears() + " уровней.";
-    chestOverlay.classList.add("show");
-  }
+  if (reward.prizes && reward.prizes.length) openChapterChest(reward.prizes);
 }
 
 async function doubleReward() {
@@ -2628,7 +2758,7 @@ board.addEventListener("click", (event) => {
 hintBtn.addEventListener("click", useHint);
 document.getElementById("skin").addEventListener("click", cycleSkin);
 document.getElementById("chest-ok").addEventListener("click", () => {
-  chestOverlay.classList.remove("show");
+  claimChapterChest();
 });
 undoBtn.addEventListener("click", () => {
   if (state.lock) return;
