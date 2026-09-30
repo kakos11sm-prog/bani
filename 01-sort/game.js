@@ -112,6 +112,7 @@ const state = {
   winTotal: 0,
   winExtraDone: false,
   locked: 0,
+  stolenEmpties: 0,
   openedExtra: 0,
   mode: "story",
   towerFloor: 0,
@@ -287,7 +288,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=44";
+  el.src = "coin.svg?v=45";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -715,28 +716,27 @@ function payoutMult() {
   return fireMult() * boostMultNow();
 }
 
-function comfortWallet() {
-  const typical = Math.round(40 * payoutMult());
-  const band = boostMultNow() >= 10 ? 2.4 : boostMultNow() >= 2 ? 2 : 1.75;
-  return Math.max(70, Math.round(typical * band));
+function pressureSteal() {
+  const fire = fireMult();
+  const boost = boostMultNow();
+  let n = 0;
+  if (fire >= 1.4) n += 1;
+  if (fire >= 2) n += 1;
+  if (boost >= 2) n += 1;
+  if (boost >= 10) n += 1;
+  return n;
 }
 
-function takeHome(n) {
-  if (n <= 0) return 0;
-  if (state.mode === "tower") return n;
-  const cap = comfortWallet();
-  const room = Math.max(0, cap - progress.coins);
-  const trickle = Math.max(1, Math.round(n * 0.12));
-  return Math.min(n, room + trickle);
-}
-
-function meltWallet() {
-  if (state.mode === "tower") return 0;
-  const cap = comfortWallet();
-  if (progress.coins <= cap) return 0;
-  const melt = Math.ceil((progress.coins - cap) * 0.3);
-  progress.coins -= melt;
-  return melt;
+function stealEmpties(tubes, n) {
+  const next = tubes.map((tube) => tube.slice());
+  let left = n;
+  for (let i = next.length - 1; i >= 0 && left > 0; i -= 1) {
+    if (!next[i].length) {
+      next.splice(i, 1);
+      left -= 1;
+    }
+  }
+  return { tubes: next, stolen: n - left };
 }
 
 function scaledPrice(base) {
@@ -774,7 +774,6 @@ function syncDailyFire() {
     progress.streak = 1;
   }
   progress.fireDay = today;
-  meltWallet();
   saveProgress();
 }
 
@@ -796,7 +795,6 @@ function gain(n, skipFire) {
     add = Math.round(n * fireMult());
     add = Math.round(add * boostMultNow());
   }
-  if (state.mode !== "tower") add = takeHome(add);
   if (state.mode === "tower") progress.towerCoins = (progress.towerCoins || 0) + add;
   else progress.coins += add;
   return add;
@@ -989,7 +987,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=44\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=45\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1691,14 +1689,13 @@ async function buyAdCoins() {
   state.busy = true;
   if (btn) btn.textContent = "Ролик…";
   await wait(1100);
-  const got = takeHome(AD_COINS);
-  progress.coins += got;
+  progress.coins += AD_COINS;
   saveProgress();
   paintHud();
   paintShop();
   if (btn) btn.textContent = "Смотреть";
   state.busy = false;
-  showPassToast(got < AD_COINS ? "+" + got + " — карман полный" : "+" + got + " монет");
+  showPassToast("+" + AD_COINS + " монет");
 }
 
 function openLeague() {
@@ -1826,8 +1823,9 @@ function closeLockShop() {
 function openLockShop() {
   if (!state.locked) return;
   if (lockText) {
-    lockText.textContent =
-      state.locked === 1
+    lockText.textContent = state.stolenEmpties
+      ? "Уровень тесный. Без колбы некуда лить."
+      : state.locked === 1
         ? "Последняя закрытая. Откроешь — появится пустое место."
         : "Ещё " + state.locked + " закрытых. Сначала одну.";
   }
@@ -1836,6 +1834,9 @@ function openLockShop() {
     lockCharge.hidden = !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
   }
+  const poor = progress.coins < nextLockPrice() && !progress.bottleCharges;
+  if (lockCoins) lockCoins.classList.toggle("primary", !poor);
+  if (lockAd) lockAd.classList.toggle("primary", poor);
   if (state.mode === "tower") {
     lockText.textContent =
       (lockText.textContent || "") + " Это он закрыл тебе ход. Откроешь — можно лить дальше.";
@@ -1856,16 +1857,25 @@ function startLevel(level, opts) {
   const n = tower
     ? Math.min(LEVELS.length, want)
     : Math.min(progress.unlocked, want);
-  const packed = packedLevel(n);
+  let packed = packedLevel(n).map((tube) => tube.slice());
+  let stolen = 0;
+  if (!tower && n > 8) {
+    const pulled = stealEmpties(packed, pressureSteal());
+    packed = pulled.tubes;
+    stolen = pulled.stolen;
+  }
   state.level = n;
   state.mode = tower ? "tower" : "story";
   state.towerFloor = tower ? opts.floor || 0 : 0;
-  state.tubes = packed.map((tube) => tube.slice());
+  state.tubes = packed;
   state.selected = -1;
   state.history = [];
   state.moves = 0;
   state.doubled = false;
-  state.locked = tower ? towerLockCount(opts.floor || 0) : lockCountFor(n);
+  state.stolenEmpties = stolen;
+  state.locked = tower
+    ? towerLockCount(opts.floor || 0)
+    : Math.min(4, lockCountFor(n) + stolen);
   state.openedExtra = 0;
   hideFail();
   overlay.classList.remove("show");
@@ -1873,6 +1883,9 @@ function startLevel(level, opts) {
   paintMission();
   render(true);
   armHook();
+  if (!tower && stolen && !packed.some((tube) => !tube.length)) {
+    showPassToast("Пустых нет. Колба или ролик.");
+  }
 }
 
 function markJars() {
@@ -2098,18 +2111,14 @@ function applyWinRewards(stars) {
   if (better) raw += 10;
   if (stars === 3 && (progress.stage || 1) >= 2) progress.hints += 1;
   const full = Math.round(raw * payoutMult());
-  const kept = takeHome(full);
-  progress.coins += kept;
-  const melted = meltWallet();
+  progress.coins += full;
   const prizes = firstClear ? claimMilestones() : [];
   syncUnlocked();
   saveProgress();
   return {
-    coins: kept,
+    coins: full,
     raw: raw,
     full: full,
-    melted: melted,
-    squeezed: kept < full,
     firstClear,
     chapterDone: false,
     chapter: 0,
@@ -2283,7 +2292,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=44";
+      pic.src = "coin.svg?v=45";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2375,7 +2384,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=44";
+        ghost.src = "coin.svg?v=45";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2492,7 +2501,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=44";
+    ghost.src = pic ? pic.src : "coin.svg?v=45";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2558,8 +2567,6 @@ async function showWin() {
       ? "Этап закрыт."
       : stageClears() + " / 100 до сундука.";
     if (reward.bombsMade) winText.textContent += " Бомба готова!";
-    if (reward.melted > 15) winText.textContent += " Карман остыл.";
-    else if (reward.squeezed) winText.textContent += " Карман полный.";
   }
   const cashNum = document.getElementById("win-cash-num");
   if (cashNum) cashNum.textContent = "0";
@@ -2603,15 +2610,14 @@ async function doubleReward() {
   winDouble.textContent = "Ролик…";
   await wait(1100);
   const from = state.lastCoins;
-  const extra = takeHome(from);
-  progress.coins += extra;
-  state.lastCoins = from + extra;
+  progress.coins += from;
+  state.lastCoins = from * 2;
   state.winTotal = state.lastCoins;
   state.doubled = true;
   saveProgress();
   const cashNum = document.getElementById("win-cash-num");
   await countUp(cashNum, from, state.lastCoins, 700);
-  winDouble.textContent = extra < from ? "Карман полный" : "Удвоено";
+  winDouble.textContent = "Удвоено";
   state.busy = false;
 }
 
@@ -2706,6 +2712,7 @@ async function unlockJar(pay) {
     state.busy = false;
   }
   state.locked -= 1;
+  if (state.stolenEmpties) state.stolenEmpties -= 1;
   state.openedExtra += 1;
   state.tubes.push([]);
   hideFail();
