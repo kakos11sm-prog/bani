@@ -1563,7 +1563,7 @@ body.screen .wrap {
   align-items: stretch;
   gap: 0;
   padding: 18px 14px 0;
-  min-height: 210px;
+  min-height: 180px;
   overflow: hidden;
   background:
     radial-gradient(90% 80% at 80% 10%, rgba(62, 207, 142, 0.2) 0%, transparent 50%),
@@ -1699,7 +1699,7 @@ body.quiet .home-tile.tower {
 
 .home-tile.tower .tower-name {
   display: block;
-  font-size: clamp(68px, 22vw, 96px);
+  font-size: clamp(44px, 15vw, 64px);
   line-height: 0.8;
   letter-spacing: 0.02em;
   background: linear-gradient(180deg, #e8fff4, #3ecf8e);

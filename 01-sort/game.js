@@ -280,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=26";
+  el.src = "coin.svg?v=27";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -855,7 +855,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=26\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=27\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
