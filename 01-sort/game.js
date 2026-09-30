@@ -116,6 +116,7 @@ const state = {
   openedExtra: 0,
   mode: "story",
   towerFloor: 0,
+  levelSrc: 1,
 };
 
 const board = document.getElementById("board");
@@ -288,7 +289,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=45";
+  el.src = "coin.svg?v=46";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -559,8 +560,20 @@ function loadProgress() {
     if (Array.isArray(raw.stars) && raw.stars.length < 200) {
       while (base.stars.length < 200) base.stars.push(0);
     }
-    const cap = (base.stage || 1) >= 2 ? 200 : 100;
-    base.unlocked = firstLocked(base.stars, cap);
+    if ((base.stage || 1) >= 2) {
+      const first = base.stars.slice(0, 100);
+      const second = base.stars.slice(100, 200);
+      const firstDone = first.filter((s) => s > 0).length === 100;
+      const secondProg = second.filter((s) => s > 0).length;
+      if (firstDone && secondProg) {
+        for (let i = 0; i < 100; i += 1) base.stars[i] = second[i] || 0;
+        for (let i = 100; i < base.stars.length; i += 1) base.stars[i] = 0;
+      } else if (firstDone && base.unlocked > 100) {
+        for (let i = 0; i < 100; i += 1) base.stars[i] = 0;
+        base.milestones = Array(10).fill(false);
+      }
+    }
+    base.unlocked = firstLocked(base.stars, 100);
     return base;
   } catch (e) {
     return emptyProgress();
@@ -601,11 +614,18 @@ const progress = loadProgress();
 const settings = loadSettings();
 
 function jarCap() {
-  return (progress.stage || 1) >= 2 ? 5 : 4;
+  return 4;
 }
 
 function storyLevelCount() {
-  return (progress.stage || 1) >= 2 ? 200 : 100;
+  return 100;
+}
+
+function storySourceLevel(level, stage) {
+  const shift = Math.max(0, (stage || 1) - 1) * 18;
+  const src = level + shift;
+  if (src <= LEVELS.length) return src;
+  return 81 + ((src - 101) % 20);
 }
 
 function syncUnlocked() {
@@ -613,14 +633,37 @@ function syncUnlocked() {
   return progress.unlocked;
 }
 
-function packedLevel(n) {
-  const src = LEVELS[(n - 1) % LEVELS.length];
-  return src.map((tube) => tube.slice());
+function cloneLevel(n) {
+  return LEVELS[(n - 1) % LEVELS.length].map((tube) => tube.slice());
+}
+
+function hardenByStage(tubes, stage) {
+  const extra = Math.min(2, Math.max(0, (stage || 1) - 1));
+  return extra ? stealEmpties(tubes, extra).tubes : tubes;
+}
+
+function packedLevel(n, stage) {
+  const src = storySourceLevel(n, stage);
+  return { tubes: hardenByStage(cloneLevel(src), stage), src: src };
+}
+
+function packedTower(n, stage) {
+  return { tubes: hardenByStage(cloneLevel(n), stage), src: n };
 }
 
 function stageClears() {
-  const start = ((progress.stage || 1) - 1) * 100;
-  return progress.stars.slice(start, start + 100).filter((s) => s > 0).length;
+  return progress.stars.slice(0, 100).filter((s) => s > 0).length;
+}
+
+function beginNextHundred() {
+  for (let i = 0; i < 100; i += 1) {
+    progress.stars[i] = 0;
+    if (progress.bestMoves) progress.bestMoves[i] = 0;
+  }
+  progress.milestones = Array(10).fill(false);
+  progress.unlocked = 1;
+  saveProgress();
+  showPassToast("Сотня " + (progress.stage || 1) + ". Уже теснее.");
 }
 
 const MILESTONES = [
@@ -633,7 +676,7 @@ const MILESTONES = [
   { at: 70, kind: "hints", n: 10, text: "10 подсказок" },
   { at: 80, kind: "skin", id: "mug", text: "Скин «Кружки»" },
   { at: 90, kind: "boost", mult: 10, hours: 2, text: "×10 монет на 2 часа" },
-  { at: 100, kind: "stage", text: "Сундук этапа: +100 уровней, широкие колбы" },
+  { at: 100, kind: "stage", text: "Новая сотня: те же 100, уже сложнее" },
 ];
 
 function claimMilestones() {
@@ -654,10 +697,9 @@ function claimMilestones() {
       progress.boostUntil = Date.now() + item.hours * 3600 * 1000;
     }
     if (item.kind === "stage") {
-      progress.stage = 2;
+      progress.stage = (progress.stage || 1) + 1;
       if (progress.skins.indexOf("wide") === -1) progress.skins.push("wide");
       progress.skin = "wide";
-      if (progress.unlocked < 101) progress.unlocked = 101;
     }
     got.push({
       kind: item.kind,
@@ -884,7 +926,9 @@ function totalStars() {
 }
 
 function starCount() {
-  const par = LEVEL_PARS[state.level - 1] || 8;
+  const src = state.levelSrc || state.level;
+  let par = LEVEL_PARS[src - 1] || 8;
+  par = Math.max(5, Math.round(par * (1 - 0.08 * Math.max(0, (progress.stage || 1) - 1))));
   if (state.moves <= par + 1) return 3;
   if (state.moves <= par + 4) return 2;
   return 1;
@@ -987,7 +1031,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=45\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=46\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1117,46 +1161,23 @@ function towerKeeper(floor) {
   return towerKeepers()[floor] || towerKeepers()[0];
 }
 
-function towerHardPool() {
-  const pool = [];
-  for (let i = 0; i < LEVELS.length; i += 1) {
-    const n = i + 1;
-    const par = LEVEL_PARS[i] || 0;
-    if (n >= 28 && par >= 10) pool.push(n);
-  }
-  if (pool.length < 10) {
-    for (let n = Math.max(1, LEVELS.length - 29); n <= LEVELS.length; n += 1) {
-      if (pool.indexOf(n) === -1) pool.push(n);
-    }
-  }
-  pool.sort((a, b) => (LEVEL_PARS[a - 1] || 0) - (LEVEL_PARS[b - 1] || 0) || a - b);
-  return pool;
+function towerBandPools() {
+  const rows = LEVELS.map((_, i) => ({ n: i + 1, par: LEVEL_PARS[i] || 0 }));
+  rows.sort((a, b) => a.par - b.par || a.n - b.n);
+  const midFrom = Math.floor(rows.length * 0.35);
+  const hardFrom = Math.floor(rows.length * 0.72);
+  return {
+    mid: rows.slice(midFrom, hardFrom).map((row) => row.n),
+    hard: rows.slice(hardFrom).map((row) => row.n),
+  };
 }
 
-function towerLevels() {
-  const pool = towerHardPool();
-  const picks = [];
-  const used = {};
-  for (let floor = 0; floor < TOWER_FLOORS; floor += 1) {
-    const lo = Math.floor((pool.length * floor) / TOWER_FLOORS);
-    const hi = Math.max(lo + 1, Math.floor((pool.length * (floor + 1)) / TOWER_FLOORS));
-    let band = pool.slice(lo, hi);
-    if (floor === TOWER_FLOORS - 1) band = pool.slice(Math.max(0, pool.length - 14));
-    if (!band.length) band = pool.slice(-5);
-    let n = band[hashStr(weekId() + ":tw" + floor) % band.length];
-    let guard = 0;
-    while (used[n] && guard < pool.length) {
-      n = pool[(pool.indexOf(n) + 1) % pool.length];
-      guard += 1;
-    }
-    used[n] = true;
-    picks.push(n);
-  }
-  return picks;
-}
-
-function towerLevel(floor) {
-  return towerLevels()[Math.max(0, Math.min(TOWER_FLOORS - 1, floor))] || LEVELS.length;
+function rollTowerLevel() {
+  const bands = towerBandPools();
+  const mid = Math.random() < 0.1 && bands.mid.length;
+  const pool = mid ? bands.mid : bands.hard.length ? bands.hard : bands.mid;
+  if (!pool.length) return LEVELS.length;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function towerLockCount(floor) {
@@ -1312,7 +1333,10 @@ function paintMap() {
   const cont = document.getElementById("map-continue");
   const stop = state.mode === "story" && state.tubes.length ? state.level : progress.unlocked;
   if (lead) {
-    lead.textContent = "Собирай монеты и звёзды для главного сундука в башне тут";
+    lead.textContent =
+      (progress.stage || 1) > 1
+        ? "Сотня " + progress.stage + ". Те же 100, уже злее."
+        : "Собирай монеты и звёзды для главного сундука в башне тут";
   }
   if (cont) cont.textContent = "Начать";
   syncUnlocked();
@@ -1607,7 +1631,7 @@ function playTowerFloor() {
   closeTower();
   closeMap();
   const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 4));
-  startLevel(towerLevel(heat), { tower: true, floor: heat });
+  startLevel(rollTowerLevel(), { tower: true, floor: heat });
   showPassToast("Башня · отдельные очки до понедельника");
   return true;
 }
@@ -1805,10 +1829,13 @@ function hideFail() {
 }
 
 function lockCountFor(level) {
-  if (level <= 8) return 0;
+  const stage = progress.stage || 1;
+  if (level <= 8 && stage === 1) return 0;
   let n = level <= 30 ? 1 : 2;
+  if (stage > 1 && level <= 8) n = Math.min(2, stage - 1);
   n += hinderLocks();
-  return Math.min(3, n);
+  n += Math.min(2, stage - 1);
+  return Math.min(4, n);
 }
 
 function nextLockPrice() {
@@ -1857,14 +1884,17 @@ function startLevel(level, opts) {
   const n = tower
     ? Math.min(LEVELS.length, want)
     : Math.min(progress.unlocked, want);
-  let packed = packedLevel(n).map((tube) => tube.slice());
+  const stage = progress.stage || 1;
+  const pack = tower ? packedTower(n, stage) : packedLevel(n, stage);
+  let packed = pack.tubes;
   let stolen = 0;
-  if (!tower && n > 8) {
+  if (!tower && (n > 8 || stage > 1)) {
     const pulled = stealEmpties(packed, pressureSteal());
     packed = pulled.tubes;
     stolen = pulled.stolen;
   }
   state.level = n;
+  state.levelSrc = pack.src;
   state.mode = tower ? "tower" : "story";
   state.towerFloor = tower ? opts.floor || 0 : 0;
   state.tubes = packed;
@@ -2292,7 +2322,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=45";
+      pic.src = "coin.svg?v=46";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2384,7 +2414,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=45";
+        ghost.src = "coin.svg?v=46";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2447,9 +2477,11 @@ async function claimChapterChest() {
   } else if (hero) {
     await flyChestBitsToHud(hero.kind, prizeFace(hero).bits);
   }
+  const nextHundred = prizes.some((item) => item.kind === "stage");
   state.holdHudHints = null;
   paintHud();
   closeChapterChest(true);
+  if (nextHundred) beginNextHundred();
   state.chestBusy = false;
   if (claimBtn) {
     claimBtn.disabled = false;
@@ -2501,7 +2533,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=45";
+    ghost.src = pic ? pic.src : "coin.svg?v=46";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
