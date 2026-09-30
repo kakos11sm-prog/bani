@@ -37,6 +37,19 @@ const RIVALS = [
   "Глеб",
   "Оля",
 ];
+const TOWER_NICKS = [
+  "Лера", "Макс", "Ника", "Тимур", "Соня", "Артём", "Кира", "Даня", "Мила", "Егор",
+  "Яна", "Лев", "Алина", "Марк", "Тоня", "Илья", "Вера", "Глеб", "Оля", "Катя",
+  "Рома", "Настя", "Паша", "Юля", "Влад", "Света", "Дима", "Маша", "Саша", "Лиза",
+  "Женя", "Полина", "Костя", "Даша", "Богдан", "Ксюша", "Антон", "Вика", "Сева", "Ира",
+  "Гоша", "Таня", "Федя", "Люба", "Ярик", "Злата", "Мирон", "Ульяна", "Стёпа", "Рита",
+  "Платон", "Кира_fox", "noobKing", "БанкаПро", "ТихийЛев", "Сок2026", "NikaPlay", "Макс7",
+  "Огонь", "Пузырь", "Колба", "Лиса", "Бублик", "Ракета", "Тень", "Искра", "Кефир", "МятаPlay",
+  "Зевс", "Нота", "Пиксель", "Шторм", "Лёд", "Жара", "Куб", "Вихрь", "Неон", "Янтарь",
+  "Вольт", "Краб", "Пингвин", "Сова", "Рысь", "Тигр", "Енот", "Хаски", "Пума", "Гепард",
+  "Арбуз", "Перец", "Буря", "Комета", "Скат", "Факел", "Квант", "Рубин", "Оникс",
+  "Фокс", "Дракон",
+];
 const HINT_PRICE = 30;
 const UNDO_PRICE = 15;
 const EXTRA_PRICE = 45;
@@ -267,7 +280,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=24";
+  el.src = "coin.svg?v=25";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -842,7 +855,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=24\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=25\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1071,7 +1084,7 @@ function rivalTowerScore(name) {
 }
 
 function towerTable() {
-  const rows = RIVALS.map((name) => ({ name: name, score: rivalTowerScore(name), you: false }));
+  const rows = TOWER_NICKS.map((name) => ({ name: name, score: rivalTowerScore(name), you: false }));
   rows.push({ name: YOU, score: progress.towerScore || 0, you: true });
   rows.sort((a, b) => b.score - a.score || (a.you ? -1 : b.you ? 1 : 0));
   return rows.map((row, i) => {
@@ -1237,15 +1250,7 @@ function paintTower() {
   const table = towerTable();
   const { me, next } = huntTarget(table);
   paintWeekClocks();
-  if (towerLead) {
-    towerLead.textContent = next
-      ? "Осталось " +
-        weekLeftText() +
-        ". Обогни " +
-        next.name +
-        " — лучший сундук недели."
-      : "Ты первый. Держи место " + weekLeftText() + " — лучший сундук твой.";
-  }
+  if (towerLead) towerLead.hidden = true;
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
     scoreEl.textContent =
@@ -1257,11 +1262,11 @@ function paintTower() {
   }
   if (towerList) {
     towerList.innerHTML = "";
-    table.slice(0, 8).forEach((row, i) => {
+    table.forEach((row, i) => {
       const el = document.createElement("div");
       const face = faceOf(row.name, row.you);
       el.className = "league-row" + (row.you ? " you" : "");
-      el.style.animationDelay = i * 40 + "ms";
+      el.style.animationDelay = Math.min(i, 24) * 18 + "ms";
       el.innerHTML =
         "<span class=\"place\">" +
         row.place +

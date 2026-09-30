@@ -777,7 +777,10 @@ body.stage2 .jar {
   }
 }
 
-body.quiet .home-title,
+body.quiet .prize-call,
+body.quiet .tower-top .tower-chest {
+  animation: none;
+}
 body.quiet .tower-name,
 body.quiet .tower-call,
 body.quiet .tower-clock-hot,
@@ -1695,8 +1698,8 @@ body.quiet .home-tile.tower {
 
 .tower-name {
   display: block;
-  font-size: clamp(36px, 12vw, 52px);
-  line-height: 0.9;
+  font-size: clamp(72px, 24vw, 104px);
+  line-height: 0.86;
   background: linear-gradient(180deg, #e8fff4, #3ecf8e);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1750,9 +1753,29 @@ body.quiet .home-tile.tower {
   height: 48px;
 }
 
-.tower-top b {
+.tower-top b,
+.prize-call {
   display: block;
-  font-size: 14px;
+  font-size: 18px;
+  background: linear-gradient(90deg, #fff6c4, #ffd24a, #ff9a1a, #fff6c4);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: prizeCall 1.4s linear infinite;
+}
+
+.tower-top .tower-chest {
+  animation: chestGlow 1.1s ease-in-out infinite;
+}
+
+@keyframes prizeCall {
+  0% { background-position: 0 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+#tower-list {
+  max-height: 50vh;
 }
 
 .tower-top small {
