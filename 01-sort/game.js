@@ -285,7 +285,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=40";
+  el.src = "coin.svg?v=41";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -920,7 +920,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=40\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=41\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2190,7 +2190,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=40";
+    ghost.src = pic ? pic.src : "coin.svg?v=41";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2443,7 +2443,7 @@ function giveUp() {
 }
 
 function flyWinStarsToHud() {
-  const dest = document.getElementById("hud-stars");
+  const dest = document.getElementById("chip-bomb") || document.getElementById("hud-stars");
   if (!dest || !winStars) return Promise.resolve();
   const earned = Array.prototype.filter.call(winStars.children, (el) => el.classList.contains("on"));
   if (!earned.length) return Promise.resolve();
@@ -2698,6 +2698,7 @@ nextBtn.addEventListener("click", async () => {
     nextBtn.disabled = true;
     settleWinExtra();
     document.querySelectorAll(".win-fire-pop").forEach((el) => el.remove());
+    await flyWinStarsToHud();
     await flyWinCoinsToHud();
     overlay.classList.remove("show");
     state.holdHudCoins = null;
