@@ -287,7 +287,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=43";
+  el.src = "coin.svg?v=44";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -642,7 +642,8 @@ function claimMilestones() {
     if (n < item.at || progress.milestones[i]) return;
     progress.milestones[i] = true;
     if (item.kind === "hints") progress.hints += item.n;
-    if (item.kind === "coins") gain(item.n);
+    let coinGot = item.n || 0;
+    if (item.kind === "coins") coinGot = gain(item.n);
     if (item.kind === "skin" && progress.skins.indexOf(item.id) === -1) {
       progress.skins.push(item.id);
       progress.skin = item.id;
@@ -659,11 +660,11 @@ function claimMilestones() {
     }
     got.push({
       kind: item.kind,
-      n: item.n || 0,
+      n: item.kind === "coins" ? coinGot : item.n || 0,
       mult: item.mult || 0,
       hours: item.hours || 0,
       id: item.id || "",
-      text: item.text,
+      text: item.kind === "coins" ? "+" + coinGot + " монет" : item.text,
     });
   });
   return got;
@@ -703,6 +704,65 @@ function fireMult() {
   return 1 + 0.1 * Math.max(0, progress.streak || 0);
 }
 
+function boostMultNow() {
+  if (progress.boostUntil && Date.now() < progress.boostUntil) {
+    return progress.boostMult || 1;
+  }
+  return 1;
+}
+
+function payoutMult() {
+  return fireMult() * boostMultNow();
+}
+
+function comfortWallet() {
+  const typical = Math.round(40 * payoutMult());
+  const band = boostMultNow() >= 10 ? 2.4 : boostMultNow() >= 2 ? 2 : 1.75;
+  return Math.max(70, Math.round(typical * band));
+}
+
+function takeHome(n) {
+  if (n <= 0) return 0;
+  if (state.mode === "tower") return n;
+  const cap = comfortWallet();
+  const room = Math.max(0, cap - progress.coins);
+  const trickle = Math.max(1, Math.round(n * 0.12));
+  return Math.min(n, room + trickle);
+}
+
+function meltWallet() {
+  if (state.mode === "tower") return 0;
+  const cap = comfortWallet();
+  if (progress.coins <= cap) return 0;
+  const melt = Math.ceil((progress.coins - cap) * 0.3);
+  progress.coins -= melt;
+  return melt;
+}
+
+function scaledPrice(base) {
+  return Math.max(base, Math.round(base * fireMult()));
+}
+
+function hintPrice() {
+  return scaledPrice(HINT_PRICE);
+}
+
+function undoPrice() {
+  return scaledPrice(UNDO_PRICE);
+}
+
+function keepPrice() {
+  return scaledPrice(KEEP_PRICE);
+}
+
+function flaskPrice() {
+  return scaledPrice(FLASK_PRICE);
+}
+
+function undoPackPrice() {
+  return scaledPrice(UNDO_PACK);
+}
+
 function syncDailyFire() {
   const today = dayStamp();
   if (progress.fireDay === today) return;
@@ -714,6 +774,7 @@ function syncDailyFire() {
     progress.streak = 1;
   }
   progress.fireDay = today;
+  meltWallet();
   saveProgress();
 }
 
@@ -733,10 +794,9 @@ function gain(n, skipFire) {
   let add = n;
   if (state.mode !== "tower" && !skipFire) {
     add = Math.round(n * fireMult());
-    if (progress.boostUntil && Date.now() < progress.boostUntil) {
-      add = Math.round(add * (progress.boostMult || 1));
-    }
+    add = Math.round(add * boostMultNow());
   }
+  if (state.mode !== "tower") add = takeHome(add);
   if (state.mode === "tower") progress.towerCoins = (progress.towerCoins || 0) + add;
   else progress.coins += add;
   return add;
@@ -929,7 +989,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=43\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=44\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1360,9 +1420,9 @@ function paintTower() {
 }
 
 function paintShop() {
-  fillCoinLabel(document.getElementById("shop-flask"), "", FLASK_PRICE, "");
+  fillCoinLabel(document.getElementById("shop-flask"), "", flaskPrice(), "");
   fillCoinLabel(document.getElementById("shop-seal"), "", SEAL_PRICE, "");
-  fillCoinLabel(document.getElementById("shop-undo"), "", UNDO_PACK, "");
+  fillCoinLabel(document.getElementById("shop-undo"), "", undoPackPrice(), "");
   fillCoinLabel(document.getElementById("shop-ad-meta"), "+", AD_COINS, " за просмотр");
   if (shopLead) {
     shopLead.textContent = "";
@@ -1601,11 +1661,11 @@ function bombHunt() {
 }
 
 function buyFlask() {
-  if (progress.coins < FLASK_PRICE) {
+  if (progress.coins < flaskPrice()) {
     shake(document.getElementById("shop-flask"));
     return;
   }
-  progress.coins -= FLASK_PRICE;
+  progress.coins -= flaskPrice();
   progress.bottleCharges += 1;
   saveProgress();
   paintHud();
@@ -1614,11 +1674,11 @@ function buyFlask() {
 }
 
 function buyUndoPack() {
-  if (progress.coins < UNDO_PACK) {
+  if (progress.coins < undoPackPrice()) {
     shake(document.getElementById("shop-undo"));
     return;
   }
-  progress.coins -= UNDO_PACK;
+  progress.coins -= undoPackPrice();
   progress.undos += 2;
   saveProgress();
   paintHud();
@@ -1631,13 +1691,14 @@ async function buyAdCoins() {
   state.busy = true;
   if (btn) btn.textContent = "Ролик…";
   await wait(1100);
-  progress.coins += AD_COINS;
+  const got = takeHome(AD_COINS);
+  progress.coins += got;
   saveProgress();
   paintHud();
   paintShop();
   if (btn) btn.textContent = "Смотреть";
   state.busy = false;
-  showPassToast("+" + AD_COINS + " монет");
+  showPassToast(got < AD_COINS ? "+" + got + " — карман полный" : "+" + got + " монет");
 }
 
 function openLeague() {
@@ -1685,11 +1746,11 @@ function paintHud() {
     state.holdHudHints != null ? state.holdHudHints : progress.hints
   );
   if (progress.hints) hintBtn.textContent = "Подсказка";
-  else fillCoinLabel(hintBtn, "Подсказка ", HINT_PRICE, "");
+  else fillCoinLabel(hintBtn, "Подсказка ", hintPrice(), "");
   if (progress.undos) undoBtn.textContent = "Отмена";
-  else fillCoinLabel(undoBtn, "Отмена ", UNDO_PRICE, "");
+  else fillCoinLabel(undoBtn, "Отмена ", undoPrice(), "");
   if (progress.undos) failUndo.textContent = "Отменить ход";
-  else fillCoinLabel(failUndo, "Отменить ход ", UNDO_PRICE, "");
+  else fillCoinLabel(failUndo, "Отменить ход ", undoPrice(), "");
   if (state.locked) fillCoinLabel(failJar, "Открыть банку ", nextLockPrice(), "");
   else failJar.textContent = "Банки открыты";
   failJar.hidden = !state.locked;
@@ -1699,7 +1760,7 @@ function paintHud() {
     lockCharge.hidden = !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
   }
-  fillCoinLabel(failKeep, "Заново, серия " + progress.streak + " ", KEEP_PRICE, "");
+  fillCoinLabel(failKeep, "Заново, серия " + progress.streak + " ", keepPrice(), "");
   document.getElementById("skin").textContent = "Скин: " + skinName(progress.skin);
   const me = huntTarget(towerTable()).me;
   if (hudPlace && me) hudPlace.textContent = String(me.place);
@@ -1754,7 +1815,7 @@ function lockCountFor(level) {
 }
 
 function nextLockPrice() {
-  return LOCK_PRICES[Math.min(state.openedExtra, LOCK_PRICES.length - 1)];
+  return scaledPrice(LOCK_PRICES[Math.min(state.openedExtra, LOCK_PRICES.length - 1)]);
 }
 
 function closeLockShop() {
@@ -2033,14 +2094,28 @@ function applyWinRewards(stars) {
       (stars === race.stars && state.moves < race.moves);
     if (raceBetter) progress.weekRace = { level: state.level, stars: stars, moves: state.moves };
   }
-  let coins = 6 + stars * 8;
-  if (better) coins += 10;
+  let raw = 6 + stars * 8;
+  if (better) raw += 10;
   if (stars === 3 && (progress.stage || 1) >= 2) progress.hints += 1;
-  const got = gain(coins, true);
+  const full = Math.round(raw * payoutMult());
+  const kept = takeHome(full);
+  progress.coins += kept;
+  const melted = meltWallet();
   const prizes = firstClear ? claimMilestones() : [];
   syncUnlocked();
   saveProgress();
-  return { coins: got, firstClear, chapterDone: false, chapter: 0, prizes: prizes, bombsMade: bombsMade };
+  return {
+    coins: kept,
+    raw: raw,
+    full: full,
+    melted: melted,
+    squeezed: kept < full,
+    firstClear,
+    chapterDone: false,
+    chapter: 0,
+    prizes: prizes,
+    bombsMade: bombsMade,
+  };
 }
 
 function shareLine() {
@@ -2208,7 +2283,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=43";
+      pic.src = "coin.svg?v=44";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2300,7 +2375,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=43";
+        ghost.src = "coin.svg?v=44";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2374,11 +2449,7 @@ async function claimChapterChest() {
 }
 
 function settleWinExtra() {
-  if (state.winExtraDone || state.mode === "tower") return;
-  const extra = Math.max(0, (state.winTotal || 0) - (state.winBase || 0));
-  if (extra) progress.coins += extra;
   state.winExtraDone = true;
-  saveProgress();
 }
 
 async function playFireBoost() {
@@ -2389,7 +2460,7 @@ async function playFireBoost() {
   const from = src.getBoundingClientRect();
   const pop = document.createElement("div");
   pop.className = "win-fire-pop";
-  pop.innerHTML = "<span>🔥</span><em>×" + fireMult().toFixed(1) + "</em>";
+  pop.innerHTML = "<span>🔥</span><em>×" + payoutMult().toFixed(1) + "</em>";
   pop.style.left = from.left + "px";
   pop.style.top = from.top + "px";
   pop.style.transform = "scale(0.45)";
@@ -2421,7 +2492,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=43";
+    ghost.src = pic ? pic.src : "coin.svg?v=44";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2449,11 +2520,11 @@ async function showWin() {
   saveProgress();
   state.lastStars = stars;
   state.holdHudCoins = beforeHud;
-  state.winBase = reward.coins;
-  state.winMult = reward.tower ? 1 : fireMult();
-  state.winTotal = reward.tower ? reward.coins : Math.round(reward.coins * state.winMult);
-  state.winExtraDone = reward.tower || state.winTotal <= state.winBase;
-  state.lastCoins = state.winBase;
+  state.winBase = reward.tower ? reward.coins : reward.raw || reward.coins;
+  state.winMult = reward.tower ? 1 : payoutMult();
+  state.winTotal = reward.coins;
+  state.winExtraDone = true;
+  state.lastCoins = reward.coins;
   state.doubled = false;
   document.body.classList.add("celebrate");
   window.setTimeout(() => document.body.classList.remove("celebrate"), 900);
@@ -2487,6 +2558,8 @@ async function showWin() {
       ? "Этап закрыт."
       : stageClears() + " / 100 до сундука.";
     if (reward.bombsMade) winText.textContent += " Бомба готова!";
+    if (reward.melted > 15) winText.textContent += " Карман остыл.";
+    else if (reward.squeezed) winText.textContent += " Карман полный.";
   }
   const cashNum = document.getElementById("win-cash-num");
   if (cashNum) cashNum.textContent = "0";
@@ -2530,14 +2603,15 @@ async function doubleReward() {
   winDouble.textContent = "Ролик…";
   await wait(1100);
   const from = state.lastCoins;
-  progress.coins += from;
-  state.lastCoins = from * 2;
+  const extra = takeHome(from);
+  progress.coins += extra;
+  state.lastCoins = from + extra;
   state.winTotal = state.lastCoins;
   state.doubled = true;
   saveProgress();
   const cashNum = document.getElementById("win-cash-num");
   await countUp(cashNum, from, state.lastCoins, 700);
-  winDouble.textContent = "Удвоено";
+  winDouble.textContent = extra < from ? "Карман полный" : "Удвоено";
   state.busy = false;
 }
 
@@ -2568,7 +2642,7 @@ function payUndo() {
     saveProgress();
     return true;
   }
-  if (!spend(UNDO_PRICE)) return false;
+  if (!spend(undoPrice())) return false;
   saveProgress();
   return true;
 }
@@ -2697,7 +2771,7 @@ function flyWinStarsToHud() {
 }
 
 function keepStreakRestart() {
-  if (!spend(KEEP_PRICE)) {
+  if (!spend(keepPrice())) {
     shake(failKeep);
     return;
   }
@@ -2744,7 +2818,7 @@ function useHint() {
     return;
   }
   if (!progress.hints) {
-    if (!spend(HINT_PRICE)) {
+    if (!spend(hintPrice())) {
       shake(0);
       return;
     }
