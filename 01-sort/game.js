@@ -14,6 +14,9 @@ const TOWER_PASS = 1000;
 const BOMB_NEED = 100;
 const FLASK_PRICE = 90;
 const SEAL_PRICE = 80;
+const TOWER_TICK_MS = 8000;
+const SEAL_HOLD_MS = 9000000;
+const BOMB_HOLD_MS = 18000000;
 const UNDO_PACK = 35;
 const AD_COINS = 40;
 const YOU = "Ты";
@@ -339,6 +342,9 @@ function emptyProgress() {
     towerPressDay: "",
     towerWounds: 0,
     towerHitNews: [],
+    towerNpc: {},
+    towerTickAt: 0,
+    towerHold: {},
   };
 }
 
@@ -572,6 +578,26 @@ function loadProgress() {
     base.towerPressDay = typeof raw.towerPressDay === "string" ? raw.towerPressDay : "";
     base.towerWounds = Math.max(0, Number(raw.towerWounds) || 0);
     base.towerHitNews = Array.isArray(raw.towerHitNews) ? raw.towerHitNews.map(String) : [];
+    base.towerNpc = {};
+    if (raw.towerNpc && typeof raw.towerNpc === "object") {
+      Object.keys(raw.towerNpc).forEach((name) => {
+        const n = Number(raw.towerNpc[name]);
+        if (n === n) base.towerNpc[name] = Math.max(0, n);
+      });
+    }
+    base.towerTickAt = Math.max(0, Number(raw.towerTickAt) || 0);
+    base.towerHold = {};
+    if (raw.towerHold && typeof raw.towerHold === "object") {
+      Object.keys(raw.towerHold).forEach((name) => {
+        const hold = raw.towerHold[name];
+        if (!hold || typeof hold !== "object") return;
+        base.towerHold[name] = {
+          freezeUntil: Math.max(0, Number(hold.freezeUntil) || 0),
+          slowUntil: Math.max(0, Number(hold.slowUntil) || 0),
+          slow: Math.max(0, Number(hold.slow) || 0),
+        };
+      });
+    }
     if (raw.bombs == null && raw.starPool == null && Array.isArray(raw.stars)) {
       const earned = raw.stars.reduce((sum, n) => sum + Math.max(0, Number(n) || 0), 0);
       base.bombs = Math.floor(earned / BOMB_NEED);
@@ -1133,6 +1159,9 @@ function syncWeek() {
   progress.towerPressDay = "";
   progress.towerWounds = 0;
   progress.towerHitNews = [];
+  progress.towerNpc = {};
+  progress.towerTickAt = 0;
+  progress.towerHold = {};
   saveProgress();
 }
 
@@ -1267,23 +1296,40 @@ function nickPersona(name) {
   };
 }
 
-function npcHitsOn(name, day) {
-  let hits = 0;
-  for (let d = 1; d <= day; d += 1) {
-    if (hashStr(weekId() + ":npchit:" + name + ":" + d) % 9 === 0) hits += 1;
-    if (hashStr(weekId() + ":npcbomb:" + name + ":" + d) % 14 === 0) hits += 2;
-  }
-  return hits;
-}
-
-function rivalTowerScore(name) {
+function npcOnBoard(name, at) {
   const life = nickPersona(name);
   const day = weekDayNum();
-  if (life.late && day < life.late) return null;
-  if (life.ghost && day >= 3 && hashStr(weekId() + ":ghost:" + name) % 2) return null;
-  if (life.quit && day >= life.quit) return null;
+  if (life.late && day < life.late) return false;
+  if (life.ghost && day >= 3 && hashStr(weekId() + ":ghost:" + name) % 2) return false;
+  if (life.quit && day >= life.quit) return false;
+  return true;
+}
+
+function holdOf(name) {
+  if (!progress.towerHold) progress.towerHold = {};
+  return progress.towerHold[name] || {};
+}
+
+function isFrozen(name, at) {
+  return (holdOf(name).freezeUntil || 0) > (at || Date.now());
+}
+
+function isSlowed(name, at) {
+  return (holdOf(name).slowUntil || 0) > (at || Date.now());
+}
+
+function holdClass(name, you) {
+  if (you || !name) return "";
+  if (isFrozen(name)) return " frozen";
+  if (isSlowed(name)) return " slowed";
+  return "";
+}
+
+function rivalTowerScoreSeed(name) {
+  const life = nickPersona(name);
+  if (!npcOnBoard(name)) return null;
   let score = 1 + (hashStr(weekId() + ":seed:" + name) % 3);
-  const last = day;
+  const last = weekDayNum();
   for (let d = life.late || 1; d <= last; d += 1) {
     const skipped = (life.skip >> (d - 1)) & 1;
     if (skipped && d !== life.surge && hashStr(weekId() + name + ":skip" + d) % 3) continue;
@@ -1292,12 +1338,81 @@ function rivalTowerScore(name) {
     if (d >= 6) add += 2;
     score += add;
   }
-  score -= (Number(progress.seals[name]) || 0) * 4;
-  score -= npcHitsOn(name, day) * 3;
   return Math.max(0, score);
 }
 
+function seedTowerNpc() {
+  if (!progress.towerNpc) progress.towerNpc = {};
+  TOWER_NICKS.forEach((name) => {
+    if (progress.towerNpc[name] != null) return;
+    if (!npcOnBoard(name)) return;
+    const seed = rivalTowerScoreSeed(name);
+    if (seed != null) progress.towerNpc[name] = seed;
+  });
+  if (!progress.towerTickAt) progress.towerTickAt = Date.now();
+}
+
+function npcTickGain(name, tickIndex, at) {
+  if (!npcOnBoard(name, at)) return 0;
+  if (isFrozen(name, at)) return 0;
+  const life = nickPersona(name);
+  const h = hashStr(weekId() + ":live:" + name + ":" + tickIndex);
+  let gate = 12 - life.pace;
+  if (life.surge && tickIndex % (36 + life.surge * 8) < 4) gate = 4;
+  if (isSlowed(name, at)) gate += 7 + (holdOf(name).slow || 1) * 4;
+  if (h % Math.max(3, gate) !== 0) return 0;
+  return 1 + (h % 19 === 0 ? 1 : 0);
+}
+
+let towerSaveAt = 0;
+let lastTowerScores = {};
+let towerLiveTimer = 0;
+
+function maybeSaveTowerLive() {
+  if (Date.now() - towerSaveAt < 20000) return;
+  towerSaveAt = Date.now();
+  saveProgress();
+}
+
+function tickTowerLive() {
+  syncWeek();
+  seedTowerNpc();
+  const now = Date.now();
+  let t = progress.towerTickAt || now;
+  if (t > now) t = now;
+  const maxSteps = 2000;
+  if (now - t > TOWER_TICK_MS * maxSteps) t = now - TOWER_TICK_MS * maxSteps;
+  let moved = false;
+  let steps = 0;
+  while (t + TOWER_TICK_MS <= now && steps < maxSteps) {
+    t += TOWER_TICK_MS;
+    steps += 1;
+    const idx = Math.floor(t / TOWER_TICK_MS);
+    TOWER_NICKS.forEach((name) => {
+      const add = npcTickGain(name, idx, t);
+      if (!add) return;
+      progress.towerNpc[name] = (Number(progress.towerNpc[name]) || 0) + add;
+      moved = true;
+    });
+  }
+  progress.towerTickAt = t;
+  if (steps) maybeSaveTowerLive();
+  return moved;
+}
+
+function rivalTowerScore(name) {
+  if (!npcOnBoard(name)) return null;
+  seedTowerNpc();
+  if (progress.towerNpc[name] == null) {
+    const seed = rivalTowerScoreSeed(name);
+    if (seed == null) return null;
+    progress.towerNpc[name] = seed;
+  }
+  return progress.towerNpc[name];
+}
+
 function towerTable() {
+  tickTowerLive();
   const rows = [];
   TOWER_NICKS.forEach((name) => {
     const score = rivalTowerScore(name);
@@ -1344,35 +1459,23 @@ function visibleTowerRows(table) {
 }
 
 function syncTowerPressure() {
-  syncWeek();
-  const today = dayStamp();
-  if (progress.towerPressDay === today) return;
-  progress.towerPressDay = today;
-  const table = towerTable();
-  const me = table.find((row) => row.you);
-  if (!me) {
-    saveProgress();
-    return;
-  }
-  const hunters = table.filter(
-    (row) => !row.you && row.place < me.place && row.place >= me.place - 6
-  );
-  const news = [];
-  if (hunters.length) {
-    const n = 1 + (hashStr(weekId() + today + ":hits") % Math.min(3, hunters.length));
-    const used = {};
-    for (let i = 0; i < n; i += 1) {
-      const pick = hunters[hashStr(weekId() + today + ":h" + i) % hunters.length];
-      if (used[pick.name]) continue;
-      used[pick.name] = true;
-      const bomb = hashStr(weekId() + today + ":b" + pick.name) % 3 === 0;
-      progress.towerScore = Math.max(0, (progress.towerScore || 0) - (bomb ? 3 : 1));
-      progress.towerWounds = (progress.towerWounds || 0) + (bomb ? 2 : 1);
-      news.push(pick.name);
-    }
-  }
-  progress.towerHitNews = news;
-  saveProgress();
+  tickTowerLive();
+}
+
+function armTowerLive() {
+  window.clearInterval(towerLiveTimer);
+  towerLiveTimer = window.setInterval(() => {
+    if (!towerOverlay || !towerOverlay.classList.contains("show")) return;
+    const moved = tickTowerLive();
+    if (moved && !towerTipOpen()) paintTower(true);
+  }, 3500);
+}
+
+function stopTowerLive() {
+  const was = towerLiveTimer;
+  window.clearInterval(towerLiveTimer);
+  towerLiveTimer = 0;
+  if (was) saveProgress();
 }
 
 function huntTarget(table) {
@@ -1573,18 +1676,19 @@ function huntRow(name) {
   return markedTower();
 }
 
-function paintTower() {
+function paintTower(live) {
   syncTowerPressure();
   const table = towerTable();
   const me = table.find((row) => row.you);
   paintWeekClocks();
-  paintTowerPodium(table);
+  paintTowerPodium(table, live);
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
     scoreEl.textContent =
       "Твои очки: " + (progress.towerScore || 0) + (me ? " · #" + me.place : "");
   }
   if (towerList) {
+    const keepScroll = live ? towerList.scrollTop : 0;
     towerList.innerHTML = "";
     const shown = visibleTowerRows(table).filter((row) => row.place > 3);
     let lastPlace = 0;
@@ -1598,11 +1702,15 @@ function paintTower() {
       lastPlace = row.place;
       const el = document.createElement("div");
       const face = faceOf(row.name, row.you);
+      const rose = lastTowerScores[row.name] != null && row.score > lastTowerScores[row.name];
       el.className =
         "league-row" +
         (row.you ? " you" : " pick") +
-        (state.towerMark === row.name ? " mark" : "");
-      el.style.animationDelay = Math.min(i, 24) * 18 + "ms";
+        (state.towerMark === row.name ? " mark" : "") +
+        holdClass(row.name, row.you) +
+        (rose ? " rise" : "");
+      if (!live) el.style.animationDelay = Math.min(i, 24) * 18 + "ms";
+      else el.style.animation = "none";
       el.innerHTML =
         "<span class=\"place\">" +
         row.place +
@@ -1612,7 +1720,9 @@ function paintTower() {
         face.letter +
         "</span><span class=\"name\">" +
         row.name +
-        "</span><span class=\"score\">" +
+        "</span><span class=\"score" +
+        (rose ? " rise" : "") +
+        "\">" +
         row.score +
         "</span>" +
         hitIcons(row.name, row.you);
@@ -1625,9 +1735,15 @@ function paintTower() {
       }
       towerList.appendChild(el);
     });
-    const youEl = towerList.querySelector(".you");
-    if (youEl && youEl.scrollIntoView && !towerTipOpen()) youEl.scrollIntoView({ block: "nearest" });
+    if (live) towerList.scrollTop = keepScroll;
+    else {
+      const youEl = towerList.querySelector(".you");
+      if (youEl && youEl.scrollIntoView && !towerTipOpen()) youEl.scrollIntoView({ block: "nearest" });
+    }
   }
+  table.forEach((row) => {
+    lastTowerScores[row.name] = row.score;
+  });
   paintDuel();
 }
 
@@ -1787,7 +1903,7 @@ function tryEnterTower() {
   openPassGate();
 }
 
-function paintTowerPodium(table) {
+function paintTowerPodium(table, live) {
   const host = document.getElementById("tower-podium");
   if (!host) return;
   host.innerHTML = "";
@@ -1795,7 +1911,13 @@ function paintTowerPodium(table) {
   [2, 1, 3].forEach((place) => {
     const row = table.find((item) => item.place === place);
     const slot = document.createElement("div");
-    slot.className = "podium-slot p" + place + (row && row.you ? " you" : "");
+    const rose = row && lastTowerScores[row.name] != null && row.score > lastTowerScores[row.name];
+    slot.className =
+      "podium-slot p" +
+      place +
+      (row && row.you ? " you" : "") +
+      (row ? holdClass(row.name, row.you) : "") +
+      (rose ? " rise" : "");
     if (row && !row.you) {
       slot.classList.add("pick");
       if (state.towerMark === row.name) slot.classList.add("mark");
@@ -1805,6 +1927,7 @@ function paintTowerPodium(table) {
         paintTower();
       });
     }
+    if (live) slot.style.animation = "none";
     const face = faceOf(row ? row.name : "—", !!(row && row.you));
     slot.innerHTML =
       "<span class=\"podium-face\" style=\"background:" +
@@ -1813,7 +1936,9 @@ function paintTowerPodium(table) {
       face.letter +
       "</span><b>" +
       (row ? row.name : "—") +
-      "</b><small>" +
+      "</b><small class=\"" +
+      (rose ? "rise" : "") +
+      "\">" +
       (row ? row.score : "0") +
       "</small>" +
       hitIcons(row ? row.name : "", !row || row.you) +
@@ -1834,23 +1959,15 @@ function openTower() {
   closeMenu();
   syncTowerPressure();
   paintTower();
-  if (progress.towerHitNews && progress.towerHitNews.length) {
-    const names = progress.towerHitNews;
-    showPassToast(
-      names.length === 1
-        ? names[0] + " залепил тебе ход"
-        : names[0] + " и ещё " + (names.length - 1) + " бьют сверху"
-    );
-    progress.towerHitNews = [];
-    saveProgress();
-  }
   towerOverlay.classList.add("show");
   syncScreens();
+  armTowerLive();
   window.setTimeout(() => startTowerTip(), 80);
 }
 
 function closeTower() {
   hideTowerTip(false);
+  stopTowerLive();
   towerOverlay.classList.remove("show");
   syncScreens();
 }
@@ -1902,8 +2019,8 @@ function placeTowerTip(host, kind) {
   host.classList.add("tip-hot");
   text.textContent =
     kind === "bomb"
-      ? "Жми бомбу на игроке — рвёшь ему банку. Он падает. Бомбы копятся из звёзд."
-      : "Зачёркнутая банка — печать. Закроет ему ход. Платишь обычными монетами.";
+      ? "Бомба усложняет ему уровень. Он набирает очки медленнее. Бомбы копятся из звёзд."
+      : "Печать закрывает банку. Он застывает — очки не растут. Платишь монетами.";
   next.textContent = kind === "bomb" ? "Дальше" : "Понятно";
   const r = host.getBoundingClientRect();
   const pad = 6;
@@ -1984,12 +2101,15 @@ function sealHunt(name, btn) {
     return;
   }
   progress.coins -= SEAL_PRICE;
-  progress.seals[mark.name] = (Number(progress.seals[mark.name]) || 0) + 1;
+  if (!progress.towerHold) progress.towerHold = {};
+  const hold = progress.towerHold[mark.name] || {};
+  hold.freezeUntil = Math.max(hold.freezeUntil || 0, Date.now()) + SEAL_HOLD_MS;
+  progress.towerHold[mark.name] = hold;
   saveProgress();
   paintHud();
   paintLeague();
   paintShop();
-  showPassToast("Запечатал ход " + mark.name + ". Он просел.");
+  showPassToast(mark.name + " застыл. Очки не растут, остальные идут дальше.");
   paintTower();
   tone(180, 0.16, "sawtooth", 0.035);
 }
@@ -2008,11 +2128,15 @@ function bombHunt(name, btn) {
     return;
   }
   progress.bombs -= 1;
-  progress.seals[mark.name] = (Number(progress.seals[mark.name]) || 0) + 2;
+  if (!progress.towerHold) progress.towerHold = {};
+  const hold = progress.towerHold[mark.name] || {};
+  hold.slowUntil = Math.max(hold.slowUntil || 0, Date.now()) + BOMB_HOLD_MS;
+  hold.slow = (hold.slow || 0) + 1;
+  progress.towerHold[mark.name] = hold;
   saveProgress();
   paintHud();
   paintTower();
-  showPassToast("Разорвал колбу " + mark.name + ". Он сыпется.");
+  showPassToast(mark.name + " тормозит. Уровень сложнее — очки капают реже.");
   feel("win");
   tone(140, 0.18, "sawtooth", 0.04);
 }

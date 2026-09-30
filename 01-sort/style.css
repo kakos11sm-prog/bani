@@ -3102,6 +3102,46 @@ button.act.ghost {
   flex: 0 0 auto;
 }
 
+.league-row.frozen .score,
+.podium-slot.frozen small {
+  color: #8ec8e8;
+}
+
+.league-row.slowed .score,
+.podium-slot.slowed small {
+  color: #e09a5a;
+}
+
+.league-row.rise,
+.podium-slot.rise {
+  animation: towerRise 0.45s ease;
+}
+
+.league-row .score.rise,
+.podium-slot small.rise {
+  color: #ffe08a;
+  animation: scorePop 0.45s ease;
+}
+
+@keyframes towerRise {
+  0% { transform: translateY(4px); }
+  60% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes scorePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+body.quiet .league-row.rise,
+body.quiet .podium-slot.rise,
+body.quiet .league-row .score.rise,
+body.quiet .podium-slot small.rise {
+  animation: none;
+}
+
 .hits {
   display: flex;
   align-items: center;
