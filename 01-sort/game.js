@@ -117,6 +117,7 @@ const state = {
   mode: "story",
   towerFloor: 0,
   levelSrc: 1,
+  towerMark: "",
 };
 
 const board = document.getElementById("board");
@@ -289,7 +290,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=46";
+  el.src = "coin.svg?v=47";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -334,6 +335,9 @@ function emptyProgress() {
     bombs: 0,
     starPool: 0,
     fireDay: "",
+    towerPressDay: "",
+    towerWounds: 0,
+    towerHitNews: [],
   };
 }
 
@@ -552,6 +556,9 @@ function loadProgress() {
     base.bombs = Math.max(0, Number(raw.bombs) || 0);
     base.starPool = Math.max(0, Number(raw.starPool) || 0);
     base.fireDay = typeof raw.fireDay === "string" ? raw.fireDay : "";
+    base.towerPressDay = typeof raw.towerPressDay === "string" ? raw.towerPressDay : "";
+    base.towerWounds = Math.max(0, Number(raw.towerWounds) || 0);
+    base.towerHitNews = Array.isArray(raw.towerHitNews) ? raw.towerHitNews.map(String) : [];
     if (raw.bombs == null && raw.starPool == null && Array.isArray(raw.stars)) {
       const earned = raw.stars.reduce((sum, n) => sum + Math.max(0, Number(n) || 0), 0);
       base.bombs = Math.floor(earned / BOMB_NEED);
@@ -1031,7 +1038,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=46\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=47\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1116,6 +1123,9 @@ function syncWeek() {
   progress.seals = {};
   progress.towerDone = [false, false, false, false, false];
   progress.towerScore = 0;
+  progress.towerPressDay = "";
+  progress.towerWounds = 0;
+  progress.towerHitNews = [];
   saveProgress();
 }
 
@@ -1231,19 +1241,146 @@ function leagueTable() {
   });
 }
 
+function weekDayNum() {
+  const parts = dayStamp().split("-").map(Number);
+  const wd = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0)).getUTCDay();
+  return wd === 0 ? 7 : wd;
+}
+
+function nickPersona(name) {
+  const h = hashStr(weekId() + ":who:" + name);
+  const h2 = hashStr(weekId() + ":who2:" + name);
+  return {
+    pace: 1 + (h % 3),
+    surge: 1 + (h2 % 7),
+    skip: h % 64,
+    quit: h % 17 === 0 ? 3 + (h2 % 4) : 0,
+    late: h % 21 === 0 ? 2 + (h2 % 3) : 0,
+    ghost: h % 29 === 0,
+  };
+}
+
+function npcHitsOn(name, day) {
+  let hits = 0;
+  for (let d = 1; d <= day; d += 1) {
+    if (hashStr(weekId() + ":npchit:" + name + ":" + d) % 9 === 0) hits += 1;
+    if (hashStr(weekId() + ":npcbomb:" + name + ":" + d) % 14 === 0) hits += 2;
+  }
+  return hits;
+}
+
 function rivalTowerScore(name) {
-  const seals = Number(progress.seals[name]) || 0;
-  return Math.max(0, 4 + (hashStr(weekId() + ":tw:" + name) % 19) - seals);
+  const life = nickPersona(name);
+  const day = weekDayNum();
+  if (life.late && day < life.late) return null;
+  if (life.ghost && day >= 3 && hashStr(weekId() + ":ghost:" + name) % 2) return null;
+  if (life.quit && day >= life.quit) return null;
+  let score = 1 + (hashStr(weekId() + ":seed:" + name) % 3);
+  const last = day;
+  for (let d = life.late || 1; d <= last; d += 1) {
+    const skipped = (life.skip >> (d - 1)) & 1;
+    if (skipped && d !== life.surge && hashStr(weekId() + name + ":skip" + d) % 3) continue;
+    let add = life.pace + (hashStr(weekId() + name + ":d" + d) % 3);
+    if (d === life.surge) add = add * 2 + 5;
+    if (d >= 6) add += 2;
+    score += add;
+  }
+  score -= (Number(progress.seals[name]) || 0) * 4;
+  score -= npcHitsOn(name, day) * 3;
+  return Math.max(0, score);
 }
 
 function towerTable() {
-  const rows = TOWER_NICKS.map((name) => ({ name: name, score: rivalTowerScore(name), you: false }));
+  const rows = [];
+  TOWER_NICKS.forEach((name) => {
+    const score = rivalTowerScore(name);
+    if (score == null) return;
+    rows.push({ name: name, score: score, you: false });
+  });
   rows.push({ name: YOU, score: progress.towerScore || 0, you: true });
   rows.sort((a, b) => b.score - a.score || (a.you ? -1 : b.you ? 1 : 0));
   return rows.map((row, i) => {
     row.place = i + 1;
     return row;
   });
+}
+
+function markedTower() {
+  const table = towerTable();
+  if (state.towerMark) {
+    const hit = table.find((row) => row.name === state.towerMark && !row.you);
+    if (hit) return hit;
+  }
+  return huntTarget(table).next;
+}
+
+function visibleTowerRows(table) {
+  const me = table.find((row) => row.you);
+  const keep = {};
+  table.slice(0, 3).forEach((row) => {
+    keep[row.name] = row;
+  });
+  if (me) {
+    table
+      .filter((row) => Math.abs(row.place - me.place) <= 7)
+      .forEach((row) => {
+        keep[row.name] = row;
+      });
+  }
+  if (state.towerMark) {
+    const mark = table.find((row) => row.name === state.towerMark);
+    if (mark) keep[mark.name] = mark;
+  }
+  return Object.keys(keep)
+    .map((name) => keep[name])
+    .sort((a, b) => a.place - b.place);
+}
+
+function pickRandomTower() {
+  const table = towerTable();
+  const me = table.find((row) => row.you);
+  const band = table.filter((row) => {
+    if (row.you) return false;
+    if (!me) return true;
+    return Math.abs(row.place - me.place) <= 12;
+  });
+  const pool = band.length ? band : table.filter((row) => !row.you);
+  if (!pool.length) return;
+  state.towerMark = pool[Math.floor(Math.random() * pool.length)].name;
+  paintTower();
+  showPassToast("Цель: " + state.towerMark);
+}
+
+function syncTowerPressure() {
+  syncWeek();
+  const today = dayStamp();
+  if (progress.towerPressDay === today) return;
+  progress.towerPressDay = today;
+  const table = towerTable();
+  const me = table.find((row) => row.you);
+  if (!me) {
+    saveProgress();
+    return;
+  }
+  const hunters = table.filter(
+    (row) => !row.you && row.place < me.place && row.place >= me.place - 6
+  );
+  const news = [];
+  if (hunters.length) {
+    const n = 1 + (hashStr(weekId() + today + ":hits") % Math.min(3, hunters.length));
+    const used = {};
+    for (let i = 0; i < n; i += 1) {
+      const pick = hunters[hashStr(weekId() + today + ":h" + i) % hunters.length];
+      if (used[pick.name]) continue;
+      used[pick.name] = true;
+      const bomb = hashStr(weekId() + today + ":b" + pick.name) % 3 === 0;
+      progress.towerScore = Math.max(0, (progress.towerScore || 0) - (bomb ? 3 : 1));
+      progress.towerWounds = (progress.towerWounds || 0) + (bomb ? 2 : 1);
+      news.push(pick.name);
+    }
+  }
+  progress.towerHitNews = news;
+  saveProgress();
 }
 
 function huntTarget(table) {
@@ -1396,10 +1533,21 @@ function continueLevel() {
 }
 
 function paintTower() {
+  syncTowerPressure();
   const table = towerTable();
-  const { me, next } = huntTarget(table);
+  const me = table.find((row) => row.you);
+  const mark = markedTower();
   paintWeekClocks();
-  if (towerLead) towerLead.hidden = true;
+  if (towerLead) {
+    towerLead.hidden = false;
+    const gone = TOWER_NICKS.length + 1 - table.length;
+    towerLead.textContent =
+      "День " +
+      weekDayNum() +
+      " из 7. Живая сетка: кто-то фармит, кто-то бросил" +
+      (gone ? " · нет " + gone : "") +
+      ".";
+  }
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
     scoreEl.textContent =
@@ -1407,21 +1555,33 @@ function paintTower() {
   }
   const sealBtn = document.getElementById("tower-seal");
   if (sealBtn) {
-    sealBtn.textContent = next ? "Запечатать ход " + next.name : "Некого печатать";
+    sealBtn.textContent = mark ? "Запечатать ход " + mark.name : "Некого печатать";
   }
   const bombBtn = document.getElementById("tower-bomb");
   if (bombBtn) {
-    bombBtn.textContent = next
-      ? "Разорвать колбу " + next.name + " · 💣" + (progress.bombs || 0)
+    bombBtn.textContent = mark
+      ? "Разорвать колбу " + mark.name + " · 💣" + (progress.bombs || 0)
       : "Некого взрывать";
-    bombBtn.classList.toggle("dim", !(progress.bombs > 0) || !next);
+    bombBtn.classList.toggle("dim", !(progress.bombs > 0) || !mark);
   }
   if (towerList) {
     towerList.innerHTML = "";
-    table.forEach((row, i) => {
+    const shown = visibleTowerRows(table);
+    let lastPlace = 0;
+    shown.forEach((row, i) => {
+      if (lastPlace && row.place > lastPlace + 1) {
+        const gap = document.createElement("div");
+        gap.className = "tower-gap";
+        gap.textContent = "…";
+        towerList.appendChild(gap);
+      }
+      lastPlace = row.place;
       const el = document.createElement("div");
       const face = faceOf(row.name, row.you);
-      el.className = "league-row" + (row.you ? " you" : "");
+      el.className =
+        "league-row" +
+        (row.you ? " you" : " pick") +
+        (state.towerMark === row.name ? " mark" : "");
       el.style.animationDelay = Math.min(i, 24) * 18 + "ms";
       el.innerHTML =
         "<span class=\"place\">" +
@@ -1435,8 +1595,16 @@ function paintTower() {
         "</span><span class=\"score\">" +
         row.score +
         "</span>";
+      if (!row.you) {
+        el.addEventListener("click", () => {
+          state.towerMark = row.name;
+          paintTower();
+        });
+      }
       towerList.appendChild(el);
     });
+    const youEl = towerList.querySelector(".you");
+    if (youEl && youEl.scrollIntoView) youEl.scrollIntoView({ block: "nearest" });
   }
   paintDuel();
 }
@@ -1602,7 +1770,18 @@ function openTower() {
   closeShop();
   closeSkins();
   closeMap();
+  syncTowerPressure();
   paintTower();
+  if (progress.towerHitNews && progress.towerHitNews.length) {
+    const names = progress.towerHitNews;
+    showPassToast(
+      names.length === 1
+        ? names[0] + " залепил тебе ход"
+        : names[0] + " и ещё " + (names.length - 1) + " бьют сверху"
+    );
+    progress.towerHitNews = [];
+    saveProgress();
+  }
   towerOverlay.classList.add("show");
   syncScreens();
 }
@@ -1637,9 +1816,9 @@ function playTowerFloor() {
 }
 
 function sealHunt() {
-  const next = huntTarget(towerTable()).next;
-  if (!next || next.you) {
-    showPassToast("Некого печатать — ты первый.");
+  const mark = markedTower();
+  if (!mark || mark.you) {
+    showPassToast("Ткни ник или случайного — кого печатать.");
     return;
   }
   if ((progress.towerCoins || 0) < SEAL_PRICE) {
@@ -1649,21 +1828,21 @@ function sealHunt() {
     return;
   }
   progress.towerCoins -= SEAL_PRICE;
-  progress.seals[next.name] = (Number(progress.seals[next.name]) || 0) + 1;
+  progress.seals[mark.name] = (Number(progress.seals[mark.name]) || 0) + 1;
   saveProgress();
   paintHud();
   paintLeague();
   paintShop();
-  showPassToast("Запечатал ход " + next.name);
+  showPassToast("Запечатал ход " + mark.name + ". Он просел.");
   paintTower();
   tone(180, 0.16, "sawtooth", 0.035);
 }
 
 function bombHunt() {
-  const next = huntTarget(towerTable()).next;
+  const mark = markedTower();
   const btn = document.getElementById("tower-bomb");
-  if (!next || next.you) {
-    showPassToast("Некого взрывать — ты первый.");
+  if (!mark || mark.you) {
+    showPassToast("Ткни ник или случайного — кого рвать.");
     return;
   }
   if (!(progress.bombs > 0)) {
@@ -1673,11 +1852,11 @@ function bombHunt() {
     return;
   }
   progress.bombs -= 1;
-  progress.seals[next.name] = (Number(progress.seals[next.name]) || 0) + 2;
+  progress.seals[mark.name] = (Number(progress.seals[mark.name]) || 0) + 2;
   saveProgress();
   paintHud();
   paintTower();
-  showPassToast("Разорвал колбу " + next.name);
+  showPassToast("Разорвал колбу " + mark.name + ". Он сыпется.");
   feel("win");
   tone(140, 0.18, "sawtooth", 0.04);
 }
@@ -1904,8 +2083,12 @@ function startLevel(level, opts) {
   state.doubled = false;
   state.stolenEmpties = stolen;
   state.locked = tower
-    ? towerLockCount(opts.floor || 0)
+    ? Math.min(4, towerLockCount(opts.floor || 0) + Math.min(2, progress.towerWounds || 0))
     : Math.min(4, lockCountFor(n) + stolen);
+  if (tower && progress.towerWounds) {
+    progress.towerWounds = Math.max(0, progress.towerWounds - 1);
+    saveProgress();
+  }
   state.openedExtra = 0;
   hideFail();
   overlay.classList.remove("show");
@@ -2322,7 +2505,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=46";
+      pic.src = "coin.svg?v=47";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2414,7 +2597,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=46";
+        ghost.src = "coin.svg?v=47";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2533,7 +2716,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=46";
+    ghost.src = pic ? pic.src : "coin.svg?v=47";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2991,6 +3174,8 @@ leagueRace.addEventListener("click", () => {
   startLevel(raceLevel());
 });
 document.getElementById("tower-play").addEventListener("click", () => playTowerFloor());
+const towerRandom = document.getElementById("tower-random");
+if (towerRandom) towerRandom.addEventListener("click", () => pickRandomTower());
 document.getElementById("tower-seal").addEventListener("click", () => sealHunt());
 const towerBomb = document.getElementById("tower-bomb");
 if (towerBomb) towerBomb.addEventListener("click", () => bombHunt());

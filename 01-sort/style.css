@@ -2798,6 +2798,22 @@ button.act.ghost {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
+.league-row.pick {
+  cursor: pointer;
+}
+
+.league-row.mark {
+  box-shadow: inset 0 0 0 1px #e85d4c;
+}
+
+.tower-gap {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  padding: 2px 0;
+}
+
 .league-row .place {
   width: 28px;
   color: var(--accent);
