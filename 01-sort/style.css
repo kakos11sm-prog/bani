@@ -868,25 +868,38 @@ body.quiet .lock-gate-miss {
   z-index: 65;
   padding: 0;
   align-items: stretch;
+  justify-content: flex-start;
 }
 
 #tower-overlay.show {
   background:
     radial-gradient(90vw 50vh at 50% 0%, #5a2a10 0%, transparent 55%),
     #120e0b;
-  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  padding: calc(58px + env(safe-area-inset-top, 0px)) 0 0;
+}
+
+body.tower-open {
+  overflow: hidden;
 }
 
 body.tower-open .wrap {
-  z-index: 60;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, 100%);
+  min-height: 0;
+  height: auto;
+  z-index: 75;
   visibility: visible;
   pointer-events: none;
+  padding-bottom: 0;
 }
 
 body.tower-open .hud,
 body.tower-open .fly {
   pointer-events: auto;
-  z-index: 75;
+  z-index: 76;
 }
 
 body.tower-open .mission,
@@ -896,14 +909,16 @@ body.tower-open .skin-btn,
 body.tower-open .more,
 body.tower-open .fx,
 body.tower-open .level {
-  visibility: hidden;
+  display: none;
 }
 
-.tower-stage {
+#tower-overlay .tower-stage {
+  flex: 1;
   width: min(540px, 100%);
-  height: 100%;
+  min-height: 0;
+  height: auto;
   margin: 0 auto;
-  padding: 6px 10px 10px;
+  padding: 4px 10px 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1075,6 +1090,7 @@ body.tower-open .level {
 }
 
 .tower-bar .act {
+  flex: 0 0 auto;
   width: 100%;
   padding: 10px 8px;
   font-size: 14px;
@@ -2312,14 +2328,14 @@ body.quiet .home-tile.tower {
   animation: none;
 }
 
-.tower-stage {
+.home-tower-stage {
   position: relative;
   flex: 0 0 78px;
   width: 78px;
   height: 86px;
 }
 
-.tower-prize {
+.home-tower-prize {
   position: absolute;
   left: 50%;
   top: 0;
@@ -2330,7 +2346,7 @@ body.quiet .home-tile.tower {
   z-index: 2;
 }
 
-.tower-chest {
+.home-tile.tower .tower-chest {
   display: block;
   width: 42px;
   height: 42px;
@@ -2338,7 +2354,7 @@ body.quiet .home-tile.tower {
   animation: chestGlow 1.3s ease-in-out infinite;
 }
 
-.tower-prize em {
+.home-tower-prize em {
   margin-top: 2px;
   font-size: 10px;
   font-style: normal;
@@ -2488,8 +2504,9 @@ body.quiet .home-tile.tower {
   100% { background-position: 220% 50%; }
 }
 
-#tower-list {
-  max-height: 50vh;
+#tower-overlay #tower-list {
+  max-height: none;
+  overflow: auto;
 }
 
 .tower-top small {

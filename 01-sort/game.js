@@ -290,7 +290,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=48";
+  el.src = "coin.svg?v=49";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -1040,7 +1040,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=48\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=49\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2531,7 +2531,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=48";
+      pic.src = "coin.svg?v=49";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2623,7 +2623,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=48";
+        ghost.src = "coin.svg?v=49";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2742,7 +2742,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=48";
+    ghost.src = pic ? pic.src : "coin.svg?v=49";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
