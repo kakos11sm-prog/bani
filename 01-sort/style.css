@@ -2023,34 +2023,47 @@ body.home-open #boot {
   justify-content: flex-start;
 }
 
+body.home-open .home-title {
+  padding-left: 48px;
+  padding-right: 48px;
+}
+
+body.map-open .map-lead {
+  padding-right: 52px;
+}
+
 .pack-ad {
   display: none;
   position: fixed;
-  right: 0;
-  top: 36%;
+  top: calc(58px + env(safe-area-inset-top, 0px));
+  right: 8px;
   z-index: 72;
-  width: 86px;
-  padding: 12px 8px 10px;
+  width: 44px;
+  padding: 6px 3px 5px;
   border: 0;
-  border-radius: 16px 0 0 16px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #6a3a10, #2a1608);
   color: #fff6c4;
-  box-shadow: -6px 8px 22px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 180, 50, 0.45);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35), 0 0 10px rgba(255, 180, 50, 0.35);
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 1px;
   cursor: pointer;
   overflow: hidden;
-  animation: packPeek 0.55s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+  animation: packPeek 0.45s cubic-bezier(0.2, 1.4, 0.3, 1) both;
 }
 
 body.home-open .pack-ad,
-body.map-open .pack-ad {
+body.map-open .pack-ad,
+body.tower-open .pack-ad {
   display: flex;
 }
 
+body.tower-open .pack-ad {
+  z-index: 77;
+}
+
 body.screen .pack-ad,
-body.tower-open .pack-ad,
 body:has(#pack-overlay.show) .pack-ad {
   display: none;
 }
@@ -2064,29 +2077,17 @@ body:has(#pack-overlay.show) .pack-ad {
 }
 
 .pack-ad-ico {
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
   animation: packIco 1.1s ease-in-out infinite;
 }
 
-.pack-ad b {
-  font-size: 13px;
-}
-
-.pack-ad small {
-  font-size: 10px;
-  font-weight: 800;
-  color: #ffe08a;
-  text-align: center;
-  line-height: 1.2;
-}
-
 .pack-ad em {
-  margin-top: 2px;
   font-style: normal;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 900;
   color: #ffd24a;
+  letter-spacing: -0.02em;
 }
 
 .pack-ad.flip {
@@ -2094,11 +2095,11 @@ body:has(#pack-overlay.show) .pack-ad {
 }
 
 .pack-ad:active {
-  transform: translateX(4px);
+  transform: scale(0.94);
 }
 
 #pack-overlay {
-  z-index: 62;
+  z-index: 74;
 }
 
 .pack-card {
@@ -2175,7 +2176,7 @@ body:has(#pack-overlay.show) .pack-ad {
 }
 
 @keyframes packPeek {
-  from { transform: translateX(70px); opacity: 0; }
+  from { transform: translateY(-10px) scale(0.8); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
 
@@ -2190,7 +2191,7 @@ body:has(#pack-overlay.show) .pack-ad {
 }
 
 @keyframes packFlip {
-  0% { transform: translateX(18px) scale(0.92); opacity: 0.4; }
+  0% { transform: scale(0.86); opacity: 0.5; }
   100% { transform: none; opacity: 1; }
 }
 

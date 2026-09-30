@@ -2232,14 +2232,11 @@ function paintPackAd() {
   const el = document.getElementById("pack-ad");
   if (!el) return;
   const pack = COIN_PACKS[packAdIndex % COIN_PACKS.length];
-  const name = document.getElementById("pack-ad-name");
-  const loot = document.getElementById("pack-ad-loot");
   const price = document.getElementById("pack-ad-price");
   const ico = document.getElementById("pack-ad-ico");
-  if (name) name.textContent = pack.name;
-  if (loot) loot.textContent = pack.coins + " + " + pack.bombs + "💣" + (pack.fire ? " +×2" : "");
-  if (price) price.textContent = pack.uah + " грн";
+  if (price) price.textContent = pack.uah + "₴";
   if (ico) ico.textContent = pack.fire ? "🔥" : pack.bombs >= 30 ? "💣" : "💰";
+  el.setAttribute("aria-label", "Набор «" + pack.name + "» · " + pack.uah + " грн");
   el.classList.remove("flip");
   void el.offsetWidth;
   el.classList.add("flip");
@@ -2288,11 +2285,14 @@ function paintPackStore() {
 function openPackStore() {
   closeLeague();
   closeShop();
-  closeTower();
   closeSkins();
-  closeMap();
   closeSettings();
-  if (boot && !state.tubes.length) boot.classList.add("show");
+  const onTower = towerOverlay && towerOverlay.classList.contains("show");
+  if (!onTower) {
+    closeTower();
+    closeMap();
+    if (boot && !state.tubes.length) boot.classList.add("show");
+  }
   paintPackStore();
   const el = document.getElementById("pack-overlay");
   if (el) el.classList.add("show");
@@ -3786,6 +3786,7 @@ const packClose = document.getElementById("pack-close");
 if (packClose) {
   packClose.addEventListener("click", () => {
     closePackStore();
+    if (towerOverlay && towerOverlay.classList.contains("show")) return;
     backToMenuIfIdle();
   });
 }
