@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=49" />
+    <link rel="stylesheet" href="style.css?v=50" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -23,6 +23,12 @@
     </div>
     <div class="wrap">
       <div class="hud">
+        <button class="tower-back" id="tower-back" type="button" aria-label="Назад">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" d="M16 16h14a9 9 0 1 1 0 18H20"/>
+            <path fill="currentColor" d="M18 9.2 8 16.4 18 23.6z"/>
+          </svg>
+        </button>
         <button class="burger" id="btn-burger" type="button" aria-label="Меню" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -295,11 +301,16 @@
         <div class="league-list" id="tower-list"></div>
         <div class="tower-bar">
           <button class="act primary" id="tower-play" type="button">Играть</button>
-          <button class="act" id="tower-random" type="button">Случайный</button>
-          <button class="act" id="tower-bomb" type="button">Бомба</button>
-          <button class="act" id="tower-seal" type="button">Печать</button>
-          <button class="act ghost" id="tower-close" type="button">Назад</button>
         </div>
+      </div>
+    </div>
+    <div class="tower-tip" id="tower-tip">
+      <div class="tower-tip-catch"></div>
+      <div class="tower-tip-spot" id="tower-tip-spot"></div>
+      <div class="tower-tip-arrow up" id="tower-tip-arrow"></div>
+      <div class="tower-tip-card" id="tower-tip-card">
+        <p id="tower-tip-text"></p>
+        <button class="act primary" id="tower-tip-next" type="button">Дальше</button>
       </div>
     </div>
     <div class="overlay" id="shop-overlay">
@@ -375,6 +386,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=49"></script>
+    <script src="game.js?v=50"></script>
   </body>
 </html>

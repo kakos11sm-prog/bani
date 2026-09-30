@@ -189,6 +189,30 @@ body.celebrate .scene-glow {
   gap: 4px;
 }
 
+.tower-back {
+  display: none;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tower-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tower-back:active {
+  transform: scale(0.92);
+}
+
 .burger {
   flex: 0 0 36px;
   width: 36px;
@@ -902,6 +926,14 @@ body.tower-open .fly {
   z-index: 76;
 }
 
+body.tower-open .tower-back {
+  display: flex;
+}
+
+body.tower-open .burger {
+  display: none;
+}
+
 body.tower-open .mission,
 body.tower-open .play-row,
 body.tower-open .bar,
@@ -960,7 +992,7 @@ body.tower-open .level {
   align-items: flex-end;
   justify-content: center;
   gap: 6px;
-  min-height: 118px;
+  min-height: 148px;
 }
 
 .podium-slot {
@@ -1057,6 +1089,15 @@ body.tower-open .level {
   color: #fff6c4;
 }
 
+.podium-slot .hits {
+  margin-top: 4px;
+}
+
+.podium-slot .hit {
+  width: 28px;
+  height: 28px;
+}
+
 #tower-overlay .tower-score {
   flex: 0 0 auto;
   margin: 0;
@@ -1075,29 +1116,15 @@ body.tower-open .level {
 
 .tower-bar {
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
 }
 
 .tower-bar #tower-play {
-  grid-column: 1 / -1;
+  width: 100%;
   height: 42px;
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.tower-bar .act {
-  flex: 0 0 auto;
-  width: 100%;
-  padding: 10px 8px;
-  font-size: 14px;
-}
-
-.tower-bar #tower-close {
-  grid-column: 1 / -1;
 }
 
 body.quiet .tower-prize #tower-clock,
@@ -1824,7 +1851,9 @@ h1 {
 }
 
 .jar.shake,
-.tower-cell.shake {
+.tower-cell.shake,
+.hit.shake,
+.league-row.shake {
   animation: shake 0.38s ease;
 }
 
@@ -3062,10 +3091,145 @@ button.act.ghost {
 
 .league-row .name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .league-row .score {
   color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.hits {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.hit {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  padding: 3px;
+  background: #1a1410;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hit .hit-draw {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hit.dim {
+  opacity: 0.38;
+}
+
+.hit:active {
+  transform: scale(0.9);
+}
+
+.hit.tip-hot {
+  box-shadow: 0 0 0 2px #ffd24a, 0 0 16px rgba(255, 210, 74, 0.7);
+}
+
+.tower-tip {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 82;
+}
+
+.tower-tip.show {
+  display: block;
+}
+
+.tower-tip-catch {
+  position: absolute;
+  inset: 0;
+}
+
+.tower-tip-spot {
+  position: absolute;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px #ffd24a, 0 0 0 9999px rgba(8, 6, 4, 0.62);
+  pointer-events: none;
+  animation: tipPulse 0.9s ease-in-out infinite;
+}
+
+.tower-tip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.tower-tip-arrow.up {
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 16px solid #ffd24a;
+  animation: tipArrowUp 0.7s ease-in-out infinite;
+}
+
+.tower-tip-arrow.down {
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 16px solid #ffd24a;
+  animation: tipArrowDown 0.7s ease-in-out infinite;
+}
+
+.tower-tip-card {
+  position: absolute;
+  width: min(320px, calc(100% - 24px));
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: #2a2118;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 2px #ffd24a;
+  text-align: center;
+}
+
+.tower-tip-card p {
+  margin: 0 0 10px;
+  color: #ffe08a;
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.tower-tip-card .act {
+  width: 100%;
+}
+
+@keyframes tipPulse {
+  0%,
+  100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes tipArrowUp {
+  0%,
+  100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -7px); }
+}
+
+@keyframes tipArrowDown {
+  0%,
+  100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 7px); }
+}
+
+body.quiet .tower-tip-spot,
+body.quiet .tower-tip-arrow {
+  animation: none;
 }
 
 .pass-toast {

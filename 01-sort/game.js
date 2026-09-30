@@ -332,6 +332,7 @@ function emptyProgress() {
     boostUntil: 0,
     boostMult: 1,
     seenIntro: false,
+    seenTowerHelp: false,
     bombs: 0,
     starPool: 0,
     fireDay: "",
@@ -555,6 +556,7 @@ function loadProgress() {
     base.boostMult = Math.max(1, Number(raw.boostMult) || 1);
     if (raw.seenIntro === true || raw.seenIntro === false) base.seenIntro = raw.seenIntro;
     else base.seenIntro = true;
+    base.seenTowerHelp = raw.seenTowerHelp === true;
     base.bombs = Math.max(0, Number(raw.bombs) || 0);
     base.starPool = Math.max(0, Number(raw.starPool) || 0);
     base.fireDay = typeof raw.fireDay === "string" ? raw.fireDay : "";
@@ -1338,21 +1340,6 @@ function visibleTowerRows(table) {
     .sort((a, b) => a.place - b.place);
 }
 
-function pickRandomTower() {
-  const table = towerTable();
-  const me = table.find((row) => row.you);
-  const band = table.filter((row) => {
-    if (row.you) return false;
-    if (!me) return true;
-    return Math.abs(row.place - me.place) <= 12;
-  });
-  const pool = band.length ? band : table.filter((row) => !row.you);
-  if (!pool.length) return;
-  state.towerMark = pool[Math.floor(Math.random() * pool.length)].name;
-  paintTower();
-  showPassToast("Цель: " + state.towerMark);
-}
-
 function syncTowerPressure() {
   syncWeek();
   const today = dayStamp();
@@ -1534,24 +1521,65 @@ function continueLevel() {
   pickLevel(progress.unlocked);
 }
 
+const HIT_BOMB =
+  "<svg class=\"hit-draw\" viewBox=\"0 0 32 32\" aria-hidden=\"true\">" +
+  "<path fill=\"#2b2b32\" stroke=\"#121214\" stroke-width=\"1.4\" d=\"M8.6 18.6c0-5.1 3.5-8.9 7.4-8.9s7.4 3.8 7.4 8.9-3.5 9.1-7.4 9.1-7.4-4-7.4-9.1z\"/>" +
+  "<path fill=\"#3c3c46\" d=\"M12.2 16.2c1-3 2.8-4.8 4.3-4.8 0 0-1.3 2.8.6 5.8-2 .2-4-.3-4.9-1z\" opacity=\".55\"/>" +
+  "<path fill=\"none\" stroke=\"#c4843a\" stroke-width=\"1.8\" stroke-linecap=\"round\" d=\"M19.1 11c2.1-3.1 5.3-4.5 7.1-3.3\"/>" +
+  "<path fill=\"#f4b942\" d=\"M26.1 5.7c1.4.2 2.3 1.6 1.5 3-1.1.4-2.5-.6-2.7-1.8-.1-.6.3-1.2 1.2-1.2z\"/>" +
+  "<circle cx=\"27.3\" cy=\"7.2\" r=\"1.1\" fill=\"#fff3b0\"/>" +
+  "</svg>";
+
+const HIT_SEAL =
+  "<svg class=\"hit-draw\" viewBox=\"0 0 32 32\" aria-hidden=\"true\">" +
+  "<path fill=\"#6ec8e8\" stroke=\"#2a6a80\" stroke-width=\"1.3\" d=\"M11 7.2h10l.6 1.6h1.8v2.1l-1.2.7v12.2c0 2.1-1.8 3.6-3.8 3.6h-4.8c-2 0-3.8-1.5-3.8-3.6V11.6L9 10.9V8.8h1.4L11 7.2z\"/>" +
+  "<path fill=\"#9adcf0\" d=\"M12.2 11.4h7.6v11.2c0 1.1-.8 1.8-1.8 1.8h-4c-1 0-1.8-.7-1.8-1.8z\"/>" +
+  "<path fill=\"#e8f7fc\" opacity=\".55\" d=\"M13 12.2h2.2v9.2h-2.2z\"/>" +
+  "<path fill=\"none\" stroke=\"#e85d4c\" stroke-width=\"2.6\" stroke-linecap=\"round\" d=\"M8.4 8.2 23.6 24.2\"/>" +
+  "<path fill=\"none\" stroke=\"#e85d4c\" stroke-width=\"2.6\" stroke-linecap=\"round\" d=\"M23.6 8.2 8.4 24.2\"/>" +
+  "</svg>";
+
+function hitIcons(name, you) {
+  if (you) return "<span class=\"hits\"></span>";
+  const bombOff = progress.bombs > 0 ? "" : " dim";
+  const sealOff = (progress.towerCoins || 0) >= SEAL_PRICE ? "" : " dim";
+  return (
+    "<span class=\"hits\">" +
+    "<button class=\"hit bomb" +
+    bombOff +
+    "\" type=\"button\" data-hit=\"bomb\" data-name=\"" +
+    name +
+    "\" aria-label=\"Бомба\">" +
+    HIT_BOMB +
+    "</button>" +
+    "<button class=\"hit seal" +
+    sealOff +
+    "\" type=\"button\" data-hit=\"seal\" data-name=\"" +
+    name +
+    "\" aria-label=\"Печать\">" +
+    HIT_SEAL +
+    "</button>" +
+    "</span>"
+  );
+}
+
+function huntRow(name) {
+  if (name) {
+    return towerTable().find((row) => row.name === name && !row.you) || null;
+  }
+  return markedTower();
+}
+
 function paintTower() {
   syncTowerPressure();
   const table = towerTable();
   const me = table.find((row) => row.you);
-  const mark = markedTower();
   paintWeekClocks();
   paintTowerPodium(table);
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
     scoreEl.textContent =
       "Твои очки: " + (progress.towerScore || 0) + (me ? " · #" + me.place : "");
-  }
-  const sealBtn = document.getElementById("tower-seal");
-  if (sealBtn) sealBtn.textContent = "Печать";
-  const bombBtn = document.getElementById("tower-bomb");
-  if (bombBtn) {
-    bombBtn.textContent = "Бомба · " + (progress.bombs || 0);
-    bombBtn.classList.toggle("dim", !(progress.bombs > 0) || !mark);
   }
   if (towerList) {
     towerList.innerHTML = "";
@@ -1583,9 +1611,11 @@ function paintTower() {
         row.name +
         "</span><span class=\"score\">" +
         row.score +
-        "</span>";
+        "</span>" +
+        hitIcons(row.name, row.you);
       if (!row.you) {
-        el.addEventListener("click", () => {
+        el.addEventListener("click", (event) => {
+          if (event.target.closest(".hit")) return;
           state.towerMark = row.name;
           paintTower();
         });
@@ -1593,7 +1623,7 @@ function paintTower() {
       towerList.appendChild(el);
     });
     const youEl = towerList.querySelector(".you");
-    if (youEl && youEl.scrollIntoView) youEl.scrollIntoView({ block: "nearest" });
+    if (youEl && youEl.scrollIntoView && !towerTipOpen()) youEl.scrollIntoView({ block: "nearest" });
   }
   paintDuel();
 }
@@ -1766,7 +1796,8 @@ function paintTowerPodium(table) {
     if (row && !row.you) {
       slot.classList.add("pick");
       if (state.towerMark === row.name) slot.classList.add("mark");
-      slot.addEventListener("click", () => {
+      slot.addEventListener("click", (event) => {
+        if (event.target.closest(".hit")) return;
         state.towerMark = row.name;
         paintTower();
       });
@@ -1781,7 +1812,9 @@ function paintTowerPodium(table) {
       (row ? row.name : "—") +
       "</b><small>" +
       (row ? row.score : "0") +
-      "</small><em>" +
+      "</small>" +
+      hitIcons(row ? row.name : "", !row || row.you) +
+      "<em>" +
       place +
       "</em><i>" +
       medals[place] +
@@ -1810,11 +1843,102 @@ function openTower() {
   }
   towerOverlay.classList.add("show");
   syncScreens();
+  window.setTimeout(() => startTowerTip(), 80);
 }
 
 function closeTower() {
+  hideTowerTip(false);
   towerOverlay.classList.remove("show");
   syncScreens();
+}
+
+let towerTipStep = 0;
+
+function towerTipOpen() {
+  const tip = document.getElementById("tower-tip");
+  return !!(tip && tip.classList.contains("show"));
+}
+
+function hideTowerTip(done) {
+  const tip = document.getElementById("tower-tip");
+  if (tip) tip.classList.remove("show");
+  document.querySelectorAll(".hit.tip-hot").forEach((el) => el.classList.remove("tip-hot"));
+  if (done && !progress.seenTowerHelp) {
+    progress.seenTowerHelp = true;
+    saveProgress();
+  }
+}
+
+function startTowerTip() {
+  if (progress.seenTowerHelp || !towerOverlay.classList.contains("show")) return;
+  towerTipStep = 0;
+  paintTowerTip();
+}
+
+function paintTowerTip() {
+  const kind = towerTipStep === 0 ? "bomb" : "seal";
+  const host = document.querySelector("#tower-overlay .hit." + kind);
+  if (!host) {
+    hideTowerTip(true);
+    return;
+  }
+  const row = host.closest(".league-row, .podium-slot");
+  if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+  window.requestAnimationFrame(() => placeTowerTip(host, kind));
+}
+
+function placeTowerTip(host, kind) {
+  const tip = document.getElementById("tower-tip");
+  const spot = document.getElementById("tower-tip-spot");
+  const arrow = document.getElementById("tower-tip-arrow");
+  const card = document.getElementById("tower-tip-card");
+  const text = document.getElementById("tower-tip-text");
+  const next = document.getElementById("tower-tip-next");
+  if (!tip || !spot || !arrow || !card || !text || !next) return;
+  document.querySelectorAll(".hit.tip-hot").forEach((el) => el.classList.remove("tip-hot"));
+  host.classList.add("tip-hot");
+  text.textContent =
+    kind === "bomb"
+      ? "Жми бомбу на игроке — рвёшь ему банку. Он падает. Бомбы копятся из звёзд."
+      : "Зачёркнутая банка — печать. Закроет ему ход. Платишь монетами башни.";
+  next.textContent = kind === "bomb" ? "Дальше" : "Понятно";
+  const r = host.getBoundingClientRect();
+  const pad = 6;
+  spot.style.left = r.left - pad + "px";
+  spot.style.top = r.top - pad + "px";
+  spot.style.width = r.width + pad * 2 + "px";
+  spot.style.height = r.height + pad * 2 + "px";
+  const midX = r.left + r.width / 2;
+  const below = window.innerHeight - r.bottom > 176;
+  arrow.className = "tower-tip-arrow " + (below ? "up" : "down");
+  arrow.style.left = midX + "px";
+  arrow.style.top = (below ? r.bottom + 8 : r.top - 22) + "px";
+  card.style.left = "50%";
+  card.style.transform = "translateX(-50%)";
+  if (below) {
+    card.style.top = r.bottom + 36 + "px";
+    card.style.bottom = "auto";
+  } else {
+    card.style.top = "auto";
+    card.style.bottom = window.innerHeight - r.top + 28 + "px";
+  }
+  tip.classList.add("show");
+}
+
+function stepTowerTip() {
+  if (towerTipStep >= 1) {
+    hideTowerTip(true);
+    return;
+  }
+  towerTipStep += 1;
+  paintTowerTip();
+}
+
+function onTowerTipMove() {
+  if (!towerTipOpen()) return;
+  const kind = towerTipStep === 0 ? "bomb" : "seal";
+  const host = document.querySelector("#tower-overlay .hit." + kind);
+  if (host) placeTowerTip(host, kind);
 }
 
 function openShop() {
@@ -1833,6 +1957,7 @@ function closeShop() {
 }
 
 function playTowerFloor() {
+  if (towerTipOpen()) return false;
   closeTower();
   closeMap();
   const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 4));
@@ -1841,16 +1966,18 @@ function playTowerFloor() {
   return true;
 }
 
-function sealHunt() {
-  const mark = markedTower();
+function sealHunt(name, btn) {
+  if (towerTipOpen()) return;
+  const mark = huntRow(name);
   if (!mark || mark.you) {
-    showPassToast("Ткни ник или случайного — кого печатать.");
+    showPassToast("Жми печать на игроке.");
     return;
   }
   if ((progress.towerCoins || 0) < SEAL_PRICE) {
+    if (btn) shake(btn);
     shake(document.getElementById("shop-seal"));
-    shake(document.getElementById("tower-seal"));
     showPassToast("Печать — за монеты башни.");
+    feel("fail");
     return;
   }
   progress.towerCoins -= SEAL_PRICE;
@@ -1864,11 +1991,11 @@ function sealHunt() {
   tone(180, 0.16, "sawtooth", 0.035);
 }
 
-function bombHunt() {
-  const mark = markedTower();
-  const btn = document.getElementById("tower-bomb");
+function bombHunt(name, btn) {
+  if (towerTipOpen()) return;
+  const mark = huntRow(name);
   if (!mark || mark.you) {
-    showPassToast("Ткни ник или случайного — кого рвать.");
+    showPassToast("Жми бомбу на игроке.");
     return;
   }
   if (!(progress.bombs > 0)) {
@@ -3200,17 +3327,28 @@ leagueRace.addEventListener("click", () => {
   startLevel(raceLevel());
 });
 document.getElementById("tower-play").addEventListener("click", () => playTowerFloor());
-const towerRandom = document.getElementById("tower-random");
-if (towerRandom) towerRandom.addEventListener("click", () => pickRandomTower());
-document.getElementById("tower-seal").addEventListener("click", () => sealHunt());
-const towerBomb = document.getElementById("tower-bomb");
-if (towerBomb) towerBomb.addEventListener("click", () => bombHunt());
+if (towerOverlay) {
+  towerOverlay.addEventListener("click", (event) => {
+    const btn = event.target.closest(".hit");
+    if (!btn || !towerOverlay.contains(btn)) return;
+    const who = btn.getAttribute("data-name");
+    if (btn.getAttribute("data-hit") === "bomb") bombHunt(who, btn);
+    else sealHunt(who, btn);
+  });
+}
 const introNext = document.getElementById("intro-next");
 if (introNext) introNext.addEventListener("click", () => stepIntro());
-document.getElementById("tower-close").addEventListener("click", () => {
-  closeTower();
-  backToMenuIfIdle();
-});
+const towerBack = document.getElementById("tower-back");
+if (towerBack) {
+  towerBack.addEventListener("click", () => {
+    closeTower();
+    backToMenuIfIdle();
+  });
+}
+const towerTipNext = document.getElementById("tower-tip-next");
+if (towerTipNext) towerTipNext.addEventListener("click", () => stepTowerTip());
+window.addEventListener("resize", onTowerTipMove);
+if (towerList) towerList.addEventListener("scroll", onTowerTipMove);
 if (towerSq) towerSq.addEventListener("click", () => tryEnterTower());
 if (mapGrid) {
   mapGrid.addEventListener("click", (event) => {
