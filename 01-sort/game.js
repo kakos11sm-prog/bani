@@ -281,7 +281,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=36";
+  el.src = "coin.svg?v=37";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -916,7 +916,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=36\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=37\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2101,16 +2101,11 @@ async function showWin() {
     window.setTimeout(() => el.classList.add("won"), i * 50);
   });
   const stars = starCount();
-  const before = huntTarget(leagueTable());
   const reward = applyWinRewards(stars);
   const after = huntTarget(leagueTable());
   if (after.me) progress.lastPlace = after.me.place;
   saveProgress();
-  if (before.me && after.me && after.me.place < before.me.place) {
-    const name = before.next ? before.next.name : "";
-    showPassToast(name ? "Обогнал " + name + " · #" + after.me.place : "Лига ↑ #" + after.me.place);
-    tone(700, 0.12, "triangle", 0.04);
-  }
+  state.lastStars = stars;
   document.body.classList.add("celebrate");
   window.setTimeout(() => document.body.classList.remove("celebrate"), 900);
   flyLoot(board.getBoundingClientRect(), 6);
@@ -2146,9 +2141,6 @@ async function showWin() {
       ? "Этап закрыт."
       : stageClears() + " / 100 до сундука.";
     if (reward.bombsMade) winText.textContent += " Собирай звёзды, чтобы получить бомбу — готово!";
-    if (before.me && after.me && after.me.place < before.me.place && before.next) {
-      winText.textContent += " Обогнал " + before.next.name + ".";
-    }
   }
   fillCoinLabel(
     winReward,
@@ -2321,6 +2313,40 @@ function replayCurrent() {
 
 function giveUp() {
   replayCurrent();
+}
+
+function flyWinStarsToHud() {
+  const dest = document.getElementById("hud-stars");
+  if (!dest || !winStars) return Promise.resolve();
+  const earned = Array.prototype.filter.call(winStars.children, (el) => el.classList.contains("on"));
+  if (!earned.length) return Promise.resolve();
+  if (document.body.classList.contains("quiet")) return Promise.resolve();
+  const to = dest.getBoundingClientRect();
+  return Promise.all(
+    earned.map((el, i) => {
+      const from = el.getBoundingClientRect();
+      const ghost = document.createElement("span");
+      ghost.className = "fly-star";
+      ghost.textContent = "★";
+      ghost.style.left = from.left + "px";
+      ghost.style.top = from.top + "px";
+      document.body.appendChild(ghost);
+      window.setTimeout(() => {
+        ghost.style.left = to.left + to.width / 2 - 10 + "px";
+        ghost.style.top = to.top + to.height / 2 - 14 + "px";
+        ghost.style.transform = "scale(0.35)";
+        ghost.style.opacity = "0.15";
+      }, 20 + i * 70);
+      return new Promise((resolve) => {
+        window.setTimeout(() => {
+          ghost.remove();
+          dest.parentElement && dest.parentElement.classList.add("catch");
+          window.setTimeout(() => dest.parentElement && dest.parentElement.classList.remove("catch"), 280);
+          resolve();
+        }, 580 + i * 70);
+      });
+    })
+  );
 }
 
 function keepStreakRestart() {
@@ -2540,14 +2566,19 @@ document.getElementById("shop-close").addEventListener("click", () => {
   closeShop();
   backToMenuIfIdle();
 });
-nextBtn.addEventListener("click", () => {
+nextBtn.addEventListener("click", async () => {
+  if (overlay.classList.contains("show")) {
+    nextBtn.disabled = true;
+    await flyWinStarsToHud();
+    overlay.classList.remove("show");
+    nextBtn.disabled = false;
+  }
   if (state.mode === "tower") {
     playTowerFloor();
     return;
   }
   syncUnlocked();
   if (state.level >= storyLevelCount()) {
-    overlay.classList.remove("show");
     openMap();
     return;
   }
