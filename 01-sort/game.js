@@ -62,6 +62,7 @@ const TOWER_NICKS = [
 const HINT_PRICE = 30;
 const UNDO_PRICE = 15;
 const EXTRA_PRICE = 45;
+const WOUND_FIX = 50;
 const LOCK_PRICES = [40, 70];
 const KEEP_PRICE = 50;
 const SKINS = [
@@ -605,6 +606,8 @@ function loadProgress() {
           freezeUntil: Math.max(0, Number(hold.freezeUntil) || 0),
           slowUntil: Math.max(0, Number(hold.slowUntil) || 0),
           slow: Math.max(0, Number(hold.slow) || 0),
+          by: typeof hold.by === "string" ? hold.by : "",
+          kind: hold.kind === "bomb" || hold.kind === "freeze" ? hold.kind : "",
         };
       });
     }
@@ -1332,10 +1335,53 @@ function isSlowed(name, at) {
 }
 
 function holdClass(name, you) {
-  if (you || !name) return "";
-  if (isFrozen(name)) return " frozen";
-  if (isSlowed(name)) return " slowed";
+  const who = you ? YOU : name;
+  if (!who) return "";
+  if (isFrozen(who)) return " frozen";
+  if (isSlowed(who)) return " slowed";
   return "";
+}
+
+function applyHold(name, kind, by) {
+  if (!progress.towerHold) progress.towerHold = {};
+  const hold = progress.towerHold[name] || {};
+  if (by) hold.by = by;
+  if (kind === "freeze") {
+    hold.freezeUntil = Math.max(hold.freezeUntil || 0, Date.now()) + SEAL_HOLD_MS;
+    hold.kind = "freeze";
+  } else {
+    hold.slowUntil = Math.max(hold.slowUntil || 0, Date.now()) + BOMB_HOLD_MS;
+    hold.slow = (hold.slow || 0) + 1;
+    hold.kind = "bomb";
+  }
+  progress.towerHold[name] = hold;
+}
+
+function youWound() {
+  if (isFrozen(YOU)) return { kind: "freeze", by: holdOf(YOU).by || "Соперник" };
+  if (isSlowed(YOU)) return { kind: "bomb", by: holdOf(YOU).by || "Соперник" };
+  return null;
+}
+
+function clearYouHold() {
+  if (!progress.towerHold) return;
+  delete progress.towerHold[YOU];
+  saveProgress();
+}
+
+function ensureYouHit() {
+  const have = youWound();
+  if (have) return have;
+  const table = towerTable();
+  const me = table.find((row) => row.you);
+  if (!me || me.place <= 1) return null;
+  const above = table.filter((row) => !row.you && row.place < me.place);
+  if (!above.length) return null;
+  const pick = above[hashStr(weekId() + ":youhit:" + Date.now()) % Math.min(8, above.length)];
+  const bomb = hashStr(weekId() + ":youkind:" + pick.name + ":" + (progress.towerScore || 0)) % 2 === 0;
+  applyHold(YOU, bomb ? "bomb" : "freeze", pick.name);
+  saveProgress();
+  return youWound();
 }
 
 function rivalTowerScoreSeed(name) {
@@ -1684,11 +1730,12 @@ function hitIcons(name, you) {
 }
 
 function holdBadge(name, you) {
-  if (you || !name) return "";
-  if (isFrozen(name)) {
+  const who = you ? YOU : name;
+  if (!who) return "";
+  if (isFrozen(who)) {
     return "<span class=\"hold-badge dead\" aria-hidden=\"true\"><span class=\"mini-flask\"><i></i><i></i></span></span>";
   }
-  if (isSlowed(name)) {
+  if (isSlowed(who)) {
     return "<span class=\"hold-badge crack\" aria-hidden=\"true\"><span class=\"mini-flask crack\"><i></i><i></i></span></span>";
   }
   return "";
@@ -2157,8 +2204,8 @@ function placeTowerTip(host, kind) {
   host.classList.add("tip-hot");
   text.textContent =
     kind === "bomb"
-      ? "Бомба усложняет ему уровень. Он набирает очки медленнее. Бомбы копятся из звёзд."
-      : "Печать закрывает банку. Он застывает — очки не растут. Платишь монетами.";
+      ? "Бомба ломает ему банку. Бомбы копятся из звёзд."
+      : "Печать замораживает ему банку. Платишь монетами.";
   next.textContent = kind === "bomb" ? "Дальше" : "Понятно";
   const r = host.getBoundingClientRect();
   const pad = 6;
@@ -2336,13 +2383,29 @@ async function buyCoinPack(id) {
   }
 }
 
-function playTowerFloor() {
+async function playIncomingWound(wound) {
+  const jar = board.querySelector(".jar.locked.wound") || board.querySelector(".jar.locked");
+  if (wound.kind === "bomb") await playBombAnim("", jar);
+  else await playSealAnim("", jar);
+}
+
+async function playTowerFloor() {
   if (towerTipOpen()) return false;
   closeTower();
   closeMap();
+  const wound = ensureYouHit();
   const heat = Math.min(4, Math.floor((progress.towerScore || 0) / 4));
   startLevel(rollTowerLevel(), { tower: true, floor: heat });
-  showPassToast("Башня · отдельные очки до понедельника");
+  if (wound) {
+    await wait(80);
+    await playIncomingWound(wound);
+    showPassToast(
+      wound.kind === "bomb"
+        ? "У тебя сломана банка. Это " + wound.by
+        : "У тебя заморожена банка. Это " + wound.by
+    );
+    openLockShop();
+  }
   return true;
 }
 
@@ -2362,17 +2425,14 @@ async function sealHunt(name, btn) {
   }
   state.towerHitBusy = true;
   progress.coins -= SEAL_PRICE;
-  if (!progress.towerHold) progress.towerHold = {};
-  const hold = progress.towerHold[mark.name] || {};
-  hold.freezeUntil = Math.max(hold.freezeUntil || 0, Date.now()) + SEAL_HOLD_MS;
-  progress.towerHold[mark.name] = hold;
+  applyHold(mark.name, "freeze", YOU);
   saveProgress();
   paintHud();
   paintLeague();
   paintShop();
   try {
     await playSealAnim(mark.name, btn);
-    showPassToast(mark.name + " застыл. Одна банка больше не работает.");
+    showPassToast("У " + mark.name + " заморожена банка");
     paintTower();
   } finally {
     state.towerHitBusy = false;
@@ -2394,16 +2454,12 @@ async function bombHunt(name, btn) {
   }
   state.towerHitBusy = true;
   progress.bombs -= 1;
-  if (!progress.towerHold) progress.towerHold = {};
-  const hold = progress.towerHold[mark.name] || {};
-  hold.slowUntil = Math.max(hold.slowUntil || 0, Date.now()) + BOMB_HOLD_MS;
-  hold.slow = (hold.slow || 0) + 1;
-  progress.towerHold[mark.name] = hold;
+  applyHold(mark.name, "bomb", YOU);
   saveProgress();
   paintHud();
   try {
     await playBombAnim(mark.name, btn);
-    showPassToast(mark.name + " тормозит. Уровень сложнее — очки капают реже.");
+    showPassToast("У " + mark.name + " сломана банка");
     paintTower();
   } finally {
     state.towerHitBusy = false;
@@ -2571,6 +2627,7 @@ function lockCountFor(level) {
 }
 
 function nextLockPrice() {
+  if (state.mode === "tower" && youWound()) return scaledPrice(WOUND_FIX);
   return scaledPrice(LOCK_PRICES[Math.min(state.openedExtra, LOCK_PRICES.length - 1)]);
 }
 
@@ -2581,28 +2638,39 @@ function closeLockShop() {
 
 function openLockShop() {
   if (!state.locked) return;
+  const wound = state.mode === "tower" ? youWound() : null;
+  const title = document.getElementById("lock-title");
+  if (title) title.textContent = wound ? (wound.kind === "bomb" ? "Сломанная банка" : "Замороженная банка") : "Закрытая банка";
   if (lockText) {
-    lockText.textContent = state.stolenEmpties
-      ? "Уровень тесный. Без колбы некуда лить."
-      : state.locked === 1
-        ? "Последняя закрытая. Откроешь — появится пустое место."
-        : "Ещё " + state.locked + " закрытых. Сначала одну.";
+    if (wound) {
+      lockText.textContent =
+        wound.kind === "bomb"
+          ? "У тебя сломана банка. Это " + wound.by + ". Почини за монеты или ролик."
+          : "У тебя заморожена банка. Это " + wound.by + ". Разморозь за монеты или ролик.";
+    } else {
+      lockText.textContent = state.stolenEmpties
+        ? "Уровень тесный. Без колбы некуда лить."
+        : state.locked === 1
+          ? "Последняя закрытая. Откроешь — появится пустое место."
+          : "Ещё " + state.locked + " закрытых. Сначала одну.";
+      if (state.mode === "tower") {
+        lockText.textContent += " Откроешь — можно лить дальше.";
+      } else if (hinderLocks() && state.level > 5) {
+        lockText.textContent += " Часть замков — помеха башни на эту неделю.";
+      }
+    }
   }
-  fillCoinLabel(lockCoins, "Открыть ", nextLockPrice(), "");
+  fillCoinLabel(lockCoins, wound ? (wound.kind === "bomb" ? "Починить " : "Разморозить ") : "Открыть ", nextLockPrice(), "");
+  if (lockAd) lockAd.textContent = wound ? (wound.kind === "bomb" ? "Ролик — починить" : "Ролик — разморозить") : "Ролик — открыть";
   if (lockCharge) {
-    lockCharge.hidden = !progress.bottleCharges;
+    lockCharge.hidden = !!wound || !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
   }
-  const poor = progress.coins < nextLockPrice() && !progress.bottleCharges;
+  const closeBtn = document.getElementById("lock-close");
+  if (closeBtn) closeBtn.textContent = wound ? "Играть так" : "Пока нет";
+  const poor = progress.coins < nextLockPrice() && (wound || !progress.bottleCharges);
   if (lockCoins) lockCoins.classList.toggle("primary", !poor);
   if (lockAd) lockAd.classList.toggle("primary", poor);
-  if (state.mode === "tower") {
-    lockText.textContent =
-      (lockText.textContent || "") + " Это он закрыл тебе ход. Откроешь — можно лить дальше.";
-  } else if (hinderLocks() && state.level > 5) {
-    lockText.textContent =
-      (lockText.textContent || "") + " Часть замков — помеха башни на эту неделю.";
-  }
   if (state.lock !== "fail") state.lock = "shop";
   lockOverlay.classList.add("show");
 }
@@ -2635,9 +2703,11 @@ function startLevel(level, opts) {
   state.moves = 0;
   state.doubled = false;
   state.stolenEmpties = stolen;
+  const wound = tower ? youWound() : null;
   state.locked = tower
-    ? Math.min(4, towerLockCount(opts.floor || 0) + Math.min(2, progress.towerWounds || 0))
+    ? Math.min(4, towerLockCount(opts.floor || 0) + (wound ? 1 : 0) + Math.min(2, progress.towerWounds || 0))
     : Math.min(4, lockCountFor(n) + stolen);
+  if (tower && wound && state.locked < 1) state.locked = 1;
   if (tower && progress.towerWounds) {
     progress.towerWounds = Math.max(0, progress.towerWounds - 1);
     saveProgress();
@@ -2692,10 +2762,16 @@ function render(enter) {
     });
     board.appendChild(btn);
   });
+  const wound = state.mode === "tower" ? youWound() : null;
   for (let i = 0; i < state.locked; i += 1) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "jar locked skin-" + progress.skin + (enter ? "" : " settled");
+    const hit = wound && i === 0;
+    btn.className =
+      "jar locked skin-" +
+      progress.skin +
+      (enter ? "" : " settled") +
+      (hit ? " wound " + (wound.kind === "bomb" ? "broken-hit" : "frozen-hit") : "");
     if (enter) btn.style.animationDelay = (state.tubes.length + i) * 45 + "ms";
     btn.setAttribute("aria-label", "закрытая банка");
     const frost = document.createElement("span");
@@ -3479,6 +3555,7 @@ async function unlockJar(pay) {
     await watchAd();
     state.busy = false;
   }
+  if (state.mode === "tower" && youWound()) clearYouHold();
   state.locked -= 1;
   if (state.stolenEmpties) state.stolenEmpties -= 1;
   state.openedExtra += 1;
