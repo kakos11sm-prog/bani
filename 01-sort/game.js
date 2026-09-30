@@ -267,7 +267,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=22";
+  el.src = "coin.svg?v=23";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -407,9 +407,9 @@ function paintMenu() {
   paintWeekClocks();
   if (towerMeta) {
     if (hasTowerPass()) {
-      towerMeta.textContent = "Открыто. Соревнуйся, пока не кончилась неделя.";
+      towerMeta.textContent = "Попробуй удержать первое место";
     } else {
-      towerMeta.textContent = "Замок. Пропуск 1000 монет — и ты в бою за сундук.";
+      towerMeta.textContent = "Замок. 1000 монет — и ты в бою за сундук.";
     }
   }
 }
@@ -842,7 +842,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=22\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=23\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);

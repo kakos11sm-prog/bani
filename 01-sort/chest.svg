@@ -1,35 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
   <defs>
-    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#8a3a12"/>
-      <stop offset="55%" stop-color="#5a220c"/>
-      <stop offset="100%" stop-color="#3a1408"/>
+    <linearGradient id="lid" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7a2c0c"/>
+      <stop offset="40%" stop-color="#c45a16"/>
+      <stop offset="100%" stop-color="#ffb24a"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fff3b0"/>
-      <stop offset="35%" stop-color="#ffd24a"/>
-      <stop offset="100%" stop-color="#c47a10"/>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9a3e12"/>
+      <stop offset="50%" stop-color="#5c220c"/>
+      <stop offset="100%" stop-color="#2c1008"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="28%">
-      <stop offset="0%" stop-color="#ffe08a" stop-opacity="0.95"/>
-      <stop offset="55%" stop-color="#ff9a2a" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#ff9a2a" stop-opacity="0"/>
+    <linearGradient id="trim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff4b8"/>
+      <stop offset="45%" stop-color="#ffd34a"/>
+      <stop offset="100%" stop-color="#a8620c"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="30%">
+      <stop offset="0%" stop-color="#fff3b0" stop-opacity="0.95"/>
+      <stop offset="40%" stop-color="#ffb020" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ff8a00" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <ellipse cx="40" cy="72" rx="22" ry="5" fill="#000" opacity="0.35"/>
-  <circle cx="40" cy="28" r="26" fill="url(#glow)"/>
-  <path d="M14 36h52l-4 8H18z" fill="#ffb020"/>
-  <path d="M12 42c0-2 2-4 6-4h44c4 0 6 2 6 4v22c0 4-3 7-8 7H20c-5 0-8-3-8-7z" fill="url(#wood)"/>
-  <path d="M12 48h56" stroke="url(#gold)" stroke-width="5"/>
-  <path d="M18 42v29" stroke="url(#gold)" stroke-width="3.2"/>
-  <path d="M62 42v29" stroke="url(#gold)" stroke-width="3.2"/>
-  <path d="M16 22c0-8 8-14 24-14s24 6 24 14v16H16z" fill="url(#gold)"/>
-  <path d="M20 24c1-6 7-10 20-10s19 4 20 10" fill="none" stroke="#fff6c4" stroke-width="2" opacity="0.7"/>
-  <circle cx="40" cy="50" r="7" fill="url(#gold)"/>
-  <circle cx="40" cy="50" r="3.2" fill="#6a2a08"/>
-  <circle cx="28" cy="38" r="3.4" fill="#ff4d6d"/>
-  <circle cx="52" cy="36" r="3" fill="#5b8def"/>
-  <circle cx="40" cy="32" r="3.6" fill="#3ecf8e"/>
-  <path d="M22 12l2 5 5 1-4 3 2 5-5-3-5 3 2-5-4-3 5-1z" fill="#fff3b0"/>
-  <path d="M58 10l1.6 4 4.2.8-3.2 2.6 1.4 4.2-4-2.4-4 2.4 1.4-4.2-3.2-2.6 4.2-.8z" fill="#ffe08a"/>
+  <ellipse cx="60" cy="108" rx="34" ry="7" fill="#000" opacity="0.4"/>
+  <circle cx="60" cy="42" r="40" fill="url(#halo)"/>
+  <path d="M22 58 L60 18 L98 58 Z" fill="url(#lid)"/>
+  <path d="M28 56 L60 24 L92 56 Z" fill="#ffd36a" opacity="0.35"/>
+  <path d="M22 58h76l-6 10H28z" fill="#ffbe3a"/>
+  <path d="M18 66c0-3 4-6 10-6h64c6 0 10 3 10 6v28c0 7-6 12-14 12H32c-8 0-14-5-14-12z" fill="url(#box)"/>
+  <path d="M18 74h84" stroke="url(#trim)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M30 62v42" stroke="url(#trim)" stroke-width="4"/>
+  <path d="M90 62v42" stroke="url(#trim)" stroke-width="4"/>
+  <path d="M24 96h72" stroke="url(#trim)" stroke-width="3.5"/>
+  <ellipse cx="44" cy="70" rx="8" ry="5" fill="#ffe27a"/>
+  <ellipse cx="58" cy="66" rx="9" ry="6" fill="#ffd24a"/>
+  <ellipse cx="72" cy="70" rx="8" ry="5" fill="#ffc01e"/>
+  <ellipse cx="50" cy="76" rx="7" ry="4.5" fill="#fff0a8"/>
+  <ellipse cx="66" cy="76" rx="7" ry="4.5" fill="#ffb020"/>
+  <ellipse cx="60" cy="80" rx="10" ry="5" fill="#e09a14"/>
+  <circle cx="38" cy="68" r="3.2" fill="#ff4d6d"/>
+  <circle cx="80" cy="67" r="3" fill="#5b8def"/>
+  <circle cx="60" cy="62" r="3.4" fill="#3ecf8e"/>
+  <circle cx="60" cy="88" r="8" fill="url(#trim)"/>
+  <circle cx="60" cy="88" r="3.4" fill="#4a1c08"/>
+  <path d="M56 88v-8c0-3 8-3 8 0v8" fill="none" stroke="#ffe08a" stroke-width="2"/>
+  <path d="M28 14l3 7 7 1.4-5.6 4.4 2.4 7-6.8-4.2-6.8 4.2 2.4-7-5.6-4.4 7-1.4z" fill="#fff6c4"/>
+  <path d="M90 10l2.2 5.4 5.6 1-4.4 3.4 1.8 5.4-5.2-3.2-5.2 3.2 1.8-5.4-4.4-3.4 5.6-1z" fill="#ffe08a"/>
+  <path d="M60 6l2.6 6.2 6.6 1.2-5.2 4 2.2 6.4-6.2-3.8-6.2 3.8 2.2-6.4-5.2-4 6.6-1.2z" fill="#fff3b0"/>
 </svg>
