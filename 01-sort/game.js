@@ -39,17 +39,17 @@ const RIVALS = [
   "Оля",
 ];
 const TOWER_NICKS = [
-  "Лера", "Макс", "Ника", "Тимур", "Соня", "Артём", "Кира", "Даня", "Мила", "Егор",
-  "Яна", "Лев", "Алина", "Марк", "Тоня", "Илья", "Вера", "Глеб", "Оля", "Катя",
-  "Рома", "Настя", "Паша", "Юля", "Влад", "Света", "Дима", "Маша", "Саша", "Лиза",
-  "Женя", "Полина", "Костя", "Даша", "Богдан", "Ксюша", "Антон", "Вика", "Сева", "Ира",
-  "Гоша", "Таня", "Федя", "Люба", "Ярик", "Злата", "Мирон", "Ульяна", "Стёпа", "Рита",
-  "Платон", "Кира_fox", "noobKing", "БанкаПро", "ТихийЛев", "Сок2026", "NikaPlay", "Макс7",
-  "Огонь", "Пузырь", "Колба", "Лиса", "Бублик", "Ракета", "Тень", "Искра", "Кефир", "МятаPlay",
-  "Зевс", "Нота", "Пиксель", "Шторм", "Лёд", "Жара", "Куб", "Вихрь", "Неон", "Янтарь",
-  "Вольт", "Краб", "Пингвин", "Сова", "Рысь", "Тигр", "Енот", "Хаски", "Пума", "Гепард",
-  "Арбуз", "Перец", "Буря", "Комета", "Скат", "Факел", "Квант", "Рубин", "Оникс",
-  "Фокс", "Дракон",
+  "Лера", "Jake", "Minji", "Hugo", "Priya", "Diego", "Yuki", "Emre", "Amina", "Lukas",
+  "Макс", "Ashley", "Joon", "Camille", "Aarav", "Lucia", "Haruto", "Elif", "Chidi", "Anna",
+  "Ника", "Tyler", "Sora", "Mateo", "Kasia", "Freja", "Rafa", "Putri", "Kenji", "Noor",
+  "Тимур", "Mei", "Omar", "Ines", "Boris", "Nia", "Pavel", "Sofia", "Lars", "Zara",
+  "Соня", "Chen", "Fatou", "Giulia", "Hassan", "Ivy", "Jamal", "Klara", "Leo", "Mira",
+  "Кира", "Niko", "Ola", "Piotr", "Quinn", "Rina", "Sami", "Tara", "Umar", "Vera",
+  "Даня", "Wei", "Xavi", "Yara", "Zoltan", "Aiko", "Bruno", "Celine", "Dario", "Ewa",
+  "Мила", "Farid", "Greta", "Hiro", "Ivana", "Jules", "Lina", "Musa", "Nadia", "Otto",
+  "Егор", "Pia", "Rami", "Sana", "Theo", "Uma", "Viktor", "Wafa", "Yusuf", "SeoulAce",
+  "BakuKing", "RioNoob", "LagosFire", "OsloBit", "noobKing", "Fox_UA", "Дракон", "БанкаПро",
+  "NikaPlay",
 ];
 const HINT_PRICE = 30;
 const UNDO_PRICE = 15;
@@ -290,7 +290,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=47";
+  el.src = "coin.svg?v=48";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -415,13 +415,15 @@ function syncScreens() {
   const mapOpen = mapOverlay && mapOverlay.classList.contains("show");
   const home = document.getElementById("boot");
   const homeOpen = home && home.classList.contains("show");
-  const cover = ["intro-overlay", "tower-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+  const towerOpen = towerOverlay && towerOverlay.classList.contains("show");
+  const cover = ["intro-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
     const el = document.getElementById(id);
     return el && el.classList.contains("show");
   });
   document.body.classList.toggle("screen", cover);
   document.body.classList.toggle("map-open", !!mapOpen);
-  document.body.classList.toggle("home-open", !!homeOpen && !cover);
+  document.body.classList.toggle("home-open", !!homeOpen && !cover && !towerOpen);
+  document.body.classList.toggle("tower-open", !!towerOpen);
 }
 
 function paintMenu() {
@@ -1038,7 +1040,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=47\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=48\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -1111,7 +1113,7 @@ function paintWeekClocks() {
   const home = document.getElementById("home-tower-clock");
   if (home) home.textContent = left + " до приза";
   const top = document.getElementById("tower-clock");
-  if (top) top.textContent = "Осталось " + left + " — потом главный сундук";
+  if (top) top.textContent = left;
 }
 
 function syncWeek() {
@@ -1538,35 +1540,22 @@ function paintTower() {
   const me = table.find((row) => row.you);
   const mark = markedTower();
   paintWeekClocks();
-  if (towerLead) {
-    towerLead.hidden = false;
-    const gone = TOWER_NICKS.length + 1 - table.length;
-    towerLead.textContent =
-      "День " +
-      weekDayNum() +
-      " из 7. Живая сетка: кто-то фармит, кто-то бросил" +
-      (gone ? " · нет " + gone : "") +
-      ".";
-  }
+  paintTowerPodium(table);
   const scoreEl = document.getElementById("tower-score");
   if (scoreEl) {
     scoreEl.textContent =
       "Твои очки: " + (progress.towerScore || 0) + (me ? " · #" + me.place : "");
   }
   const sealBtn = document.getElementById("tower-seal");
-  if (sealBtn) {
-    sealBtn.textContent = mark ? "Запечатать ход " + mark.name : "Некого печатать";
-  }
+  if (sealBtn) sealBtn.textContent = "Печать";
   const bombBtn = document.getElementById("tower-bomb");
   if (bombBtn) {
-    bombBtn.textContent = mark
-      ? "Разорвать колбу " + mark.name + " · 💣" + (progress.bombs || 0)
-      : "Некого взрывать";
+    bombBtn.textContent = "Бомба · " + (progress.bombs || 0);
     bombBtn.classList.toggle("dim", !(progress.bombs > 0) || !mark);
   }
   if (towerList) {
     towerList.innerHTML = "";
-    const shown = visibleTowerRows(table);
+    const shown = visibleTowerRows(table).filter((row) => row.place > 3);
     let lastPlace = 0;
     shown.forEach((row, i) => {
       if (lastPlace && row.place > lastPlace + 1) {
@@ -1765,11 +1754,48 @@ function tryEnterTower() {
   openPassGate();
 }
 
+function paintTowerPodium(table) {
+  const host = document.getElementById("tower-podium");
+  if (!host) return;
+  host.innerHTML = "";
+  const medals = ["", "золото", "серебро", "бронза"];
+  [2, 1, 3].forEach((place) => {
+    const row = table.find((item) => item.place === place);
+    const slot = document.createElement("div");
+    slot.className = "podium-slot p" + place + (row && row.you ? " you" : "");
+    if (row && !row.you) {
+      slot.classList.add("pick");
+      if (state.towerMark === row.name) slot.classList.add("mark");
+      slot.addEventListener("click", () => {
+        state.towerMark = row.name;
+        paintTower();
+      });
+    }
+    const face = faceOf(row ? row.name : "—", !!(row && row.you));
+    slot.innerHTML =
+      "<span class=\"podium-face\" style=\"background:" +
+      face.color +
+      "\">" +
+      face.letter +
+      "</span><b>" +
+      (row ? row.name : "—") +
+      "</b><small>" +
+      (row ? row.score : "0") +
+      "</small><em>" +
+      place +
+      "</em><i>" +
+      medals[place] +
+      "</i>";
+    host.appendChild(slot);
+  });
+}
+
 function openTower() {
   closeLeague();
   closeShop();
   closeSkins();
   closeMap();
+  closeMenu();
   syncTowerPressure();
   paintTower();
   if (progress.towerHitNews && progress.towerHitNews.length) {
@@ -2505,7 +2531,7 @@ function fillChestBits(face) {
     if (face.glyph === "coin") {
       const pic = document.createElement("img");
       pic.className = "chest-bulb chest-bit-coin";
-      pic.src = "coin.svg?v=47";
+      pic.src = "coin.svg?v=48";
       pic.alt = "";
       host.appendChild(pic);
     } else {
@@ -2597,7 +2623,7 @@ function flyChestBitsToHud(kind, count, onLand) {
       const ghost = document.createElement(coin ? "img" : "span");
       ghost.className = coin ? "fly-coin" : "fly-hint";
       if (coin) {
-        ghost.src = "coin.svg?v=47";
+        ghost.src = "coin.svg?v=48";
         ghost.alt = "";
       } else if (kind === "hints") ghost.textContent = "💡";
       else if (kind === "boost") ghost.textContent = "🔥";
@@ -2716,7 +2742,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=47";
+    ghost.src = pic ? pic.src : "coin.svg?v=48";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";

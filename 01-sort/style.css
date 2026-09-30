@@ -860,9 +860,233 @@ body.quiet .lock-gate-miss {
   z-index: 90;
 }
 
-#tower-overlay,
 #shop-overlay {
   z-index: 59;
+}
+
+#tower-overlay {
+  z-index: 65;
+  padding: 0;
+  align-items: stretch;
+}
+
+#tower-overlay.show {
+  background:
+    radial-gradient(90vw 50vh at 50% 0%, #5a2a10 0%, transparent 55%),
+    #120e0b;
+  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+}
+
+body.tower-open .wrap {
+  z-index: 60;
+  visibility: visible;
+  pointer-events: none;
+}
+
+body.tower-open .hud,
+body.tower-open .fly {
+  pointer-events: auto;
+  z-index: 75;
+}
+
+body.tower-open .mission,
+body.tower-open .play-row,
+body.tower-open .bar,
+body.tower-open .skin-btn,
+body.tower-open .more,
+body.tower-open .fx,
+body.tower-open .level {
+  visibility: hidden;
+}
+
+.tower-stage {
+  width: min(540px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: 6px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.tower-prize {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.tower-prize .tower-chest,
+.tower-prize .chest-pic.big {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+}
+
+.tower-prize .prize-call {
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+.tower-prize #tower-clock {
+  display: block;
+  margin-top: 2px;
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffe27a;
+  text-shadow: 0 0 16px rgba(255, 210, 74, 0.75);
+  animation: chestPrizeGlow 1.1s ease-in-out infinite;
+}
+
+.tower-podium {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  min-height: 118px;
+}
+
+.podium-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 4px 0;
+  border-radius: 14px 14px 0 0;
+  animation: chestPrizeIn 0.45s cubic-bezier(0.2, 1.5, 0.3, 1) both;
+}
+
+.podium-slot.p1 {
+  order: 2;
+  background: linear-gradient(180deg, #6a4a10, #3a2808);
+  box-shadow: 0 0 22px rgba(255, 210, 74, 0.45);
+  transform: translateY(-8px) scale(1.08);
+}
+
+.podium-slot.p2 {
+  order: 1;
+  background: linear-gradient(180deg, #4a4a52, #2a2a30);
+}
+
+.podium-slot.p3 {
+  order: 3;
+  background: linear-gradient(180deg, #5a3218, #2a180c);
+}
+
+.podium-slot.you {
+  box-shadow: inset 0 0 0 2px #f4b942;
+}
+
+.podium-slot.pick {
+  cursor: pointer;
+}
+
+.podium-slot.mark {
+  box-shadow: inset 0 0 0 2px #e85d4c;
+}
+
+.podium-face {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.podium-slot.p1 .podium-face {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+
+.podium-slot b {
+  max-width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-slot small {
+  color: #ffe08a;
+  font-weight: 800;
+}
+
+.podium-slot em {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.podium-slot.p1 em { color: #ffd24a; }
+.podium-slot.p2 em { color: #d8d8e0; }
+.podium-slot.p3 em { color: #e09a5a; }
+
+.podium-slot i {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff6c4;
+}
+
+#tower-overlay .tower-score {
+  flex: 0 0 auto;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffe08a;
+}
+
+#tower-overlay #tower-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+}
+
+.tower-bar {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tower-bar #tower-play {
+  grid-column: 1 / -1;
+  height: 42px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tower-bar .act {
+  width: 100%;
+  padding: 10px 8px;
+  font-size: 14px;
+}
+
+.tower-bar #tower-close {
+  grid-column: 1 / -1;
+}
+
+body.quiet .tower-prize #tower-clock,
+body.quiet .podium-slot {
+  animation: none;
 }
 
 .pass-card {
