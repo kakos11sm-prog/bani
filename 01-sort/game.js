@@ -107,6 +107,7 @@ const state = {
   doubled: false,
   holdHudCoins: null,
   holdHudHints: null,
+  chestPrizes: [],
   winBase: 0,
   winTotal: 0,
   winExtraDone: false,
@@ -286,7 +287,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=42";
+  el.src = "coin.svg?v=43";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -656,7 +657,14 @@ function claimMilestones() {
       progress.skin = "wide";
       if (progress.unlocked < 101) progress.unlocked = 101;
     }
-    got.push({ kind: item.kind, n: item.n || 0, text: item.text });
+    got.push({
+      kind: item.kind,
+      n: item.n || 0,
+      mult: item.mult || 0,
+      hours: item.hours || 0,
+      id: item.id || "",
+      text: item.text,
+    });
   });
   return got;
 }
@@ -921,7 +929,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=42\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=43\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2158,39 +2166,90 @@ function hintWord(n) {
   return "подсказок";
 }
 
-function fillChestBulbs(n) {
+function prizeHero(prizes) {
+  const order = ["hints", "coins", "boost", "skin", "stage", "undos"];
+  for (let i = 0; i < order.length; i += 1) {
+    const hit = prizes.find((item) => item.kind === order[i]);
+    if (hit) return hit;
+  }
+  return prizes[0];
+}
+
+function prizeFace(item) {
+  if (!item) return { num: "Приз", word: "сундук", glyph: "✨", bits: 6 };
+  if (item.kind === "hints") {
+    return { num: "+" + item.n, word: hintWord(item.n), glyph: "💡", bits: item.n };
+  }
+  if (item.kind === "coins") {
+    return { num: "+" + item.n, word: "монет", glyph: "coin", bits: 7 };
+  }
+  if (item.kind === "boost") {
+    return { num: "×" + item.mult, word: "на " + item.hours + " ч", glyph: "🔥", bits: 5 };
+  }
+  if (item.kind === "skin") {
+    const name = (item.text || "").replace(/^Скин «?/, "").replace(/»?.*$/, "");
+    return { num: "Скин", word: name || "банок", glyph: "✨", bits: 6 };
+  }
+  if (item.kind === "stage") {
+    return { num: "+100", word: "уровней", glyph: "★", bits: 6 };
+  }
+  if (item.kind === "undos") {
+    return { num: "+" + item.n, word: item.n === 1 ? "отмена" : "отмен", glyph: "↩", bits: item.n || 1 };
+  }
+  return { num: "Приз", word: item.text || "сундук", glyph: "✨", bits: 6 };
+}
+
+function fillChestBits(face) {
   const host = document.getElementById("chest-bulbs");
   if (!host) return;
   host.innerHTML = "";
+  const n = Math.max(1, face.bits || 6);
   for (let i = 0; i < n; i += 1) {
-    const bulb = document.createElement("span");
-    bulb.className = "chest-bulb";
-    bulb.textContent = "💡";
-    host.appendChild(bulb);
+    if (face.glyph === "coin") {
+      const pic = document.createElement("img");
+      pic.className = "chest-bulb chest-bit-coin";
+      pic.src = "coin.svg?v=43";
+      pic.alt = "";
+      host.appendChild(pic);
+    } else {
+      const bit = document.createElement("span");
+      bit.className = "chest-bulb";
+      bit.textContent = face.glyph;
+      host.appendChild(bit);
+    }
   }
 }
 
+function chestHudDest(kind) {
+  if (kind === "hints" || kind === "undos") {
+    return document.getElementById("chip-hints") || document.getElementById("hud-hints");
+  }
+  if (kind === "coins") {
+    return document.querySelector(".chip.coin-chip") || document.getElementById("hud-coins");
+  }
+  if (kind === "boost") return document.getElementById("chip-fire");
+  return document.getElementById("chip-bomb") || document.getElementById("hud-stars");
+}
+
 function openChapterChest(prizes) {
+  state.chestPrizes = prizes.slice();
   const hintN = prizes
     .filter((item) => item.kind === "hints")
     .reduce((sum, item) => sum + (item.n || 0), 0);
   if (hintN) state.holdHudHints = Math.max(0, progress.hints - hintN);
   paintHud();
   chestLoot.innerHTML = "";
+  const hero = prizeHero(prizes);
+  const face = prizeFace(hero);
   const prizeEl = document.getElementById("chest-prize");
   const prizeNum = document.getElementById("chest-prize-num");
   const prizeWord = document.getElementById("chest-prize-word");
-  if (prizeEl && hintN) {
-    prizeEl.hidden = false;
-    if (prizeNum) prizeNum.textContent = "+" + hintN;
-    if (prizeWord) prizeWord.textContent = hintWord(hintN);
-    fillChestBulbs(hintN);
-  } else if (prizeEl) {
-    prizeEl.hidden = true;
-    fillChestBulbs(0);
-  }
+  if (prizeEl) prizeEl.hidden = false;
+  if (prizeNum) prizeNum.textContent = face.num;
+  if (prizeWord) prizeWord.textContent = face.word;
+  fillChestBits(face);
   prizes.forEach((item, i) => {
-    if (item.kind === "hints") return;
+    if (hero && item === hero) return;
     const row = document.createElement("b");
     row.textContent = item.text;
     row.style.animationDelay = i * 90 + "ms";
@@ -2218,32 +2277,41 @@ function closeChapterChest(keepHold) {
   document.body.classList.remove("chest-open");
   const fxHost = document.getElementById("chest-fx");
   if (fxHost) fxHost.innerHTML = "";
+  state.chestPrizes = [];
   if (!keepHold) {
     state.holdHudHints = null;
     paintHud();
   }
 }
 
-function flyHintsToHud(n) {
-  const dest = document.getElementById("chip-hints") || document.getElementById("hud-hints");
-  const bulbs = document.querySelectorAll("#chest-bulbs .chest-bulb");
+function flyChestBitsToHud(kind, count, onLand) {
+  const dest = chestHudDest(kind);
+  const bits = document.querySelectorAll("#chest-bulbs .chest-bulb");
   const fallback = document.getElementById("chest-prize") || document.getElementById("chest-box");
-  if (!dest || !n) return Promise.resolve();
+  const n = Math.max(1, count || bits.length || 6);
+  if (!dest) return Promise.resolve();
   if (document.body.classList.contains("quiet")) return Promise.resolve();
   const to = dest.getBoundingClientRect();
-  let shown = state.holdHudHints != null ? state.holdHudHints : progress.hints - n;
   return Promise.all(
     Array.from({ length: n }, (_, i) => {
-      const src = bulbs[i] || fallback;
+      const src = bits[i] || bits[bits.length - 1] || fallback;
       const from = src ? src.getBoundingClientRect() : to;
-      const ghost = document.createElement("span");
-      ghost.className = "fly-hint";
-      ghost.textContent = "💡";
+      const coin = kind === "coins";
+      const ghost = document.createElement(coin ? "img" : "span");
+      ghost.className = coin ? "fly-coin" : "fly-hint";
+      if (coin) {
+        ghost.src = "coin.svg?v=43";
+        ghost.alt = "";
+      } else if (kind === "hints") ghost.textContent = "💡";
+      else if (kind === "boost") ghost.textContent = "🔥";
+      else if (kind === "undos") ghost.textContent = "↩";
+      else if (kind === "stage") ghost.textContent = "★";
+      else ghost.textContent = "✨";
       ghost.style.left = from.left + from.width / 2 - 14 + "px";
       ghost.style.top = from.top + "px";
       document.body.appendChild(ghost);
       window.setTimeout(() => {
-        if (bulbs[i]) bulbs[i].style.opacity = "0";
+        if (bits[i]) bits[i].style.opacity = "0";
         ghost.style.left = to.left + to.width / 2 - 12 + "px";
         ghost.style.top = to.top + to.height / 2 - 12 + "px";
         ghost.style.transform = "scale(0.35) rotate(-20deg)";
@@ -2252,9 +2320,7 @@ function flyHintsToHud(n) {
       return new Promise((resolve) => {
         window.setTimeout(() => {
           ghost.remove();
-          shown += 1;
-          const hud = document.getElementById("hud-hints");
-          if (hud) hud.textContent = String(shown);
+          if (onLand) onLand(i);
           dest.classList.add("catch");
           window.setTimeout(() => dest.classList.remove("catch"), 280);
           tone(640 + i * 40, 0.08, "sine", 0.03);
@@ -2270,9 +2336,33 @@ async function claimChapterChest() {
   state.chestBusy = true;
   const claimBtn = document.getElementById("chest-ok");
   if (claimBtn) claimBtn.disabled = true;
-  const add =
+  const prizes = state.chestPrizes || [];
+  const hintN =
     state.holdHudHints != null ? Math.max(0, progress.hints - state.holdHudHints) : 0;
-  if (add) await flyHintsToHud(add);
+  const coinN = prizes
+    .filter((item) => item.kind === "coins")
+    .reduce((sum, item) => sum + (item.n || 0), 0);
+  const hero = prizeHero(prizes);
+  if (hintN) {
+    let shown = state.holdHudHints;
+    await flyChestBitsToHud("hints", hintN, () => {
+      shown += 1;
+      const hud = document.getElementById("hud-hints");
+      if (hud) hud.textContent = String(shown);
+    });
+  } else if (coinN) {
+    const start = state.holdHudCoins != null ? state.holdHudCoins : progress.coins - coinN;
+    let shown = start;
+    await flyChestBitsToHud("coins", 7, () => {
+      shown = Math.min(start + coinN, shown + Math.ceil(coinN / 7));
+      if (state.holdHudCoins != null) state.holdHudCoins = shown;
+      const hud = document.getElementById("hud-coins");
+      if (hud) hud.textContent = String(shown);
+    });
+    if (state.holdHudCoins != null) state.holdHudCoins = start + coinN;
+  } else if (hero) {
+    await flyChestBitsToHud(hero.kind, prizeFace(hero).bits);
+  }
   state.holdHudHints = null;
   paintHud();
   closeChapterChest(true);
@@ -2331,7 +2421,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=42";
+    ghost.src = pic ? pic.src : "coin.svg?v=43";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";

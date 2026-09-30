@@ -2568,6 +2568,12 @@ body.chest-open .hud {
   animation: chestBulbPop 0.4s cubic-bezier(0.2, 1.6, 0.3, 1) both;
 }
 
+.chest-bit-coin {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
 .chest-bulb:nth-child(2) { animation-delay: 0.04s; }
 .chest-bulb:nth-child(3) { animation-delay: 0.08s; }
 .chest-bulb:nth-child(4) { animation-delay: 0.12s; }
