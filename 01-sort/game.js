@@ -285,7 +285,7 @@ function wait(ms) {
 function coinEl() {
   const el = document.createElement("img");
   el.className = "coin";
-  el.src = "coin.svg?v=39";
+  el.src = "coin.svg?v=40";
   el.alt = "";
   el.setAttribute("aria-hidden", "true");
   return el;
@@ -920,7 +920,7 @@ function paintSkins() {
       " settled\"><span class=\"layer\" style=\"background:#e85d4c\"></span><span class=\"layer\" style=\"background:#f4b942\"></span><span class=\"layer\" style=\"background:#3ecf8e\"></span></span><b>" +
       item.name +
       "</b><small class=\"with-coin\">" +
-      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=39\" alt=\"\" />" : "") +
+      (item.premium && !ownsSkin(item.id) ? "<img class=\"coin\" src=\"coin.svg?v=40\" alt=\"\" />" : "") +
       skinMark(item) +
       "</small>";
     grid.appendChild(card);
@@ -2152,34 +2152,30 @@ function settleWinExtra() {
 
 async function playFireBoost() {
   const src = document.getElementById("chip-fire");
-  const pop = document.getElementById("win-fire-pop");
   const cash = document.getElementById("win-cash");
-  const multEl = document.getElementById("win-fire-mult");
-  if (!src || !pop || !cash) return;
-  if (multEl) multEl.textContent = "×" + fireMult().toFixed(1);
+  if (!src || !cash) return;
+  document.querySelectorAll(".win-fire-pop").forEach((el) => el.remove());
   const from = src.getBoundingClientRect();
-  const midX = window.innerWidth / 2 - 70;
-  const midY = window.innerHeight * 0.36;
-  pop.hidden = false;
-  pop.classList.add("show");
+  const pop = document.createElement("div");
+  pop.className = "win-fire-pop";
+  pop.innerHTML = "<span>🔥</span><em>×" + fireMult().toFixed(1) + "</em>";
   pop.style.left = from.left + "px";
   pop.style.top = from.top + "px";
   pop.style.transform = "scale(0.45)";
   pop.style.opacity = "1";
+  document.body.appendChild(pop);
   await wait(40);
-  pop.style.left = midX + "px";
-  pop.style.top = midY + "px";
+  pop.style.left = window.innerWidth / 2 - 70 + "px";
+  pop.style.top = window.innerHeight * 0.36 + "px";
   pop.style.transform = "scale(1.85)";
   await wait(720);
   const to = cash.getBoundingClientRect();
   pop.style.left = to.left + to.width / 2 - 36 + "px";
   pop.style.top = to.top - 8 + "px";
-  pop.style.transform = "scale(0.25)";
+  pop.style.transform = "scale(0.2)";
   pop.style.opacity = "0";
-  await wait(420);
-  pop.classList.remove("show");
-  pop.hidden = true;
-  pop.removeAttribute("style");
+  await wait(400);
+  pop.remove();
 }
 
 function flyWinCoinsToHud() {
@@ -2194,7 +2190,7 @@ function flyWinCoinsToHud() {
   for (let i = 0; i < n; i += 1) {
     const ghost = document.createElement("img");
     ghost.className = "fly-coin";
-    ghost.src = pic ? pic.src : "coin.svg?v=39";
+    ghost.src = pic ? pic.src : "coin.svg?v=40";
     ghost.alt = "";
     ghost.style.left = from.left + from.width / 2 - 12 + (i - 3) * 6 + "px";
     ghost.style.top = from.top + "px";
@@ -2701,12 +2697,7 @@ nextBtn.addEventListener("click", async () => {
   if (overlay.classList.contains("show")) {
     nextBtn.disabled = true;
     settleWinExtra();
-    const leftoverFire = document.getElementById("win-fire-pop");
-    if (leftoverFire) {
-      leftoverFire.classList.remove("show");
-      leftoverFire.hidden = true;
-      leftoverFire.removeAttribute("style");
-    }
+    document.querySelectorAll(".win-fire-pop").forEach((el) => el.remove());
     await flyWinCoinsToHud();
     overlay.classList.remove("show");
     state.holdHudCoins = null;
