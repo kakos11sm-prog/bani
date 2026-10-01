@@ -1854,6 +1854,41 @@ const HIT_SEAL =
   "<path fill=\"none\" stroke=\"#e85d4c\" stroke-width=\"2.6\" stroke-linecap=\"round\" d=\"M23.6 8.2 8.4 24.2\"/>" +
   "</svg>";
 
+const PODIUM_CROWN =
+  "<svg class=\"podium-pic\" viewBox=\"0 0 48 48\" aria-hidden=\"true\">" +
+  "<path fill=\"#7a4e08\" d=\"M7 30h34v7a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3z\"/>" +
+  "<path fill=\"#ffd24a\" d=\"M8 29 7 16l9 8 8-14 8 14 9-8-1 13z\"/>" +
+  "<path fill=\"#fff6c4\" d=\"M16.2 24.2 24 13.4l7.8 10.8z\" opacity=\".45\"/>" +
+  "<circle cx=\"7.2\" cy=\"15.2\" r=\"3.1\" fill=\"#ffe27a\"/>" +
+  "<circle cx=\"24\" cy=\"10.4\" r=\"3.4\" fill=\"#fff6c4\"/>" +
+  "<circle cx=\"40.8\" cy=\"15.2\" r=\"3.1\" fill=\"#ffe27a\"/>" +
+  "<rect x=\"9\" y=\"31\" width=\"30\" height=\"4\" rx=\"1.2\" fill=\"#fff1a0\"/>" +
+  "</svg>";
+
+const PODIUM_SILVER =
+  "<svg class=\"podium-pic\" viewBox=\"0 0 48 48\" aria-hidden=\"true\">" +
+  "<circle cx=\"24\" cy=\"22\" r=\"14\" fill=\"#c8c8d4\" stroke=\"#8e8e9a\" stroke-width=\"2\"/>" +
+  "<circle cx=\"24\" cy=\"22\" r=\"9\" fill=\"#e8e8f0\"/>" +
+  "<path fill=\"#9a9aa8\" d=\"M20 16.6h8l-1.2 3.2 2.8 2.2-3.4.2-1.2 3.2-1.2-3.2-3.4-.2 2.8-2.2z\"/>" +
+  "<path fill=\"#b8b8c4\" d=\"M18 36h12l2 6H16z\"/>" +
+  "<path fill=\"#d8d8e4\" d=\"M20 36h8v3h-8z\"/>" +
+  "</svg>";
+
+const PODIUM_BRONZE =
+  "<svg class=\"podium-pic\" viewBox=\"0 0 48 48\" aria-hidden=\"true\">" +
+  "<circle cx=\"24\" cy=\"22\" r=\"14\" fill=\"#d4894a\" stroke=\"#8a4e22\" stroke-width=\"2\"/>" +
+  "<circle cx=\"24\" cy=\"22\" r=\"9\" fill=\"#f0b06a\"/>" +
+  "<path fill=\"#a85a28\" d=\"M20 16.6h8l-1.2 3.2 2.8 2.2-3.4.2-1.2 3.2-1.2-3.2-3.4-.2 2.8-2.2z\"/>" +
+  "<path fill=\"#b86a32\" d=\"M18 36h12l2 6H16z\"/>" +
+  "<path fill=\"#e09a5a\" d=\"M20 36h8v3h-8z\"/>" +
+  "</svg>";
+
+function podiumMedal(place) {
+  if (place === 1) return PODIUM_CROWN;
+  if (place === 2) return PODIUM_SILVER;
+  return PODIUM_BRONZE;
+}
+
 function hitIcons(name, you) {
   if (you) return "<span class=\"hits\"></span>";
   const bombOff = progress.bombs > 0 ? "" : " dim";
@@ -2244,7 +2279,6 @@ function paintTowerPodium(table, live) {
   const host = document.getElementById("tower-podium");
   if (!host) return;
   host.innerHTML = "";
-  const medals = ["", "золото", "серебро", "бронза"];
   [2, 1, 3].forEach((place) => {
     const row = table.find((item) => item.place === place);
     const slot = document.createElement("div");
@@ -2267,6 +2301,10 @@ function paintTowerPodium(table, live) {
     if (live) slot.style.animation = "none";
     const face = faceOf(row ? row.name : "—", !!(row && row.you));
     slot.innerHTML =
+      "<span class=\"podium-spark\" aria-hidden=\"true\"></span>" +
+      "<span class=\"podium-medal\">" +
+      podiumMedal(place) +
+      "</span>" +
       "<span class=\"podium-face\" style=\"background:" +
       face.color +
       "\">" +
@@ -2280,11 +2318,9 @@ function paintTowerPodium(table, live) {
       "</small>" +
       holdBadge(row ? row.name : "", !row || row.you) +
       hitIcons(row ? row.name : "", !row || row.you) +
-      "<em>" +
+      "<span class=\"podium-stand\"><em>" +
       place +
-      "</em><i>" +
-      medals[place] +
-      "</i>";
+      "</em></span>";
     host.appendChild(slot);
   });
 }
