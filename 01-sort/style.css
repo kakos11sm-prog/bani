@@ -2159,12 +2159,12 @@ body:has(#pass-overlay.show) .tower-ad {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .pack-shop #pack-close {
   align-self: stretch;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .pack-banner {
