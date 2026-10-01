@@ -1970,6 +1970,7 @@ button.act:disabled {
 #boot {
   z-index: 80;
   padding: 0;
+  flex-direction: column;
   align-items: stretch;
   justify-content: center;
 }
@@ -2026,8 +2027,10 @@ body.home-open .level {
 
 body.home-open #boot {
   z-index: 40;
-  padding-top: 56px;
+  padding: calc(52px + env(safe-area-inset-top, 0px)) 0 max(8px, env(safe-area-inset-bottom, 0px));
   justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 body.home-open .home-title {
@@ -2303,8 +2306,11 @@ button.act.map-start {
   justify-content: center;
   align-items: flex-end;
   gap: 18px;
-  height: 168px;
-  margin: 0 0 10px;
+  flex: 0 1 120px;
+  height: 120px;
+  min-height: 56px;
+  max-height: 140px;
+  margin: 0 0 4px;
 }
 
 .home-pour,
@@ -2454,20 +2460,25 @@ button.act.map-start {
 
 .home-screen {
   width: min(440px, 100%);
-  min-height: 100dvh;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   margin: 0 auto;
-  padding: 36px 18px 28px;
+  padding: 2px 16px 6px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
+  box-sizing: border-box;
   animation: homeIn 0.45s ease;
 }
 
 .home-screen h1,
 .home-title {
   margin: 0;
-  font-size: 46px;
+  flex: 0 0 auto;
+  font-size: clamp(32px, 7vh, 46px);
   letter-spacing: 0.08em;
   background: linear-gradient(180deg, #fff6c4 0%, #ffd24a 45%, #f4b942 100%);
   -webkit-background-clip: text;
@@ -2484,7 +2495,8 @@ button.act.map-start {
 }
 
 .home-tag {
-  margin: 8px 0 22px;
+  flex: 0 0 auto;
+  margin: 4px 0 10px;
   color: var(--muted);
   font-weight: 700;
 }
@@ -2505,10 +2517,12 @@ button.act.map-start {
 
 .home-tile.play {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
   background: #2a2118;
   box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.45);
   animation: playCall 2s ease-in-out infinite;
@@ -2538,8 +2552,10 @@ body.quiet .home-tile.play {
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  padding: 18px 14px 0;
-  min-height: 180px;
+  flex: 1 1 auto;
+  padding: 12px 14px 0;
+  min-height: 0;
+  max-height: 200px;
   overflow: hidden;
   background:
     radial-gradient(90% 80% at 80% 10%, rgba(62, 207, 142, 0.2) 0%, transparent 50%),
@@ -2570,7 +2586,8 @@ body.quiet .home-tile.play {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 104px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .tower-main {
@@ -2735,9 +2752,10 @@ body.quiet .home-tile.tower {
 
 .coin-heap-pic {
   display: block;
+  flex: 0 0 auto;
   width: calc(100% + 28px);
-  height: 78px;
-  margin: auto -14px -2px;
+  height: 52px;
+  margin: auto -14px 0;
   object-fit: cover;
   object-position: bottom;
 }
@@ -2833,8 +2851,9 @@ body.quiet .home-tile.tower {
 
 .home-row {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 .home-mini {
@@ -2902,6 +2921,38 @@ body.quiet .home-tile.tower {
 
 .home-gear:active {
   transform: scale(0.96);
+}
+
+@media (max-height: 720px) {
+  .home-art {
+    gap: 12px;
+  }
+
+  .home-jar {
+    width: 34px;
+    height: 78px;
+  }
+
+  .home-jar.j2 {
+    height: 90px;
+  }
+
+  .home-jar i {
+    height: 16px;
+  }
+
+  .home-mini.premium {
+    padding: 10px 12px;
+  }
+
+  .home-mini.premium b {
+    font-size: 18px;
+  }
+
+  .home-gear {
+    flex-basis: 52px;
+    width: 52px;
+  }
 }
 
 @keyframes homeIn {
