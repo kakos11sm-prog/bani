@@ -2136,14 +2136,20 @@ h1 {
 }
 
 .board {
+  --jar-w: 62px;
+  --jar-h: 176px;
+  --jar-gap-x: 16px;
+  --jar-gap-y: 14px;
+  --layer-h: 34px;
   flex: 1;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-content: center;
-  gap: 14px 16px;
-  padding: 8px 0 28px;
+  gap: var(--jar-gap-y) var(--jar-gap-x);
+  padding: 4px 0 16px;
   position: relative;
+  min-height: 0;
 }
 
 .board::after {
@@ -2166,8 +2172,8 @@ h1 {
 }
 
 .jar {
-  width: 62px;
-  height: 176px;
+  width: var(--jar-w);
+  height: var(--jar-h);
   border: 0;
   padding: 10px 8px 8px;
   border-radius: 12px 12px 28px 28px;
@@ -2223,7 +2229,7 @@ h1 {
 }
 
 .layer {
-  height: 34px;
+  height: var(--layer-h);
   border-radius: 8px;
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.28),

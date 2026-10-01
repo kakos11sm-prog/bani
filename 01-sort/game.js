@@ -1798,23 +1798,12 @@ function paintLeague() {
 function paintHunt() {
   const { me, next } = huntTarget(towerTable());
   if (hudPlace && me) hudPlace.textContent = String(me.place);
-  if (huntEl) {
-    if (state.mode === "tower") {
-      huntEl.textContent =
-        "Башня · очки " +
-        (progress.towerScore || 0) +
-        " · #" +
-        (me ? me.place : "—") +
-        ". Закрой банки, открывай свои ходы за монеты.";
-    } else {
-      huntEl.textContent = "";
-    }
-  }
+  if (huntEl) huntEl.textContent = "";
   if (hinderEl) {
     const hz = hinderLocks();
     hinderEl.textContent =
       state.mode === "tower"
-        ? "Он закрыл тебе ходы. Свои открываешь за монеты, чужие — печатью."
+        ? ""
         : hz && state.level > 5
           ? "Помеха недели: закрыто " + hz + (hz === 1 ? " колба." : " колбы.")
           : "";
@@ -3079,6 +3068,49 @@ function render(enter) {
   }
   undoBtn.disabled = state.history.length === 0 || state.busy || state.lock === "fail";
   markJars();
+  fitBoardSoon();
+}
+
+function fitBoardSoon() {
+  requestAnimationFrame(() => {
+    fitBoard();
+    requestAnimationFrame(fitBoard);
+  });
+}
+
+function fitBoard() {
+  if (!board) return;
+  const n = board.querySelectorAll(".jar").length;
+  if (!n) return;
+  const box = board.getBoundingClientRect();
+  const spaceW = Math.max(200, box.width);
+  const spaceH = Math.max(160, box.height - 8);
+  let best = null;
+  const maxCols = Math.min(n, 8);
+  for (let cols = 1; cols <= maxCols; cols += 1) {
+    const rows = Math.ceil(n / cols);
+    const gapX = cols >= 6 ? 6 : cols >= 5 ? 8 : 12;
+    const gapY = rows >= 3 ? 6 : 10;
+    const cellW = (spaceW - gapX * (cols - 1)) / cols;
+    const cellH = (spaceH - gapY * (rows - 1)) / rows;
+    const scale = Math.min(cellW / 62, cellH / 176, 1.08);
+    if (scale < 0.36) continue;
+    const jw = 62 * scale;
+    const jh = 176 * scale;
+    const score = jw * jh - rows * 40;
+    if (!best || score > best.score) {
+      best = { jw: jw, jh: jh, gapX: gapX, gapY: gapY, scale: scale, score: score };
+    }
+  }
+  if (!best) {
+    best = { jw: 40, jh: 114, gapX: 6, gapY: 6, scale: 0.65 };
+  }
+  const layer = Math.max(10, Math.round((best.jh - 16 - 10) / 4));
+  board.style.setProperty("--jar-w", best.jw.toFixed(1) + "px");
+  board.style.setProperty("--jar-h", best.jh.toFixed(1) + "px");
+  board.style.setProperty("--jar-gap-x", best.gapX + "px");
+  board.style.setProperty("--jar-gap-y", best.gapY + "px");
+  board.style.setProperty("--layer-h", layer + "px");
 }
 
 function spawnBlob(fromBox, toBox, color) {
@@ -4147,7 +4179,10 @@ if (towerBack) {
 }
 const towerTipNext = document.getElementById("tower-tip-next");
 if (towerTipNext) towerTipNext.addEventListener("click", () => stepTowerTip());
-window.addEventListener("resize", onTowerTipMove);
+window.addEventListener("resize", () => {
+  onTowerTipMove();
+  fitBoardSoon();
+});
 if (towerList) towerList.addEventListener("scroll", onTowerTipMove);
 if (towerSq) towerSq.addEventListener("click", () => tryEnterTower());
 if (mapGrid) {
