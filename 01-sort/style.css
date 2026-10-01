@@ -3563,12 +3563,14 @@ body.quiet .tower-cell.now .face {
   animation: none;
 }
 
-#chest-overlay {
+#chest-overlay,
+#jackpot-overlay {
   z-index: 60;
   overflow: hidden;
 }
 
-#chest-overlay.show {
+#chest-overlay.show,
+#jackpot-overlay.show {
   background: linear-gradient(180deg, rgba(10, 8, 6, 0.18) 0 58px, rgba(10, 8, 6, 0.7) 92px);
   align-items: flex-start;
   padding-top: 70px;
@@ -3601,6 +3603,28 @@ body.chest-open .hud {
 .chest-card {
   border: 2px solid rgba(255, 210, 74, 0.55);
   box-shadow: 0 0 36px rgba(255, 196, 64, 0.28);
+}
+
+.jackpot-card .jackpot-ico {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 8px;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.jackpot-card .jackpot-ico .prize-coin,
+.jackpot-card .jackpot-ico .prize-chest {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.jackpot-card .jackpot-prize strong {
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .chest-prize {

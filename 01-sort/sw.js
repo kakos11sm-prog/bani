@@ -1,4 +1,4 @@
-const CACHE = "bani-pilot-v69";
+const CACHE = "bani-pilot-v70";
 const FILES = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const FILES = [
   "./levels.js",
   "./pars.js",
   "./manifest.json",
+  "./privacy.html",
   "./icon.svg",
   "./coin.svg",
   "./chest.svg",

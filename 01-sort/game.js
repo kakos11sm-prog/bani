@@ -20,10 +20,11 @@ const BOMB_HOLD_MS = 18000000;
 const UNDO_PACK = 35;
 const AD_COINS = 40;
 const COIN_PACKS = [
-  { id: "pack200", name: "Старт", uah: 200, coins: 2000, bombs: 10, fire: false, bonus: "", tone: "start" },
-  { id: "pack500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false, bonus: "+50%", tone: "mid" },
-  { id: "pack999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true, bonus: "200%", tone: "fat" },
+  { id: "pack200", sku: "bani_pack_200", name: "Старт", uah: 200, coins: 2000, bombs: 10, fire: false, bonus: "", tone: "start" },
+  { id: "pack500", sku: "bani_pack_500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false, bonus: "+50%", tone: "mid" },
+  { id: "pack999", sku: "bani_pack_999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true, bonus: "200%", tone: "fat" },
 ];
+const DAY_MS = 86400000;
 const TOWER_JACKPOTS = [
   { id: "mute", ico: "mute", title: "Неделя без рекламы", sub: "Ни одного ролика. Только банки.", tone: "mute" },
   { id: "bombs", ico: "💣", title: "Бомбы без дна", sub: "14 дней кидай сколько влезет.", tone: "bomb" },
@@ -366,6 +367,13 @@ function emptyProgress() {
     towerHold: {},
     fireDouble: false,
     youHits: [],
+    pendingJackpot: "",
+    jackpotWeek: "",
+    adsUntil: 0,
+    bombsInfUntil: 0,
+    hintsInfUntil: 0,
+    fireBoost: 1,
+    fireBoostUntil: 0,
   };
 }
 
@@ -444,7 +452,7 @@ function syncScreens() {
   const home = document.getElementById("boot");
   const homeOpen = home && home.classList.contains("show");
   const towerOpen = towerOverlay && towerOverlay.classList.contains("show");
-  const cover = ["intro-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay"].some((id) => {
+  const cover = ["intro-overlay", "pass-overlay", "settings-overlay", "shop-overlay", "skins-overlay", "league-overlay", "jackpot-overlay"].some((id) => {
     const el = document.getElementById(id);
     return el && el.classList.contains("show");
   });
@@ -633,6 +641,13 @@ function loadProgress() {
       });
     }
     base.fireDouble = raw.fireDouble === true;
+    base.pendingJackpot = typeof raw.pendingJackpot === "string" ? raw.pendingJackpot : "";
+    base.jackpotWeek = typeof raw.jackpotWeek === "string" ? raw.jackpotWeek : "";
+    base.adsUntil = Math.max(0, Number(raw.adsUntil) || 0);
+    base.bombsInfUntil = Math.max(0, Number(raw.bombsInfUntil) || 0);
+    base.hintsInfUntil = Math.max(0, Number(raw.hintsInfUntil) || 0);
+    base.fireBoost = Math.max(1, Number(raw.fireBoost) || 1);
+    base.fireBoostUntil = Math.max(0, Number(raw.fireBoostUntil) || 0);
     base.youHits = Array.isArray(raw.youHits)
       ? raw.youHits
           .map((hit) => ({
@@ -872,9 +887,31 @@ function prevStamp(id) {
   return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] - 1)).toISOString().slice(0, 10);
 }
 
+function untilActive(ts) {
+  return Date.now() < (Number(ts) || 0);
+}
+
+function adsFree() {
+  return untilActive(progress.adsUntil);
+}
+
+function bombsFree() {
+  return untilActive(progress.bombsInfUntil);
+}
+
+function hintsFree() {
+  return untilActive(progress.hintsInfUntil);
+}
+
+function fireBoostNow() {
+  if (untilActive(progress.fireBoostUntil)) return Math.max(1, progress.fireBoost || 1);
+  return 1;
+}
+
 function fireMult() {
   const base = 1 + 0.1 * Math.max(0, progress.streak || 0);
-  return progress.fireDouble ? base * 2 : base;
+  const pack = progress.fireDouble ? 2 : 1;
+  return base * pack * fireBoostNow();
 }
 
 function boostMultNow() {
@@ -1288,12 +1325,121 @@ function stopPrizeReel() {
   prizeReelTimer = 0;
 }
 
+function weekJackpotOf(id) {
+  return TOWER_JACKPOTS[hashStr((id || weekId()) + ":jack") % TOWER_JACKPOTS.length];
+}
+
+function jackpotById(id) {
+  return TOWER_JACKPOTS.find((item) => item.id === id) || null;
+}
+
+function youTowerPlaceNow() {
+  seedTowerNpc();
+  const you = progress.towerScore || 0;
+  let better = 0;
+  TOWER_NICKS.forEach((name) => {
+    const score = rivalTowerScore(name);
+    if (score != null && score > you) better += 1;
+  });
+  return better + 1;
+}
+
+function settleWeekPrize(oldWeek) {
+  if (!oldWeek) return;
+  if (!(progress.towerScore || 0)) {
+    progress.lastPlace = 0;
+    return;
+  }
+  const place = youTowerPlaceNow();
+  progress.lastPlace = place;
+  if (place !== 1) return;
+  if (progress.pendingJackpot || progress.jackpotWeek === oldWeek) return;
+  progress.pendingJackpot = weekJackpotOf(oldWeek).id;
+  progress.jackpotWeek = oldWeek;
+}
+
+function extendUntil(key, ms) {
+  progress[key] = Math.max(Number(progress[key]) || 0, Date.now() + ms);
+}
+
+function applyJackpot(id) {
+  if (id === "mute") extendUntil("adsUntil", 7 * DAY_MS);
+  else if (id === "bombs") extendUntil("bombsInfUntil", 14 * DAY_MS);
+  else if (id === "hints") extendUntil("hintsInfUntil", 14 * DAY_MS);
+  else if (id === "coins") progress.coins += 100000;
+  else if (id === "fire") {
+    progress.fireBoost = 5;
+    extendUntil("fireBoostUntil", 7 * DAY_MS);
+  } else if (id === "skins") {
+    SKINS.forEach((skin) => {
+      if (progress.skins.indexOf(skin.id) < 0) progress.skins.push(skin.id);
+    });
+  } else if (id === "mix") {
+    progress.coins += 25000;
+    extendUntil("bombsInfUntil", 7 * DAY_MS);
+    progress.fireBoost = Math.max(progress.fireBoost || 1, 3);
+    extendUntil("fireBoostUntil", 7 * DAY_MS);
+  }
+}
+
+function openJackpotClaim() {
+  const prize = jackpotById(progress.pendingJackpot);
+  if (!prize) return;
+  const overlay = document.getElementById("jackpot-overlay");
+  const title = document.getElementById("jackpot-title");
+  const lead = document.getElementById("jackpot-lead");
+  const num = document.getElementById("jackpot-prize-num");
+  const word = document.getElementById("jackpot-prize-word");
+  const ico = document.getElementById("jackpot-ico");
+  if (title) title.textContent = "Ты первый!";
+  if (lead) lead.textContent = "Неделя закрыта. Этот приз твой.";
+  if (num) num.textContent = prize.title;
+  if (word) word.textContent = prize.sub;
+  if (ico) ico.innerHTML = jackpotIco(prize);
+  if (overlay) overlay.classList.add("show");
+  burstWinConfetti();
+  feel("win");
+  tone(392, 0.1, "sine", 0.04);
+  tone(523, 0.14, "sine", 0.045);
+  tone(659, 0.2, "triangle", 0.035);
+  syncScreens();
+}
+
+function closeJackpotClaim() {
+  const overlay = document.getElementById("jackpot-overlay");
+  if (overlay) overlay.classList.remove("show");
+  syncScreens();
+}
+
+function claimJackpot() {
+  const id = progress.pendingJackpot;
+  if (!id) {
+    closeJackpotClaim();
+    return;
+  }
+  applyJackpot(id);
+  progress.pendingJackpot = "";
+  saveProgress();
+  paintHud();
+  paintShop();
+  paintMenu();
+  closeJackpotClaim();
+  showPassToast("Приз башни у тебя");
+}
+
+function maybeOfferJackpot() {
+  if (!progress.pendingJackpot) return;
+  const intro = document.getElementById("intro-overlay");
+  if (intro && intro.classList.contains("show")) return;
+  openJackpotClaim();
+}
+
 function syncWeek() {
   const id = weekId();
   if (progress.weekId === id) return;
+  settleWeekPrize(progress.weekId);
   progress.weekId = id;
   progress.weekRace = { level: 0, stars: 0, moves: 99 };
-  progress.lastPlace = 0;
   progress.seals = {};
   progress.towerDone = [false, false, false, false, false];
   progress.towerScore = 0;
@@ -1945,7 +2091,7 @@ function podiumMedal(place) {
 
 function hitIcons(name, you) {
   if (you) return "<span class=\"hits\"></span>";
-  const bombOff = progress.bombs > 0 ? "" : " dim";
+  const bombOff = bombsFree() || progress.bombs > 0 ? "" : " dim";
   const sealOff = progress.coins >= SEAL_PRICE ? "" : " dim";
   return (
     "<span class=\"hits\">" +
@@ -2176,7 +2322,9 @@ function paintShop() {
   fillCoinLabel(document.getElementById("shop-flask"), "", flaskPrice(), "");
   fillCoinLabel(document.getElementById("shop-seal"), "", SEAL_PRICE, "");
   fillCoinLabel(document.getElementById("shop-undo"), "", undoPackPrice(), "");
-  fillCoinLabel(document.getElementById("shop-ad-meta"), "+", AD_COINS, " за просмотр");
+  fillCoinLabel(document.getElementById("shop-ad-meta"), "+", AD_COINS, adsFree() ? " без ролика" : " за просмотр");
+  const shopAd = document.getElementById("shop-ad");
+  if (shopAd) shopAd.textContent = adsFree() ? "Забрать" : "Смотреть";
   if (shopLead) {
     shopLead.textContent = "";
     shopLead.appendChild(document.createTextNode("У тебя "));
@@ -2289,6 +2437,7 @@ function closeIntro() {
   const el = document.getElementById("intro-overlay");
   if (el) el.classList.remove("show");
   syncScreens();
+  maybeOfferJackpot();
 }
 
 function stepIntro() {
@@ -2601,32 +2750,58 @@ function closePackStore() {
   syncScreens();
 }
 
+async function payPack(pack) {
+  if (window.BaniBilling && typeof window.BaniBilling.purchase === "function") {
+    try {
+      return await window.BaniBilling.purchase({
+        id: pack.id,
+        sku: pack.sku || "bani_" + pack.id,
+        title: pack.name,
+        uah: pack.uah,
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+  return "test";
+}
+
 async function buyCoinPack(id) {
   const pack = COIN_PACKS.find((item) => item.id === id);
   if (!pack || state.packBusy) return;
   state.packBusy = true;
-  const coinsFrom = progress.coins;
-  const bombsFrom = progress.bombs || 0;
-  progress.coins += pack.coins;
-  progress.bombs = bombsFrom + pack.bombs;
-  if (pack.fire) progress.fireDouble = true;
-  saveProgress();
-  feel("win");
-  tone(392, 0.1, "sine", 0.04);
-  tone(523, 0.14, "sine", 0.045);
-  tone(659, 0.2, "triangle", 0.035);
-  const coinHud = document.getElementById("hud-coins");
-  const bombHud = document.getElementById("hud-bombs");
-  if (coinHud && coinHud.parentElement) coinHud.parentElement.classList.add("catch");
-  if (fireChip && pack.fire) fireChip.classList.add("hot2");
   try {
+    const paid = await payPack(pack);
+    if (!paid) {
+      showPassToast("Оплата не прошла");
+      feel("fail");
+      return;
+    }
+    const coinsFrom = progress.coins;
+    const bombsFrom = progress.bombs || 0;
+    progress.coins += pack.coins;
+    progress.bombs = bombsFrom + pack.bombs;
+    if (pack.fire) progress.fireDouble = true;
+    saveProgress();
+    feel("win");
+    tone(392, 0.1, "sine", 0.04);
+    tone(523, 0.14, "sine", 0.045);
+    tone(659, 0.2, "triangle", 0.035);
+    const coinHud = document.getElementById("hud-coins");
+    const bombHud = document.getElementById("hud-bombs");
+    if (coinHud && coinHud.parentElement) coinHud.parentElement.classList.add("catch");
+    if (fireChip && pack.fire) fireChip.classList.add("hot2");
     await Promise.all([
       countUp(coinHud, coinsFrom, progress.coins, 900),
       countUp(bombHud, bombsFrom, progress.bombs, 720),
     ]);
     paintHud();
     paintMenu();
-    showPassToast("Набор «" + pack.name + "» твой. В Play Market это будет " + pack.uah + " грн.");
+    showPassToast(
+      paid === "test"
+        ? "Набор «" + pack.name + "» твой. Когда выйдет в Play — " + pack.uah + " грн."
+        : "Набор «" + pack.name + "» твой."
+    );
   } finally {
     state.packBusy = false;
   }
@@ -2711,14 +2886,14 @@ async function bombHunt(name, btn) {
     showPassToast("Жми бомбу на игроке.");
     return;
   }
-  if (!(progress.bombs > 0)) {
+  if (!bombsFree() && !(progress.bombs > 0)) {
     if (btn) shake(btn);
     showPassToast("Собери звёзды, чтобы получить бомбу.");
     feel("fail");
     return;
   }
   state.towerHitBusy = true;
-  progress.bombs -= 1;
+  if (!bombsFree()) progress.bombs -= 1;
   applyHold(mark.name, "bomb", YOU);
   saveProgress();
   paintHud();
@@ -2760,13 +2935,17 @@ async function buyAdCoins() {
   const btn = document.getElementById("shop-ad");
   if (state.busy) return;
   state.busy = true;
-  if (btn) btn.textContent = "Ролик…";
-  await wait(1100);
+  if (btn) btn.textContent = adsFree() ? "Секунду…" : "Ролик…";
+  const ok = await watchAd();
+  if (!ok) {
+    paintShop();
+    state.busy = false;
+    return;
+  }
   progress.coins += AD_COINS;
   saveProgress();
   paintHud();
   paintShop();
-  if (btn) btn.textContent = "Смотреть";
   state.busy = false;
   showPassToast("+" + AD_COINS + " монет");
 }
@@ -2806,20 +2985,24 @@ function armHook() {
 function paintHud() {
   document.getElementById("hud-streak").textContent = String(progress.streak);
   const fireX2 = document.getElementById("hud-fire-x2");
-  if (fireX2) fireX2.hidden = !progress.fireDouble;
-  if (fireChip) fireChip.classList.toggle("hot2", !!progress.fireDouble);
+  const fireBoost = fireBoostNow();
+  if (fireX2) {
+    fireX2.hidden = !progress.fireDouble && fireBoost <= 1;
+    fireX2.textContent = fireBoost > 1 ? "×" + fireBoost : "×2";
+  }
+  if (fireChip) fireChip.classList.toggle("hot2", !!progress.fireDouble || fireBoost > 1);
   const onHome = document.getElementById("boot") && document.getElementById("boot").classList.contains("show");
   const starHud = document.getElementById("hud-stars");
   const bombHud = document.getElementById("hud-bombs");
   if (starHud) starHud.textContent = (progress.starPool || 0) + "/" + BOMB_NEED;
-  if (bombHud) bombHud.textContent = String(progress.bombs || 0);
+  if (bombHud) bombHud.textContent = bombsFree() ? "∞" : String(progress.bombs || 0);
   const coinShown =
     state.holdHudCoins != null ? state.holdHudCoins : onHome ? progress.coins : cash();
   document.getElementById("hud-coins").textContent = String(coinShown);
-  document.getElementById("hud-hints").textContent = String(
-    state.holdHudHints != null ? state.holdHudHints : progress.hints
-  );
-  if (progress.hints) hintBtn.textContent = "Подсказка";
+  document.getElementById("hud-hints").textContent = hintsFree()
+    ? "∞"
+    : String(state.holdHudHints != null ? state.holdHudHints : progress.hints);
+  if (hintsFree() || progress.hints) hintBtn.textContent = "Подсказка";
   else fillCoinLabel(hintBtn, "Подсказка ", hintPrice(), "");
   if (progress.undos) undoBtn.textContent = "Отмена";
   else fillCoinLabel(undoBtn, "Отмена ", undoPrice(), "");
@@ -2929,7 +3112,20 @@ function openLockShop() {
     }
   }
   fillCoinLabel(lockCoins, wound ? (wound.kind === "bomb" ? "Починить " : "Разморозить ") : "Открыть ", nextLockPrice(), "");
-  if (lockAd) lockAd.textContent = wound ? (wound.kind === "bomb" ? "Ролик — починить" : "Ролик — разморозить") : "Ролик — открыть";
+  if (lockAd) {
+    const free = adsFree();
+    if (wound) {
+      lockAd.textContent = free
+        ? wound.kind === "bomb"
+          ? "Без рекламы — починить"
+          : "Без рекламы — разморозить"
+        : wound.kind === "bomb"
+          ? "Ролик — починить"
+          : "Ролик — разморозить";
+    } else {
+      lockAd.textContent = free ? "Без рекламы — открыть" : "Ролик — открыть";
+    }
+  }
   if (lockCharge) {
     lockCharge.hidden = !!wound || !progress.bottleCharges;
     lockCharge.textContent = "Своя колба · " + progress.bottleCharges;
@@ -3729,7 +3925,7 @@ async function showWin() {
   tone(659, 0.2, "triangle", 0.035);
   winDouble.disabled = true;
   nextBtn.disabled = true;
-  winDouble.textContent = "Ролик — удвоить";
+  winDouble.textContent = adsFree() ? "Без рекламы — удвоить" : "Ролик — удвоить";
   paintHud();
   const last = state.level >= storyLevelCount();
   winTitle.textContent = reward.tower
@@ -3793,8 +3989,14 @@ async function doubleReward() {
   if (state.doubled || !state.lastCoins || state.busy) return;
   state.busy = true;
   winDouble.disabled = true;
-  winDouble.textContent = "Ролик…";
-  await wait(1100);
+  winDouble.textContent = adsFree() ? "Секунду…" : "Ролик…";
+  const ok = await watchAd();
+  if (!ok) {
+    winDouble.disabled = false;
+    winDouble.textContent = adsFree() ? "Без рекламы — удвоить" : "Ролик — удвоить";
+    state.busy = false;
+    return;
+  }
   const from = state.lastCoins;
   progress.coins += from;
   state.lastCoins = from * 2;
@@ -3864,15 +4066,27 @@ function addExtraJar() {
 }
 
 async function watchAd() {
+  if (adsFree()) return true;
   if (lockAd) {
     lockAd.disabled = true;
     lockAd.textContent = "Ролик…";
   }
-  await wait(1100);
+  let ok = true;
+  if (window.BaniAds && typeof window.BaniAds.showRewarded === "function") {
+    try {
+      ok = (await window.BaniAds.showRewarded()) !== false;
+    } catch (e) {
+      ok = false;
+    }
+  } else {
+    await wait(1100);
+  }
   if (lockAd) {
     lockAd.disabled = false;
     lockAd.textContent = "Ролик — открыть";
   }
+  if (!ok) showPassToast("Реклама не открылась");
+  return ok;
 }
 
 async function unlockJar(pay) {
@@ -3895,8 +4109,9 @@ async function unlockJar(pay) {
     saveProgress();
   } else {
     state.busy = true;
-    await watchAd();
+    const ok = await watchAd();
     state.busy = false;
+    if (!ok) return;
   }
   hideFail();
   if (mustFixWound()) {
@@ -4042,7 +4257,8 @@ function useHint() {
     showFail();
     return;
   }
-  if (!progress.hints) {
+  const free = hintsFree();
+  if (!free && !progress.hints) {
     if (!spend(hintPrice())) {
       shake(0);
       return;
@@ -4051,7 +4267,7 @@ function useHint() {
   }
   const move = hintMove(state.tubes);
   if (!move) return;
-  progress.hints -= 1;
+  if (!free) progress.hints -= 1;
   saveProgress();
   paintHud();
   const fromEl = jarEl(move.a);
@@ -4153,6 +4369,8 @@ document.getElementById("skin").addEventListener("click", cycleSkin);
 document.getElementById("chest-ok").addEventListener("click", () => {
   claimChapterChest();
 });
+const jackpotOk = document.getElementById("jackpot-ok");
+if (jackpotOk) jackpotOk.addEventListener("click", () => claimJackpot());
 undoBtn.addEventListener("click", () => {
   if (state.lock) return;
   doUndo();
@@ -4439,6 +4657,7 @@ paintMenu();
 paintShop();
 syncScreens();
 if (!progress.seenIntro && !skipBoot) openIntro();
+else maybeOfferJackpot();
 window.setInterval(paintWeekClocks, 30000);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {

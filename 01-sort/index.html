@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=69" />
+    <link rel="stylesheet" href="style.css?v=70" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -421,8 +421,22 @@
         <button class="act primary chest-claim" id="chest-ok" type="button">Забрать</button>
       </div>
     </div>
+    <div class="overlay" id="jackpot-overlay">
+      <div class="chest-fx" id="jackpot-fx" aria-hidden="true"></div>
+      <div class="card chest-card jackpot-card">
+        <div class="chest" id="jackpot-box"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></div>
+        <h2 id="jackpot-title">Ты первый!</h2>
+        <p id="jackpot-lead">Неделя закрыта. Этот приз твой.</p>
+        <div class="jackpot-ico" id="jackpot-ico" aria-hidden="true"></div>
+        <div class="chest-prize jackpot-prize">
+          <strong id="jackpot-prize-num">Приз</strong>
+          <span id="jackpot-prize-word">за первое место</span>
+        </div>
+        <button class="act primary chest-claim" id="jackpot-ok" type="button">Забрать</button>
+      </div>
+    </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=69"></script>
+    <script src="game.js?v=70"></script>
   </body>
 </html>
