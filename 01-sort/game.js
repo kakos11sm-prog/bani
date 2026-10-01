@@ -361,6 +361,7 @@ function emptyProgress() {
     towerWounds: 0,
     towerHitNews: [],
     towerNpc: {},
+    towerNpcPace: 2,
     towerTickAt: 0,
     towerHold: {},
     fireDouble: false,
@@ -610,6 +611,12 @@ function loadProgress() {
         if (n === n) base.towerNpc[name] = Math.max(0, n);
       });
     }
+    if (raw.towerNpcPace !== 2) {
+      Object.keys(base.towerNpc).forEach((name) => {
+        base.towerNpc[name] = Math.max(0, Math.round(base.towerNpc[name] / 3));
+      });
+    }
+    base.towerNpcPace = 2;
     base.towerTickAt = Math.max(0, Number(raw.towerTickAt) || 0);
     base.towerHold = {};
     if (raw.towerHold && typeof raw.towerHold === "object") {
@@ -1599,9 +1606,9 @@ function rivalTowerScoreSeed(name) {
   for (let d = life.late || 1; d <= last; d += 1) {
     const skipped = (life.skip >> (d - 1)) & 1;
     if (skipped && d !== life.surge && hashStr(weekId() + name + ":skip" + d) % 3) continue;
-    let add = life.pace + (hashStr(weekId() + name + ":d" + d) % 3);
-    if (d === life.surge) add = add * 2 + 5;
-    if (d >= 6) add += 2;
+    let add = 52 + life.pace * 10 + (hashStr(weekId() + name + ":d" + d) % 15);
+    if (d === life.surge) add = Math.round(add * 1.3);
+    if (d >= 6) add += 8;
     score += add;
   }
   return Math.max(0, score);
@@ -1623,11 +1630,11 @@ function npcTickGain(name, tickIndex, at) {
   if (isFrozen(name, at)) return 0;
   const life = nickPersona(name);
   const h = hashStr(weekId() + ":live:" + name + ":" + tickIndex);
-  let gate = 12 - life.pace;
-  if (life.surge && tickIndex % (36 + life.surge * 8) < 4) gate = 4;
-  if (isSlowed(name, at)) gate += 7 + (holdOf(name).slow || 1) * 4;
-  if (h % Math.max(3, gate) !== 0) return 0;
-  return 1 + (h % 19 === 0 ? 1 : 0);
+  let gate = 168 - life.pace * 18;
+  if (life.surge && tickIndex % (820 + life.surge * 90) < 3) gate = Math.max(54, gate - 36);
+  if (isSlowed(name, at)) gate += 90 + (holdOf(name).slow || 1) * 50;
+  if (h % Math.max(12, gate) !== 0) return 0;
+  return 1;
 }
 
 let towerSaveAt = 0;
