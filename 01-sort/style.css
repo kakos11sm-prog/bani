@@ -924,10 +924,14 @@ body.quiet .lock-gate-miss {
 }
 
 #tower-overlay.show {
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(90vw 50vh at 50% 0%, #5a2a10 0%, transparent 55%),
     #120e0b;
-  padding: calc(58px + env(safe-area-inset-top, 0px)) 0 0;
+  padding: calc(58px + env(safe-area-inset-top, 0px)) 0 max(8px, env(safe-area-inset-bottom, 0px));
+  height: 100dvh;
+  box-sizing: border-box;
 }
 
 body.tower-open {
@@ -979,13 +983,43 @@ body.tower-open .level {
   flex: 1;
   width: min(540px, 100%);
   min-height: 0;
-  height: auto;
+  height: 100%;
   margin: 0 auto;
-  padding: 4px 10px 8px;
+  padding: 4px 10px 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   box-sizing: border-box;
+}
+
+.tower-jackpot {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgba(255, 210, 74, 0.14), transparent 55%),
+    #24180f;
+  box-shadow: inset 0 0 0 1px rgba(244, 185, 66, 0.28);
+}
+
+.tower-heroes {
+  flex: 0 0 auto;
+  padding: 6px 6px 0;
+  border-radius: 18px 18px 8px 8px;
+  background:
+    linear-gradient(180deg, rgba(42, 32, 22, 0.9), rgba(18, 14, 10, 0.4));
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 200, 0.1);
+}
+
+.tower-board {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #1a1410;
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 200, 0.1);
+  overflow: hidden;
 }
 
 .tower-prize {
@@ -999,9 +1033,9 @@ body.tower-open .level {
 
 .tower-prize .tower-chest,
 .tower-prize .chest-pic.big {
-  flex: 0 0 72px;
-  width: 72px;
-  height: 72px;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
   margin: 0;
 }
 
@@ -1024,7 +1058,7 @@ body.tower-open .level {
 
 .prize-reel {
   width: 100%;
-  height: 52px;
+  height: 46px;
   overflow: hidden;
 }
 
@@ -1033,7 +1067,7 @@ body.tower-open .level {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  min-height: 52px;
+  min-height: 46px;
   padding: 0;
 }
 
@@ -1042,9 +1076,9 @@ body.tower-open .level {
 }
 
 .prize-ico {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1143,9 +1177,9 @@ body.tower-open .level {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 8px;
-  min-height: 176px;
-  padding: 4px 2px 0;
+  gap: 6px;
+  min-height: 0;
+  padding: 2px 2px 0;
 }
 
 .podium-slot {
@@ -1193,16 +1227,16 @@ body.tower-open .level {
 }
 
 .podium-medal {
-  width: 34px;
-  height: 34px;
-  margin-bottom: 2px;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0;
   animation: podiumFloat 2s ease-in-out infinite;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
 }
 
 .podium-slot.p1 .podium-medal {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   animation: podiumCrown 1.5s ease-in-out infinite;
   filter: drop-shadow(0 0 10px rgba(255, 210, 74, 0.7));
 }
@@ -1214,8 +1248,8 @@ body.tower-open .level {
 }
 
 .podium-face {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1227,9 +1261,9 @@ body.tower-open .level {
 }
 
 .podium-slot.p1 .podium-face {
-  width: 52px;
-  height: 52px;
-  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
   box-shadow:
     0 0 0 3px #ffd24a,
     0 0 16px rgba(255, 210, 74, 0.55);
@@ -1261,7 +1295,7 @@ body.tower-open .level {
 .podium-stand {
   position: relative;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 4px;
   border-radius: 12px 12px 4px 4px;
   overflow: hidden;
   display: flex;
@@ -1279,18 +1313,18 @@ body.tower-open .level {
 }
 
 .podium-slot.p1 .podium-stand {
-  height: 54px;
+  height: 42px;
   background: linear-gradient(180deg, #ffe27a, #c48418 55%, #7a4e08);
   box-shadow: 0 0 18px rgba(255, 210, 74, 0.4);
 }
 
 .podium-slot.p2 .podium-stand {
-  height: 40px;
+  height: 32px;
   background: linear-gradient(180deg, #ececf4, #9a9aa8 55%, #5a5a66);
 }
 
 .podium-slot.p3 .podium-stand {
-  height: 32px;
+  height: 26px;
   background: linear-gradient(180deg, #f0b06a, #b86a32 55%, #6a3414);
 }
 
@@ -1304,7 +1338,7 @@ body.tower-open .level {
   color: #1a1410;
 }
 
-.podium-slot.p1 em { font-size: 28px; }
+.podium-slot.p1 em { font-size: 24px; }
 
 .podium-spark {
   display: none;
@@ -1345,12 +1379,12 @@ body.tower-open .level {
 }
 
 .podium-slot .hits {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .podium-slot .hit {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
 }
 
 @keyframes podiumIn {
@@ -1411,10 +1445,13 @@ body.tower-open .level {
 #tower-overlay .tower-score {
   flex: 0 0 auto;
   margin: 0;
+  padding: 7px 10px;
   text-align: center;
   font-size: 13px;
   font-weight: 800;
   color: #ffe08a;
+  background: rgba(42, 28, 14, 0.7);
+  box-shadow: 0 1px 0 rgba(255, 210, 74, 0.12);
 }
 
 #tower-overlay #tower-list {
@@ -1422,10 +1459,18 @@ body.tower-open .level {
   min-height: 0;
   max-height: none;
   margin: 0;
+  padding: 6px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#tower-overlay #tower-list .league-row {
+  padding: 6px 8px;
 }
 
 .tower-bar {
   flex: 0 0 auto;
+  padding-top: 2px;
 }
 
 .tower-bar #tower-play {
@@ -3228,7 +3273,6 @@ body.quiet .home-tile.tower {
 
 #tower-overlay #tower-list {
   max-height: none;
-  overflow: auto;
 }
 
 .tower-top small {

@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=65" />
+    <link rel="stylesheet" href="style.css?v=66" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -292,19 +292,25 @@
     </div>
     <div class="overlay screen" id="tower-overlay">
       <div class="tower-stage">
-        <div class="tower-prize">
-          <span class="tower-chest" aria-hidden="true"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></span>
-          <div class="prize-side">
-            <p class="prize-kicker">В сундуке недели</p>
-            <div class="prize-reel" id="prize-reel">
-              <div class="prize-slide" id="prize-slide"></div>
+        <div class="tower-jackpot">
+          <div class="tower-prize">
+            <span class="tower-chest" aria-hidden="true"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></span>
+            <div class="prize-side">
+              <p class="prize-kicker">В сундуке недели</p>
+              <div class="prize-reel" id="prize-reel">
+                <div class="prize-slide" id="prize-slide"></div>
+              </div>
+              <em id="tower-clock">3д</em>
             </div>
-            <em id="tower-clock">3д</em>
           </div>
         </div>
-        <div class="tower-podium" id="tower-podium"></div>
-        <p class="tower-score" id="tower-score">Твои очки: 0</p>
-        <div class="league-list" id="tower-list"></div>
+        <div class="tower-heroes">
+          <div class="tower-podium" id="tower-podium"></div>
+        </div>
+        <div class="tower-board">
+          <p class="tower-score" id="tower-score">Твои очки: 0</p>
+          <div class="league-list" id="tower-list"></div>
+        </div>
         <div class="tower-bar">
           <button class="act primary" id="tower-play" type="button">Играть</button>
         </div>
@@ -417,6 +423,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=65"></script>
+    <script src="game.js?v=66"></script>
   </body>
 </html>
