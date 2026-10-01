@@ -3087,32 +3087,44 @@ function fitBoardSoon() {
 
 function fitBoard() {
   if (!board) return;
+  const playing =
+    !!(state.tubes && state.tubes.length) &&
+    !document.body.classList.contains("home-open") &&
+    !document.body.classList.contains("map-open") &&
+    !document.body.classList.contains("tower-open");
+  document.body.classList.toggle("play-fit", playing);
   const n = board.querySelectorAll(".jar").length;
   if (!n) return;
   const box = board.getBoundingClientRect();
-  const spaceW = Math.max(200, box.width);
-  const spaceH = Math.max(160, box.height - 8);
+  const bar = document.querySelector(".bar");
+  const barTop = bar ? bar.getBoundingClientRect().top : window.innerHeight;
+  const spaceW = Math.max(180, box.width);
+  const spaceH = Math.max(120, barTop - box.top - 10);
   let best = null;
-  const maxCols = Math.min(n, 8);
+  const maxCols = Math.min(n, 10);
   for (let cols = 1; cols <= maxCols; cols += 1) {
     const rows = Math.ceil(n / cols);
-    const gapX = cols >= 6 ? 6 : cols >= 5 ? 8 : 12;
-    const gapY = rows >= 3 ? 6 : 10;
+    const gapX = cols >= 7 ? 4 : cols >= 5 ? 6 : 10;
+    const gapY = rows >= 3 ? 4 : 8;
     const cellW = (spaceW - gapX * (cols - 1)) / cols;
     const cellH = (spaceH - gapY * (rows - 1)) / rows;
-    const scale = Math.min(cellW / 62, cellH / 176, 1.08);
-    if (scale < 0.36) continue;
+    const scale = Math.min(cellW / 62, cellH / 176, 1.05);
+    if (scale < 0.28) continue;
     const jw = 62 * scale;
     const jh = 176 * scale;
-    const score = jw * jh - rows * 40;
+    const score = jw * jh - rows * 80;
     if (!best || score > best.score) {
-      best = { jw: jw, jh: jh, gapX: gapX, gapY: gapY, scale: scale, score: score };
+      best = { jw: jw, jh: jh, gapX: gapX, gapY: gapY, score: score };
     }
   }
   if (!best) {
-    best = { jw: 40, jh: 114, gapX: 6, gapY: 6, scale: 0.65 };
+    const cols = Math.min(n, 6);
+    const rows = Math.ceil(n / cols);
+    const jw = Math.max(28, spaceW / cols - 4);
+    const jh = Math.max(72, spaceH / rows - 4);
+    best = { jw: jw, jh: jh, gapX: 4, gapY: 4 };
   }
-  const layer = Math.max(10, Math.round((best.jh - 16 - 10) / 4));
+  const layer = Math.max(8, Math.round((best.jh - 14 - 8) / 4));
   board.style.setProperty("--jar-w", best.jw.toFixed(1) + "px");
   board.style.setProperty("--jar-h", best.jh.toFixed(1) + "px");
   board.style.setProperty("--jar-gap-x", best.gapX + "px");
