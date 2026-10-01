@@ -24,6 +24,15 @@ const COIN_PACKS = [
   { id: "pack500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false, bonus: "+50%", tone: "mid" },
   { id: "pack999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true, bonus: "200%", tone: "fat" },
 ];
+const TOWER_JACKPOTS = [
+  { id: "mute", ico: "mute", title: "Неделя без рекламы", sub: "Ни одного ролика. Только банки.", tone: "mute" },
+  { id: "bombs", ico: "💣", title: "Бомбы без дна", sub: "14 дней кидай сколько влезет.", tone: "bomb" },
+  { id: "hints", ico: "💡", title: "Подсказки без конца", sub: "Две недели любая банка светится.", tone: "hint" },
+  { id: "coins", ico: "coin", title: "100 000 монет", sub: "Гора. Хватит на башню и все банки.", tone: "gold" },
+  { id: "fire", ico: "🔥", title: "Огонёк ×5", sub: "Неделя. Каждый выигрыш жирный.", tone: "fire" },
+  { id: "skins", ico: "👑", title: "Все скины сразу", sub: "Золото, лава, миф — твои.", tone: "royal" },
+  { id: "mix", ico: "gift", title: "Джекпот недели", sub: "25 000 монет, бомбы ∞ на 7 дней и огонь ×3.", tone: "mix" },
+];
 const YOU = "Ты";
 const RIVALS = [
   "Лера",
@@ -1223,6 +1232,55 @@ function paintWeekClocks() {
   if (top) top.textContent = left;
 }
 
+function jackpotIco(pack) {
+  if (pack.ico === "coin") return "<img class=\"coin prize-coin\" src=\"coin.svg?v=49\" alt=\"\" />";
+  if (pack.ico === "gift") return "<img class=\"prize-chest\" src=\"chest.svg?v=49\" alt=\"\" />";
+  if (pack.ico === "mute") return "<span class=\"prize-mute\" aria-hidden=\"true\">▶</span>";
+  return "<span class=\"prize-emo\">" + pack.ico + "</span>";
+}
+
+let prizeReelAt = 0;
+let prizeReelTimer = 0;
+
+function paintPrizeSlide(animate) {
+  const slide = document.getElementById("prize-slide");
+  if (!slide) return;
+  const pack = TOWER_JACKPOTS[prizeReelAt % TOWER_JACKPOTS.length];
+  slide.className = "prize-slide tone-" + pack.tone + (animate ? " swap" : "");
+  slide.innerHTML =
+    "<span class=\"prize-ico\">" +
+    jackpotIco(pack) +
+    "</span><span class=\"prize-copy\"><b class=\"prize-call\">" +
+    pack.title +
+    "</b><small>" +
+    pack.sub +
+    "</small></span>";
+  if (animate) {
+    const chest = document.querySelector("#tower-overlay .tower-chest");
+    if (chest) {
+      chest.classList.remove("prize-pop");
+      void chest.offsetWidth;
+      chest.classList.add("prize-pop");
+    }
+  }
+}
+
+function armPrizeReel() {
+  prizeReelAt = hashStr(weekId() + ":jack") % TOWER_JACKPOTS.length;
+  paintPrizeSlide(false);
+  window.clearInterval(prizeReelTimer);
+  prizeReelTimer = window.setInterval(() => {
+    if (!towerOverlay || !towerOverlay.classList.contains("show")) return;
+    prizeReelAt = (prizeReelAt + 1) % TOWER_JACKPOTS.length;
+    paintPrizeSlide(true);
+  }, 2800);
+}
+
+function stopPrizeReel() {
+  window.clearInterval(prizeReelTimer);
+  prizeReelTimer = 0;
+}
+
 function syncWeek() {
   const id = weekId();
   if (progress.weekId === id) return;
@@ -2337,12 +2395,14 @@ function openTower() {
   towerOverlay.classList.add("show");
   syncScreens();
   armTowerLive();
+  armPrizeReel();
   window.setTimeout(() => startTowerTip(), 80);
 }
 
 function closeTower() {
   hideTowerTip(false);
   stopTowerLive();
+  stopPrizeReel();
   towerOverlay.classList.remove("show");
   syncScreens();
 }
