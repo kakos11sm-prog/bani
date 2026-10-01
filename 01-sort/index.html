@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=70" />
+    <link rel="stylesheet" href="style.css?v=71" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -23,34 +23,34 @@
     </div>
     <div class="wrap">
       <div class="hud">
-        <button class="tower-back" id="tower-back" type="button" aria-label="Назад">
+        <button class="tower-back" id="tower-back" type="button" aria-label="Назад" data-i18n-aria="back">
           <svg viewBox="0 0 48 48" aria-hidden="true">
             <path fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" d="M16 16h14a9 9 0 1 1 0 18H20"/>
             <path fill="currentColor" d="M18 9.2 8 16.4 18 23.6z"/>
           </svg>
         </button>
-        <button class="burger" id="btn-burger" type="button" aria-label="Меню" aria-expanded="false">
+        <button class="burger" id="btn-burger" type="button" aria-label="Меню" aria-expanded="false" data-i18n-aria="menu">
           <span></span><span></span><span></span>
         </button>
         <div class="hud-stats">
-          <div class="chip star-bomb" id="chip-bomb" title="Звёзды наполняют бомбу. 100 ★ = 💣">
+          <div class="chip star-bomb" id="chip-bomb" title="Звёзды наполняют бомбу. 100 ★ = 💣" data-i18n-title="hud.bomb">
             <span>💣 <span id="hud-bombs">0</span></span>
             <small>★ <span id="hud-stars">0/100</span></small>
           </div>
-          <div class="chip fire" id="chip-fire" title="Заходи каждый день. Огонёк умножает выигрыш">🔥 <span id="hud-streak">0</span><em id="hud-fire-x2" hidden>×2</em></div>
+          <div class="chip fire" id="chip-fire" title="Заходи каждый день. Огонёк умножает выигрыш" data-i18n-title="hud.fire">🔥 <span id="hud-streak">0</span><em id="hud-fire-x2" hidden>×2</em></div>
           <div class="chip coin-chip"><img class="coin" src="coin.svg?v=49" alt="" /><span id="hud-coins">0</span></div>
           <div class="chip hint-chip" id="chip-hints">💡 <span id="hud-hints">0</span></div>
-          <button class="chip league" id="chip-league" type="button" title="Башня" hidden>
+          <button class="chip league" id="chip-league" type="button" title="Башня" data-i18n-title="hud.tower" hidden>
             #<span id="hud-place">—</span>
           </button>
         </div>
         <div class="level" id="level">1</div>
       </div>
       <div class="fly" id="menu-fly" hidden>
-        <button type="button" id="fly-menu">На главный</button>
-        <button type="button" id="fly-settings">Настройки</button>
-        <button type="button" id="fly-shop">Премиум</button>
-        <button type="button" id="fly-skins">Скины</button>
+        <button type="button" id="fly-menu" data-i18n="home">На главный</button>
+        <button type="button" id="fly-settings" data-i18n="settings">Настройки</button>
+        <button type="button" id="fly-shop" data-i18n="premium">Премиум</button>
+        <button type="button" id="fly-skins" data-i18n="skins">Скины</button>
       </div>
       <div class="mission">
         <div class="track-row">
@@ -69,15 +69,15 @@
         <div class="duel" id="duel" hidden>
           <div class="duel-side you">
             <span class="face" id="duel-you-face">Я</span>
-            <span>Ты</span>
+            <span data-i18n="you">Ты</span>
           </div>
           <div class="duel-mid">
             <b>VS</b>
-            <small id="duel-floor">этаж</small>
+            <small id="duel-floor" data-i18n="floor">этаж</small>
           </div>
           <div class="duel-side them">
             <span class="face" id="duel-them-face">?</span>
-            <b id="duel-name">Соперник</b>
+            <b id="duel-name" data-i18n="rival">Соперник</b>
             <small id="duel-meta"></small>
           </div>
         </div>
@@ -91,10 +91,10 @@
       <div class="bar">
         <button class="act" id="undo" type="button">Отмена</button>
         <button class="act" id="hint" type="button">Подсказка</button>
-        <button class="act" id="restart" type="button">Заново</button>
+        <button class="act" id="restart" type="button" data-i18n="restart">Заново</button>
       </div>
       <button class="skin-btn" id="skin" type="button">Скин банки</button>
-      <a class="more" id="more" href="../index.html">Ещё игры — пилот студии</a>
+      <a class="more" id="more" href="../index.html" data-i18n="more">Ещё игры — пилот студии</a>
     </div>
     <div class="overlay screen" id="intro-overlay">
       <div class="card intro-card">
@@ -113,17 +113,17 @@
           <span class="home-jar j2"><i></i><i></i><i></i></span>
           <span class="home-jar j3"><i></i><i></i><i></i><i></i></span>
         </div>
-        <h1 class="home-title">Банки</h1>
-        <p class="home-tag">Перелей цвет. Не оставь себя без хода.</p>
+        <h1 class="home-title" data-i18n="app.title">Банки</h1>
+        <p class="home-tag" data-i18n="app.tag">Перелей цвет. Не оставь себя без хода.</p>
         <button class="home-tile play" id="boot-play" type="button">
-          <b>Играть</b>
+          <b data-i18n="play">Играть</b>
           <span class="play-level" id="home-play-level">ур. 1</span>
         </button>
         <button class="home-tile tower locked" id="boot-tower" type="button">
           <span class="tower-face">
             <span class="tower-main">
               <span class="tower-copy">
-                <b class="tower-name">Башня</b>
+                <b class="tower-name" data-i18n="tower">Башня</b>
                 <small class="tower-call" id="home-tower-meta">Попробуй удержать первое место</small>
               </span>
               <span class="home-tower-stage">
@@ -141,10 +141,10 @@
         </button>
         <div class="home-row">
           <button class="home-mini premium" id="boot-shop" type="button">
-            <b>Наборы</b>
-            <small>Монеты и бомбы</small>
+            <b data-i18n="packs">Наборы</b>
+            <small data-i18n="packs.sub">Монеты и бомбы</small>
           </button>
-          <button class="home-gear" id="boot-settings" type="button" aria-label="Настройки">
+          <button class="home-gear" id="boot-settings" type="button" aria-label="Настройки" data-i18n-aria="settings">
             <svg viewBox="0 0 48 48" aria-hidden="true">
               <path fill="currentColor" d="M19 4h10l1.6 6.2a14 14 0 0 1 4.6 2.6L41 10l5 8-5.2 3.4a14 14 0 0 1 0 5.2L46 30l-5 8-5.8-2.8a14 14 0 0 1-4.6 2.6L29 44H19l-1.6-6.2a14 14 0 0 1-4.6-2.6L7 38l-5-8 5.2-3.4a14 14 0 0 1 0-5.2L2 18l5-8 5.8 2.8a14 14 0 0 1 4.6-2.6zm5 12a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/>
             </svg>
@@ -154,54 +154,65 @@
     </div>
     <div class="overlay" id="settings-overlay">
       <div class="card league-card">
-        <h2>Настройки</h2>
+        <h2 data-i18n="settings">Настройки</h2>
         <p class="league-lead" id="set-lead">Как тебе удобнее играть.</p>
         <div class="set-list">
+          <div class="set-row set-lang" id="set-lang-row">
+            <span>
+              <b data-i18n="set.lang">Язык</b>
+              <small data-i18n="set.langSub">Тексты в игре</small>
+            </span>
+            <div class="lang-picks" id="lang-picks">
+              <button type="button" data-lang="uk">UA</button>
+              <button type="button" data-lang="ru">RU</button>
+              <button type="button" data-lang="en">EN</button>
+            </div>
+          </div>
           <button class="set-row" id="set-sound" type="button">
             <span>
-              <b>Звук</b>
-              <small>Капли и победа</small>
+              <b data-i18n="set.sound">Звук</b>
+              <small data-i18n="set.soundSub">Капли и победа</small>
             </span>
             <em id="set-sound-val">Вкл</em>
           </button>
           <button class="set-row" id="set-vibe" type="button">
             <span>
-              <b>Вибрация</b>
-              <small>Отдача в руке</small>
+              <b data-i18n="set.vibe">Вибрация</b>
+              <small data-i18n="set.vibeSub">Отдача в руке</small>
             </span>
             <em id="set-vibe-val">Вкл</em>
           </button>
           <button class="set-row" id="set-juice" type="button">
             <span>
-              <b>Эффекты</b>
-              <small>Брызги и вспышки. Выключи, если тормозит</small>
+              <b data-i18n="set.juice">Эффекты</b>
+              <small data-i18n="set.juiceSub">Брызги и вспышки. Выключи, если тормозит</small>
             </span>
             <em id="set-juice-val">Вкл</em>
           </button>
           <button class="set-row" id="set-hint" type="button">
             <span>
-              <b>Подсказка на старте</b>
-              <small>Первая банка чуть подпрыгнет</small>
+              <b data-i18n="set.hint">Подсказка на старте</b>
+              <small data-i18n="set.hintSub">Первая банка чуть подпрыгнет</small>
             </span>
             <em id="set-hint-val">Вкл</em>
           </button>
           <button class="set-row" id="set-skin" type="button">
             <span>
-              <b>Скин банок</b>
+              <b data-i18n="set.skin">Скин банок</b>
               <small id="set-skin-name">Стекло</small>
             </span>
-            <em>Каталог</em>
+            <em data-i18n="set.catalog">Каталог</em>
           </button>
           <button class="set-row danger" id="set-reset" type="button">
             <span>
-              <b>Сбросить прогресс</b>
-              <small>Уровни, монеты, скины — сначала</small>
+              <b data-i18n="set.reset">Сбросить прогресс</b>
+              <small data-i18n="set.resetSub">Уровни, монеты, скины — сначала</small>
             </span>
             <em id="set-reset-val">Стереть</em>
           </button>
         </div>
         <div class="card-actions">
-          <button class="act primary" id="set-play" type="button">Играть</button>
+          <button class="act primary" id="set-play" type="button" data-i18n="play">Играть</button>
           <button class="act ghost" id="set-close" type="button">К игре</button>
         </div>
       </div>
@@ -209,20 +220,20 @@
     <div class="overlay" id="overlay">
       <div class="win-fx" id="win-fx" aria-hidden="true"></div>
       <div class="card">
-        <h2 id="win-title">Собрал</h2>
+        <h2 id="win-title" data-i18n="win.done">Собрал</h2>
         <div class="win-stars" id="win-stars">
           <span>★</span><span>★</span><span>★</span>
         </div>
-        <p id="win-text">Дальше больше цветов и длиннее ходы.</p>
+        <p id="win-text" data-i18n="win.more">Дальше больше цветов и длиннее ходы.</p>
         <div class="win-cash" id="win-cash">
           <img class="coin" src="coin.svg?v=49" alt="" />
           <b id="win-cash-num">0</b>
         </div>
         <p class="reward" id="win-reward" hidden></p>
         <div class="card-actions">
-          <button class="act primary" id="next" type="button">Дальше</button>
+          <button class="act primary" id="next" type="button" data-i18n="next">Дальше</button>
           <button class="act" id="win-double" type="button">Ролик — удвоить</button>
-          <button class="act" id="win-share" type="button">Показать</button>
+          <button class="act" id="win-share" type="button" data-i18n="win.share">Показать</button>
         </div>
       </div>
     </div>
@@ -235,7 +246,7 @@
           <button class="act primary" id="fail-undo" type="button">Отменить ход</button>
           <button class="act" id="fail-jar" type="button">Ещё банка</button>
           <button class="act" id="fail-keep" type="button">Заново, серия жива</button>
-          <button class="act ghost" id="fail-give" type="button">Сдаться — серия сгорит</button>
+          <button class="act ghost" id="fail-give" type="button" data-i18n="fail.give">Сдаться — серия сгорит</button>
         </div>
       </div>
     </div>
@@ -254,14 +265,14 @@
     <div class="pass-toast" id="pass-toast" aria-live="polite"></div>
     <div class="overlay" id="league-overlay">
       <div class="card league-card">
-        <h2>Лига недели</h2>
+        <h2 data-i18n="league.title">Лига недели</h2>
         <p class="league-lead" id="league-lead">Одни и те же соперники до понедельника. Не онлайн-чат.</p>
         <div class="league-list" id="league-list"></div>
         <div class="card-actions">
-          <button class="act primary" id="league-tower" type="button">Башня</button>
-          <button class="act" id="league-shop" type="button">Магазин монет</button>
-          <button class="act" id="league-race" type="button">Забег</button>
-          <button class="act" id="league-close" type="button">Закрыть</button>
+          <button class="act primary" id="league-tower" type="button" data-i18n="tower">Башня</button>
+          <button class="act" id="league-shop" type="button" data-i18n="league.shop">Магазин монет</button>
+          <button class="act" id="league-race" type="button" data-i18n="league.race">Забег</button>
+          <button class="act" id="league-close" type="button" data-i18n="close">Закрыть</button>
         </div>
       </div>
     </div>
@@ -269,24 +280,24 @@
       <div class="map-panel">
         <p class="map-lead" id="map-lead">Собирай монеты и звёзды для главного сундука в башне тут</p>
         <div class="map-grid" id="map-grid"></div>
-        <button class="act primary map-start" id="map-continue" type="button">Начать</button>
+        <button class="act primary map-start" id="map-continue" type="button" data-i18n="start">Начать</button>
       </div>
     </div>
     <div class="overlay screen" id="pass-overlay">
       <div class="card lock-gate">
         <div class="lock-gate-ico" aria-hidden="true">🔒</div>
-        <h2 class="lock-gate-title">Башня на замке</h2>
-        <p class="lock-gate-call">Сундук недели только для тех, кто накопил на вход</p>
+        <h2 class="lock-gate-title" data-i18n="pass.title">Башня на замке</h2>
+        <p class="lock-gate-call" data-i18n="pass.call">Сундук недели только для тех, кто накопил на вход</p>
         <div class="lock-gate-wallet">
-          <span>В кошельке</span>
+          <span data-i18n="pass.wallet">В кошельке</span>
           <b id="pass-have"></b>
         </div>
-        <p class="lock-gate-need">Вход — 1000 монет</p>
+        <p class="lock-gate-need" data-i18n="pass.need">Вход — 1000 монет</p>
         <p class="lock-gate-miss" id="pass-miss">Не хватает монет</p>
         <div class="card-actions lock-gate-actions">
           <button class="act primary with-coin" id="pass-buy" type="button" hidden>Купить пропуск</button>
-          <button class="act" id="pass-shop" type="button" hidden>В магазин</button>
-          <button class="act ghost lock-gate-back" id="pass-back" type="button">Назад</button>
+          <button class="act" id="pass-shop" type="button" hidden data-i18n="pass.shop">В магазин</button>
+          <button class="act ghost lock-gate-back" id="pass-back" type="button" data-i18n="back">Назад</button>
         </div>
       </div>
     </div>
@@ -296,7 +307,7 @@
           <div class="tower-prize">
             <span class="tower-chest" aria-hidden="true"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></span>
             <div class="prize-side">
-              <p class="prize-kicker">В сундуке недели</p>
+              <p class="prize-kicker" data-i18n="prize.kicker">В сундуке недели</p>
               <div class="prize-reel" id="prize-reel">
                 <div class="prize-slide" id="prize-slide"></div>
               </div>
@@ -312,7 +323,7 @@
           <div class="league-list" id="tower-list"></div>
         </div>
         <div class="tower-bar">
-          <button class="act primary" id="tower-play" type="button">Играть</button>
+          <button class="act primary" id="tower-play" type="button" data-i18n="play">Играть</button>
         </div>
       </div>
     </div>
@@ -323,86 +334,86 @@
       <div class="tower-tip-arrow up" id="tower-tip-arrow"></div>
       <div class="tower-tip-card" id="tower-tip-card">
         <p id="tower-tip-text"></p>
-        <button class="act primary" id="tower-tip-next" type="button">Дальше</button>
+        <button class="act primary" id="tower-tip-next" type="button" data-i18n="next">Дальше</button>
       </div>
     </div>
     <div class="overlay" id="shop-overlay">
       <div class="card league-card">
-        <h2>Магазин монет</h2>
+        <h2 data-i18n="shop.title">Магазин монет</h2>
         <p class="league-lead" id="shop-lead">Трать на колбы и на помеху другим. Ролик — только если сам включил.</p>
         <div class="shop-list">
           <div class="shop-row pack-jump">
             <div>
-              <b>Наборы за гривны</b>
-              <span>Монеты, бомбы и жирный огонёк</span>
+              <b data-i18n="packs.uah">Наборы за гривны</b>
+              <span data-i18n="packs.uahSub">Монеты, бомбы и жирный огонёк</span>
             </div>
-            <button class="act primary" id="shop-packs" type="button">Витрина</button>
+            <button class="act primary" id="shop-packs" type="button" data-i18n="packs.vitrine">Витрина</button>
           </div>
           <div class="shop-row">
             <div>
-              <b>Скины банок</b>
-              <span>20 видов. Премиум — за монеты</span>
+              <b data-i18n="shop.skins">Скины банок</b>
+              <span data-i18n="shop.skinsSub">20 видов. Премиум — за монеты</span>
             </div>
-            <button class="act" id="shop-skins" type="button">Каталог</button>
+            <button class="act" id="shop-skins" type="button" data-i18n="set.catalog">Каталог</button>
           </div>
           <div class="shop-row">
             <div>
-              <b>Запасная колба</b>
-              <span>Откроет закрытую банку без цены уровня</span>
+              <b data-i18n="shop.flask">Запасная колба</b>
+              <span data-i18n="shop.flaskSub">Откроет закрытую банку без цены уровня</span>
             </div>
             <button class="act with-coin" id="shop-flask" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
-              <b>Печать на колбу</b>
-              <span>Обычные монеты. Остановит рост очков</span>
+              <b data-i18n="shop.seal">Печать на колбу</b>
+              <span data-i18n="shop.sealSub">Обычные монеты. Остановит рост очков</span>
             </div>
             <button class="act with-coin" id="shop-seal" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
-              <b>Пачка отмен</b>
-              <span>Две отмены в карман</span>
+              <b data-i18n="shop.undo">Пачка отмен</b>
+              <span data-i18n="shop.undoSub">Две отмены в карман</span>
             </div>
             <button class="act with-coin" id="shop-undo" type="button"></button>
           </div>
           <div class="shop-row">
             <div>
-              <b>Ролик — монеты</b>
+              <b data-i18n="shop.ad">Ролик — монеты</b>
               <span class="with-coin" id="shop-ad-meta"></span>
             </div>
             <button class="act" id="shop-ad" type="button">Смотреть</button>
           </div>
         </div>
         <div class="card-actions">
-          <button class="act ghost" id="shop-close" type="button">Закрыть</button>
+          <button class="act ghost" id="shop-close" type="button" data-i18n="close">Закрыть</button>
         </div>
       </div>
     </div>
-    <button class="pack-ad" id="pack-ad" type="button" aria-label="Наборы">
+    <button class="pack-ad" id="pack-ad" type="button" aria-label="Наборы" data-i18n-aria="packs">
       <span class="pack-ad-shine"></span>
       <span class="pack-ad-ico" id="pack-ad-ico" aria-hidden="true">💰</span>
       <em id="pack-ad-price">200₴</em>
     </button>
-    <button class="pack-ad tower-ad" id="tower-ad" type="button" aria-label="Башня">
+    <button class="pack-ad tower-ad" id="tower-ad" type="button" aria-label="Башня" data-i18n-aria="tower">
       <span class="pack-ad-shine"></span>
       <span class="pack-ad-ico" aria-hidden="true">🏆</span>
-      <em>Башня</em>
+      <em data-i18n="tower">Башня</em>
     </button>
     <div class="overlay" id="pack-overlay">
       <div class="pack-shop">
-        <div class="pack-banner" aria-hidden="true">Наборы</div>
+        <div class="pack-banner" aria-hidden="true" data-i18n="packs.banner">Наборы</div>
         <div class="pack-grid" id="pack-grid"></div>
-        <button class="act ghost" id="pack-close" type="button">Назад</button>
+        <button class="act ghost" id="pack-close" type="button" data-i18n="back">Назад</button>
       </div>
     </div>
     <div class="overlay" id="skins-overlay">
       <div class="card league-card skins-card">
-        <h2>Скины</h2>
+        <h2 data-i18n="skins.title">Скины</h2>
         <p class="league-lead" id="skins-lead">Восемь простых из сундуков. Двенадцать премиум — за монеты.</p>
         <div class="skin-grid" id="skin-grid"></div>
         <div class="card-actions">
-          <button class="act ghost" id="skins-close" type="button">Закрыть</button>
+          <button class="act ghost" id="skins-close" type="button" data-i18n="close">Закрыть</button>
         </div>
       </div>
     </div>
@@ -410,7 +421,7 @@
       <div class="chest-fx" id="chest-fx" aria-hidden="true"></div>
       <div class="card chest-card">
         <div class="chest" id="chest-box"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></div>
-        <h2>Сундук главы</h2>
+        <h2 data-i18n="chest.title">Сундук главы</h2>
         <p id="chest-lead">За десять уровней. Вот что внутри.</p>
         <div class="chest-prize" id="chest-prize">
           <strong id="chest-prize-num">+7</strong>
@@ -437,6 +448,7 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=70"></script>
+    <script src="lang.js?v=71"></script>
+    <script src="game.js?v=71"></script>
   </body>
 </html>
