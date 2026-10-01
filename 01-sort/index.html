@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=57" />
+    <link rel="stylesheet" href="style.css?v=59" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -117,6 +117,7 @@
         <p class="home-tag">Перелей цвет. Не оставь себя без хода.</p>
         <button class="home-tile play" id="boot-play" type="button">
           <b>Играть</b>
+          <span class="play-level" id="home-play-level">ур. 1</span>
         </button>
         <button class="home-tile tower locked" id="boot-tower" type="button">
           <span class="tower-face">
@@ -372,6 +373,11 @@
       <span class="pack-ad-ico" id="pack-ad-ico" aria-hidden="true">💰</span>
       <em id="pack-ad-price">200₴</em>
     </button>
+    <button class="pack-ad tower-ad" id="tower-ad" type="button" aria-label="Башня">
+      <span class="pack-ad-shine"></span>
+      <span class="pack-ad-ico" aria-hidden="true">🏆</span>
+      <em>Башня</em>
+    </button>
     <div class="overlay" id="pack-overlay">
       <div class="card pack-card">
         <h2>Наборы</h2>
@@ -409,6 +415,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=57"></script>
+    <script src="game.js?v=59"></script>
   </body>
 </html>

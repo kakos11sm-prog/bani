@@ -442,6 +442,7 @@ function syncScreens() {
   document.body.classList.toggle("map-open", !!mapOpen);
   document.body.classList.toggle("home-open", !!homeOpen && !cover && !towerOpen);
   document.body.classList.toggle("tower-open", !!towerOpen);
+  if (!document.body.classList.contains("home-open")) closeFly();
 }
 
 function paintMenu() {
@@ -455,6 +456,8 @@ function paintMenu() {
   paintWeekClocks();
   syncDailyFire();
   paintHud();
+  paintPlayLevel();
+  paintTowerAd();
   if (towerMeta) {
     towerMeta.hidden = !hasTowerPass();
     if (hasTowerPass()) towerMeta.textContent = "Попробуй удержать первое место";
@@ -691,6 +694,49 @@ function jarCap() {
 
 function storyLevelCount() {
   return 100;
+}
+
+function storyPlace() {
+  syncUnlocked();
+  if (state.mode === "story" && state.tubes.length) return state.level;
+  return Math.max(1, progress.unlocked || 1);
+}
+
+function paintPlayLevel() {
+  const el = document.getElementById("home-play-level");
+  if (!el) return;
+  el.textContent = "ур. " + storyPlace();
+}
+
+function paintTowerAd() {
+  const el = document.getElementById("tower-ad");
+  if (!el) return;
+  el.classList.toggle("locked", !hasTowerPass());
+}
+
+function goHudBack() {
+  closeFly();
+  overlay.classList.remove("show");
+  failOverlay.classList.remove("show");
+  if (lockOverlay) lockOverlay.classList.remove("show");
+  if (towerOverlay && towerOverlay.classList.contains("show")) {
+    closeTower();
+    openMenu();
+    return;
+  }
+  if (mapOverlay && mapOverlay.classList.contains("show")) {
+    openMenu();
+    return;
+  }
+  if (state.mode === "tower") {
+    openTower();
+    return;
+  }
+  if (state.tubes.length) {
+    openMap();
+    return;
+  }
+  openMenu();
 }
 
 function storySourceLevel(level, stage) {
@@ -1407,10 +1453,25 @@ function towerHeat(place, total) {
 }
 
 function hunterPool(table, me) {
-  const band = me.place <= 10 ? 8 : me.place <= 28 ? 5 : 3;
-  return table.filter(
-    (row) => !row.you && (row.place < me.place || Math.abs(row.place - me.place) <= band)
-  );
+  const heat = towerHeat(me.place, table.length);
+  const band = heat < 0.25 ? 3 : heat < 0.55 ? 6 : 12;
+  return table.filter((row) => {
+    if (row.you) return false;
+    const above = me.place - row.place;
+    if (above > 0 && above <= band) return true;
+    if (heat > 0.7 && above > 0 && above <= 22) return true;
+    return Math.abs(row.place - me.place) <= 2;
+  });
+}
+
+function pickHunters(pool, n) {
+  const copy = pool.slice();
+  const out = [];
+  while (out.length < n && copy.length) {
+    const i = Math.floor(Math.random() * copy.length);
+    out.push(copy.splice(i, 1)[0]);
+  }
+  return out;
 }
 
 function rollYouHits() {
@@ -1428,24 +1489,21 @@ function rollYouHits() {
     saveProgress();
     return [];
   }
-  const firstChance = 0.05 + heat * 0.8;
+  const firstChance = heat < 0.22 ? 0.03 + heat * 0.18 : 0.08 + heat * 0.8;
   if (Math.random() >= firstChance) {
     progress.youHits = [];
     saveProgress();
     return [];
   }
-  const twoChance = heat > 0.48 ? 0.12 + (heat - 0.48) * 0.72 : 0;
+  const twoChance = heat < 0.52 ? 0 : 0.18 + (heat - 0.52) * 0.95;
   const n = Math.random() < twoChance ? 2 : 1;
-  const hits = [];
-  const used = {};
-  for (let i = 0; i < n; i += 1) {
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    if (used[pick.name]) continue;
-    used[pick.name] = true;
+  const hunters = pickHunters(pool, n);
+  const hits = hunters.map((pick, i) => {
     const bomb = Math.random() < 0.5;
-    const paint = heat > 0.3 && Math.random() < heat * 0.7;
-    hits.push({ kind: bomb ? "bomb" : "freeze", by: pick.name, paint: paint, idx: -1 });
-  }
+    const paint = heat >= 0.34 && (heat > 0.72 || Math.random() < 0.12 + heat * 0.7 || i > 0);
+    return { kind: bomb ? "bomb" : "freeze", by: pick.name, paint: paint, idx: -1 };
+  });
+  hits.forEach((hit) => applyHold(YOU, hit.kind === "bomb" ? "bomb" : "freeze", hit.by));
   progress.youHits = hits;
   saveProgress();
   return hits;
@@ -2501,11 +2559,19 @@ async function playTowerFloor() {
     for (let i = 0; i < hits.length; i += 1) {
       const wound = hits[i];
       await playIncomingWound(wound);
-      showPassToast(
-        wound.kind === "bomb"
-          ? "У тебя сломана банка. Это " + wound.by
-          : "У тебя заморожена банка. Это " + wound.by
-      );
+      if (wound.paint) {
+        showPassToast(
+          wound.kind === "bomb"
+            ? "У тебя банка с краской сломана. Это " + wound.by + ". Чинить обязательно."
+            : "У тебя банка с краской заморожена. Это " + wound.by + ". Чинить обязательно."
+        );
+      } else {
+        showPassToast(
+          wound.kind === "bomb"
+            ? "У тебя сломана банка. Это " + wound.by
+            : "У тебя заморожена банка. Это " + wound.by
+        );
+      }
       if (i < hits.length - 1) await wait(320);
     }
     openLockShop();
@@ -2868,13 +2934,24 @@ function render(enter) {
       btn.className += " wound-paint " + (paint.kind === "bomb" ? "broken-hit" : "frozen-hit");
     }
     if (enter) btn.style.animationDelay = index * 45 + "ms";
-    btn.setAttribute("aria-label", paint ? (paint.kind === "bomb" ? "сломанная банка" : "замороженная банка") : "банка " + (index + 1));
+    btn.setAttribute(
+      "aria-label",
+      paint
+        ? "банка с краской — чинить обязательно"
+        : "банка " + (index + 1)
+    );
     tube.forEach((color) => {
       const layer = document.createElement("span");
       layer.className = "layer";
       layer.style.background = COLORS[color];
       btn.appendChild(layer);
     });
+    if (paint) {
+      const drip = document.createElement("span");
+      drip.className = "paint-drip";
+      drip.setAttribute("aria-hidden", "true");
+      btn.appendChild(drip);
+    }
     board.appendChild(btn);
   });
   const emptyHits = (progress.youHits || []).filter((hit) => !hit.paint);
@@ -3967,10 +4044,7 @@ const introNext = document.getElementById("intro-next");
 if (introNext) introNext.addEventListener("click", () => stepIntro());
 const towerBack = document.getElementById("tower-back");
 if (towerBack) {
-  towerBack.addEventListener("click", () => {
-    closeTower();
-    backToMenuIfIdle();
-  });
+  towerBack.addEventListener("click", () => goHudBack());
 }
 const towerTipNext = document.getElementById("tower-tip-next");
 if (towerTipNext) towerTipNext.addEventListener("click", () => stepTowerTip());
@@ -4002,6 +4076,8 @@ const shopPacks = document.getElementById("shop-packs");
 if (shopPacks) shopPacks.addEventListener("click", () => openPackStore());
 const packAd = document.getElementById("pack-ad");
 if (packAd) packAd.addEventListener("click", () => openPackStore());
+const towerAd = document.getElementById("tower-ad");
+if (towerAd) towerAd.addEventListener("click", () => tryEnterTower());
 const packGrid = document.getElementById("pack-grid");
 if (packGrid) {
   packGrid.addEventListener("click", (event) => {
@@ -4104,6 +4180,10 @@ function closeFly() {
 function toggleFly(event) {
   if (event) event.stopPropagation();
   if (!fly) return;
+  if (!document.body.classList.contains("home-open")) {
+    closeFly();
+    return;
+  }
   const open = fly.hidden;
   fly.hidden = !open;
   if (burger) {
