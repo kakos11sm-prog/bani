@@ -990,18 +990,31 @@ body.tower-open .level {
 
 .tower-prize {
   flex: 0 0 auto;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 0 4px;
 }
 
 .tower-prize .tower-chest,
 .tower-prize .chest-pic.big {
+  flex: 0 0 72px;
   width: 72px;
   height: 72px;
-  margin: 0 auto;
+  margin: 0;
+}
+
+.prize-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .tower-prize .prize-kicker {
-  margin: 2px 0 4px;
+  margin: 0 0 2px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -1010,17 +1023,18 @@ body.tower-open .level {
 }
 
 .prize-reel {
-  height: 58px;
+  width: 100%;
+  height: 52px;
   overflow: hidden;
 }
 
 .prize-slide {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 58px;
-  padding: 0 8px;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0;
 }
 
 .prize-slide.swap {
@@ -1115,7 +1129,7 @@ body.tower-open .level {
 .tower-prize #tower-clock {
   display: block;
   margin-top: 2px;
-  font-size: 28px;
+  font-size: 22px;
   font-style: normal;
   font-weight: 900;
   letter-spacing: 0.04em;

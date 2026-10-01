@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=64" />
+    <link rel="stylesheet" href="style.css?v=65" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -294,11 +294,13 @@
       <div class="tower-stage">
         <div class="tower-prize">
           <span class="tower-chest" aria-hidden="true"><img class="chest-pic big" src="chest.svg?v=49" alt="" /></span>
-          <p class="prize-kicker">В сундуке недели</p>
-          <div class="prize-reel" id="prize-reel">
-            <div class="prize-slide" id="prize-slide"></div>
+          <div class="prize-side">
+            <p class="prize-kicker">В сундуке недели</p>
+            <div class="prize-reel" id="prize-reel">
+              <div class="prize-slide" id="prize-slide"></div>
+            </div>
+            <em id="tower-clock">3д</em>
           </div>
-          <em id="tower-clock">3д</em>
         </div>
         <div class="tower-podium" id="tower-podium"></div>
         <p class="tower-score" id="tower-score">Твои очки: 0</p>
@@ -415,6 +417,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=64"></script>
+    <script src="game.js?v=65"></script>
   </body>
 </html>
