@@ -20,9 +20,9 @@ const BOMB_HOLD_MS = 18000000;
 const UNDO_PACK = 35;
 const AD_COINS = 40;
 const COIN_PACKS = [
-  { id: "pack200", name: "Старт", uah: 200, coins: 2000, bombs: 10, fire: false },
-  { id: "pack500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false },
-  { id: "pack999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true },
+  { id: "pack200", name: "Старт", uah: 200, coins: 2000, bombs: 10, fire: false, bonus: "", tone: "start" },
+  { id: "pack500", name: "Запас", uah: 500, coins: 5000, bombs: 30, fire: false, bonus: "+50%", tone: "mid" },
+  { id: "pack999", name: "Корона", uah: 999, coins: 20000, bombs: 100, fire: true, bonus: "200%", tone: "fat" },
 ];
 const YOU = "Ты";
 const RIVALS = [
@@ -2457,28 +2457,31 @@ function paintPackStore() {
   const grid = document.getElementById("pack-grid");
   if (!grid) return;
   grid.innerHTML = "";
-  COIN_PACKS.forEach((pack) => {
+  COIN_PACKS.forEach((pack, i) => {
     const card = document.createElement("button");
-    card.className = "pack-offer" + (pack.fire ? " fat" : "");
+    card.className = "pack-offer tone-" + (pack.tone || "start") + (pack.fire ? " fat" : "");
     card.type = "button";
     card.setAttribute("data-pack", pack.id);
+    card.style.animationDelay = i * 80 + "ms";
+    const extras = pack.fire
+      ? "<span class=\"pack-bit fire\"><span class=\"pack-ico\">🔥</span><em>×2</em><small>огонёк</small></span>"
+      : "";
     card.innerHTML =
-      (pack.fire ? "<i>жирный</i>" : "") +
-      "<b>" +
-      pack.name +
-      "</b>" +
+      (pack.bonus ? "<i class=\"pack-bonus\">" + pack.bonus + "</i>" : "") +
       "<span class=\"pack-loot\">" +
-      "<em>+" +
+      "<span class=\"pack-bit\"><img class=\"coin\" src=\"coin.svg?v=49\" alt=\"\" /><em>+" +
       pack.coins +
-      " монет</em>" +
-      "<em>" +
+      "</em><small>монеты</small></span>" +
+      "<span class=\"pack-bit\"><span class=\"pack-ico\">💣</span><em>+" +
       pack.bombs +
-      " бомб</em>" +
-      (pack.fire ? "<em>огонёк ×2 навсегда</em>" : "") +
+      "</em><small>бомбы</small></span>" +
+      extras +
       "</span>" +
-      "<strong>" +
+      "<span class=\"pack-bar\"><b>" +
+      pack.name +
+      "</b><strong>" +
       pack.uah +
-      " грн</strong>";
+      " грн</strong></span>";
     grid.appendChild(card);
   });
 }

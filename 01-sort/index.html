@@ -9,7 +9,7 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="style.css?v=60" />
+    <link rel="stylesheet" href="style.css?v=61" />
   </head>
   <body class="screen">
     <div class="scene" id="scene" aria-hidden="true">
@@ -379,13 +379,10 @@
       <em>Башня</em>
     </button>
     <div class="overlay" id="pack-overlay">
-      <div class="card pack-card">
-        <h2>Наборы</h2>
-        <p class="league-lead">Как в сторе: жми сбоку — открывается витрина. Живые гривны пойдут через Play Market.</p>
+      <div class="pack-shop">
+        <div class="pack-banner" aria-hidden="true">Наборы</div>
         <div class="pack-grid" id="pack-grid"></div>
-        <div class="card-actions">
-          <button class="act ghost" id="pack-close" type="button">Закрыть</button>
-        </div>
+        <button class="act ghost" id="pack-close" type="button">Назад</button>
       </div>
     </div>
     <div class="overlay" id="skins-overlay">
@@ -415,6 +412,6 @@
     </div>
     <script src="levels.js"></script>
     <script src="pars.js"></script>
-    <script src="game.js?v=60"></script>
+    <script src="game.js?v=61"></script>
   </body>
 </html>

@@ -2141,79 +2141,212 @@ body:has(#pass-overlay.show) .tower-ad {
 
 #pack-overlay {
   z-index: 74;
+  padding: calc(58px + env(safe-area-inset-top, 0px)) 12px 16px;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
-.pack-card {
-  width: min(400px, 100%);
+#pack-overlay.show {
+  background:
+    radial-gradient(90vw 50vh at 50% 0%, #4a2a12 0%, transparent 55%),
+    #120e0b;
+}
+
+.pack-shop {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.pack-shop #pack-close {
+  align-self: stretch;
+  margin-top: 4px;
+}
+
+.pack-banner {
+  flex: 0 0 auto;
+  margin: 0 8px 4px;
+  padding: 8px 12px;
+  border-radius: 99px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff6c4;
+  background: linear-gradient(90deg, #5a2a0c, #a85a14 50%, #5a2a0c);
+  box-shadow: 0 0 16px rgba(244, 185, 66, 0.28);
+  animation: titleShine 2.4s ease-in-out infinite;
 }
 
 .pack-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0 0 12px;
+  gap: 12px;
+  margin: 0;
 }
 
 .pack-offer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   border: 0;
-  border-radius: 16px;
-  padding: 14px 14px 12px;
-  background: #2a2118;
+  border-radius: 22px;
+  padding: 18px 14px 0;
   color: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   font: inherit;
-  animation: jarIn 0.32s both;
+  overflow: hidden;
+  animation: packCardIn 0.42s cubic-bezier(0.2, 1.3, 0.3, 1) both;
 }
 
-.pack-offer:nth-child(2) { animation-delay: 60ms; }
-.pack-offer:nth-child(3) { animation-delay: 120ms; }
+.pack-offer.tone-start {
+  background:
+    radial-gradient(80% 70% at 80% 0%, rgba(62, 207, 142, 0.18), transparent 55%),
+    linear-gradient(180deg, #24382c, #162018);
+  box-shadow: inset 0 0 0 1px #3ecf8e;
+}
 
+.pack-offer.tone-mid {
+  background:
+    radial-gradient(80% 70% at 80% 0%, rgba(160, 110, 255, 0.22), transparent 55%),
+    linear-gradient(180deg, #3a2458, #1c1430);
+  box-shadow: inset 0 0 0 1px #c084fc;
+}
+
+.pack-offer.tone-fat,
 .pack-offer.fat {
-  background: linear-gradient(180deg, #6a4a10, #2a1808);
-  box-shadow: 0 0 22px rgba(255, 210, 74, 0.4);
+  background:
+    radial-gradient(80% 70% at 80% 0%, rgba(255, 210, 74, 0.28), transparent 55%),
+    linear-gradient(180deg, #6a4a10, #2a1808);
+  box-shadow:
+    inset 0 0 0 1px #ffd24a,
+    0 0 22px rgba(255, 210, 74, 0.35);
 }
 
-.pack-offer i {
+.pack-bonus {
   position: absolute;
-  top: 8px;
-  right: 10px;
+  top: 10px;
+  right: -2px;
   font-style: normal;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #ffd24a;
+  letter-spacing: 0.04em;
+  color: #1a1410;
+  background: #ffd24a;
+  border-radius: 10px 0 0 10px;
+  padding: 4px 10px 4px 12px;
   animation: packGlow 1s ease-in-out infinite;
-}
-
-.pack-offer b {
-  display: block;
-  font-size: 20px;
 }
 
 .pack-loot {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 6px 0 8px;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px;
+  min-height: 78px;
+  margin: 4px 8px 2px;
 }
 
-.pack-loot em {
+.pack-bit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  animation: packBitPop 0.45s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+}
+
+.pack-offer .pack-bit:nth-child(2) { animation-delay: 80ms; }
+.pack-offer .pack-bit:nth-child(3) { animation-delay: 160ms; }
+
+.pack-bit .coin,
+.pack-ico {
+  width: 42px;
+  height: 42px;
+  font-size: 34px;
+  line-height: 42px;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+  animation: packIco 1.3s ease-in-out infinite;
+}
+
+.pack-bit em {
   font-style: normal;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff6c4;
+  letter-spacing: -0.03em;
+}
+
+.pack-bit small {
+  font-size: 10px;
   font-weight: 800;
   color: #ffe08a;
+  opacity: 0.8;
 }
 
-.pack-offer strong {
-  display: block;
-  font-size: 22px;
-  color: #ffd24a;
+.pack-bit.fire em {
+  color: #ff9a1a;
+}
+
+.pack-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px -14px 0;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #ffe27a, #f4b942);
+  color: #1a1410;
+}
+
+.pack-bar b {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pack-bar strong {
+  font-size: 20px;
+  font-weight: 900;
+  color: #1a1410;
 }
 
 .pack-offer:active {
   transform: scale(0.98);
+}
+
+.pack-offer:active .pack-bar {
+  filter: brightness(1.08);
+}
+
+@keyframes packCardIn {
+  from {
+    transform: translateY(16px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes packBitPop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 @keyframes packPeek {
@@ -2245,7 +2378,12 @@ body.quiet .pack-ad,
 body.quiet .pack-ad-shine,
 body.quiet .pack-ad-ico,
 body.quiet .chip.fire.hot2,
-body.quiet .pack-offer i {
+body.quiet .pack-offer i,
+body.quiet .pack-bonus,
+body.quiet .pack-bit,
+body.quiet .pack-bit .coin,
+body.quiet .pack-ico,
+body.quiet .pack-banner {
   animation: none;
 }
 
