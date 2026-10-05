@@ -18,11 +18,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 6, y: 20 },
-  { x: 38, y: 8 },
-  { x: 70, y: 20 },
-  { x: 16, y: 58 },
-  { x: 54, y: 58 },
+  { x: 2, b: 32, s: 0.84 },
+  { x: 35, b: 36, s: 0.8 },
+  { x: 66, b: 32, s: 0.84 },
+  { x: 12, b: 2, s: 1 },
+  { x: 50, b: 2, s: 1 },
 ];
 
 const boot = document.getElementById("boot");
@@ -127,9 +127,21 @@ function pakInner(sku) {
 
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
+  const cols = 2;
+  const rows = PALLET_PACKS / cols;
   let load = "";
-  for (let i = 0; i < n; i += 1) {
-    load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
+  for (let row = 0; row < rows; row += 1) {
+    const vacant = row * cols + 1 < PALLET_PACKS - n;
+    load += "<span class=\"pak-layer" + (vacant ? " vacant" : "") + "\">";
+    for (let col = 0; col < cols; col += 1) {
+      const slot = row * cols + col;
+      if (slot >= PALLET_PACKS - n) {
+        load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
+      } else {
+        load += "<span class=\"pak empty\"></span>";
+      }
+    }
+    load += "</span>";
   }
   return (
     "<div class=\"pal-live sku-" +
@@ -167,7 +179,8 @@ function palSpots() {
     const row = Math.floor(i / cols);
     spots.push({
       x: 8 + col * (80 / Math.max(1, cols - 1)),
-      y: 10 + row * 28,
+      b: 6 + (Math.floor((n - 1) / cols) - row) * 22,
+      s: row === 0 ? 0.86 : 1,
     });
   }
   return spots;
@@ -322,11 +335,12 @@ function paintSlots() {
   const spots = palSpots();
   progress.pallets.forEach((pal, i) => {
     const sku = skuOf(pal.sku);
-    const spot = spots[i] || spots[spots.length - 1] || { x: 40, y: 40 };
+    const spot = spots[i] || spots[spots.length - 1] || { x: 40, b: 6, s: 1 };
     const stand = document.createElement("div");
     stand.className = "pal-stand";
     stand.style.left = spot.x + "%";
-    stand.style.top = spot.y + "%";
+    stand.style.bottom = (spot.b ?? 6) + "%";
+    stand.style.setProperty("--sc", String(spot.s || 1));
     stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
     host.appendChild(stand);
   });
