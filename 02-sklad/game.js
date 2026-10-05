@@ -213,6 +213,46 @@ function pakInner(sku) {
   );
 }
 
+function palSkin(sku) {
+  return (
+    "--sku:" +
+    sku.tone +
+    ";--liq:" +
+    (sku.liq || sku.tone) +
+    ";--cap:" +
+    (sku.cap || sku.tone) +
+    ";--paper:" +
+    (sku.paper || "#efe6d4") +
+    ";--ink:" +
+    (sku.ink || "#2c3438")
+  );
+}
+
+function palWood() {
+  return (
+    "<div class=\"pal-wood\">" +
+    "<div class=\"pal-boards\"><i></i><i></i><i></i><i></i><i></i></div>" +
+    "<div class=\"pal-stringers\"><i></i><i></i><i></i></div>" +
+    "<div class=\"pal-base\"><i></i><i></i><i></i></div>" +
+    "</div>"
+  );
+}
+
+function shopPalMarkup(sku) {
+  return (
+    "<div class=\"pal-live shop-one sku-" +
+    sku.id +
+    "\" style=\"" +
+    palSkin(sku) +
+    "\">" +
+    "<div class=\"pal-load\"><span class=\"pak-layer\"><span class=\"pak\">" +
+    pakInner(sku) +
+    "</span></span></div>" +
+    palWood() +
+    "</div>"
+  );
+}
+
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
   const cols = 2;
@@ -234,25 +274,14 @@ function palMarkup(sku, packs) {
   return (
     "<div class=\"pal-live sku-" +
     sku.id +
-    "\" style=\"--sku:" +
-    sku.tone +
-    ";--liq:" +
-    (sku.liq || sku.tone) +
-    ";--cap:" +
-    (sku.cap || sku.tone) +
-    ";--paper:" +
-    (sku.paper || "#efe6d4") +
-    ";--ink:" +
-    (sku.ink || "#2c3438") +
+    "\" style=\"" +
+    palSkin(sku) +
     "\">" +
     "<div class=\"pal-load\">" +
     load +
     "</div>" +
-    "<div class=\"pal-wood\">" +
-    "<div class=\"pal-boards\"><i></i><i></i><i></i><i></i><i></i></div>" +
-    "<div class=\"pal-stringers\"><i></i><i></i><i></i></div>" +
-    "<div class=\"pal-base\"><i></i><i></i><i></i></div>" +
-    "</div></div>"
+    palWood() +
+    "</div>"
   );
 }
 
@@ -540,7 +569,7 @@ function paintShop() {
     btn.dataset.sku = sku.id;
     btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
     btn.innerHTML =
-      palMarkup(sku, PALLET_PACKS) +
+      shopPalMarkup(sku) +
       "<span><b>" +
       sku.name +
       "</b><small>едет 1 мин · доставка " +
