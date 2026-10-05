@@ -1535,6 +1535,14 @@ body.shipping .jobs-tab {
   filter: grayscale(0.85) brightness(0.55);
 }
 
+.good.locked {
+  filter: grayscale(0.9) brightness(0.62);
+}
+
+.good.locked .good-meta em {
+  color: #d4a017;
+}
+
 .good.poor .good-meta em {
   color: #8a7a66;
 }

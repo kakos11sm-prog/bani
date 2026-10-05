@@ -16,6 +16,7 @@ const GRADE_NAME = {
   hard: "Тяжёлая",
   wild: "Нереальная",
 };
+const UNLOCK_PRICE = [0, 1000, 2500, 5000, 10000, 20000];
 const SKUS = [
   { id: "water", name: "Вода", tag: "ВОДА", tone: "#6a7c84", liq: "#6e8792", cap: "#3e4a50", paper: "#efe6d4", ink: "#2c3438", cost: 320 },
   { id: "cola", name: "Кола", tag: "КОЛА", tone: "#5a322c", liq: "#2a1814", cap: "#6a2c26", paper: "#e4d4b8", ink: "#3a1814", cost: 480 },
@@ -55,6 +56,7 @@ function emptyProgress() {
     nextPallet: 1,
     nextShip: 1,
     gifted: false,
+    unlocked: ["water"],
   };
 }
 
@@ -91,6 +93,19 @@ function loadProgress() {
     base.orders = Array.isArray(raw.orders)
       ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length)
       : [];
+    const open = { water: true };
+    if (Array.isArray(raw.unlocked)) {
+      raw.unlocked.forEach((id) => {
+        if (SKUS.some((s) => s.id === id)) open[id] = true;
+      });
+    }
+    base.pallets.forEach((p) => {
+      if (p.sku) open[p.sku] = true;
+    });
+    base.incoming.forEach((p) => {
+      if (p.sku) open[p.sku] = true;
+    });
+    base.unlocked = SKUS.map((s) => s.id).filter((id) => open[id]);
     return base;
   } catch (e) {
     return emptyProgress();
@@ -106,6 +121,19 @@ const state = { packId: 0, pickId: 0, shipId: 0, busy: false, drag: null, cart: 
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
+}
+
+function isUnlocked(id) {
+  return (progress.unlocked || []).indexOf(id) >= 0;
+}
+
+function nextLocked() {
+  return SKUS.find((s) => !isUnlocked(s.id)) || null;
+}
+
+function unlockPrice(id) {
+  const i = SKUS.findIndex((s) => s.id === id);
+  return UNLOCK_PRICE[i] || UNLOCK_PRICE[UNLOCK_PRICE.length - 1];
 }
 
 function packPayOf(skuId) {
@@ -185,7 +213,11 @@ function orderPossible(order) {
 }
 
 function pruneOrders() {
-  const keep = (progress.orders || []).filter((order) => order.lines && order.lines.length);
+  const keep = (progress.orders || []).filter((order) => {
+    if (!order.lines || !order.lines.length) return false;
+    if (order.grade === "wild") return true;
+    return order.lines.every((line) => isUnlocked(line.sku));
+  });
   if (keep.length !== progress.orders.length) {
     progress.orders = keep;
     saveProgress();
@@ -674,9 +706,36 @@ function cartTotal() {
 function canAddPal(sku) {
   return (
     !!progress.room &&
+    isUnlocked(sku.id) &&
     state.cart.pals.length < freeSlots() &&
     progress.coins >= cartTotal() + sku.cost + DELIVERY_FEE
   );
+}
+
+function tryUnlock(id, btn) {
+  const sku = skuOf(id);
+  const next = nextLocked();
+  if (isUnlocked(id)) return false;
+  if (!next || next.id !== id) {
+    shake(btn);
+    toast(next ? "Сначала открой «" + next.name + "»" : "Уже всё открыто");
+    return true;
+  }
+  const price = unlockPrice(id);
+  if (progress.coins < price) {
+    shake(btn);
+    toast("Не хватает монет");
+    return true;
+  }
+  progress.coins -= price;
+  progress.unlocked.push(id);
+  saveProgress();
+  paintHud();
+  paintShop();
+  maybeOrders();
+  paintJobs();
+  toast("Открыт товар «" + sku.name + "»");
+  return true;
 }
 
 function setQty(btn, n) {
@@ -699,20 +758,27 @@ function paintShop() {
   host.innerHTML = "";
   SKUS.forEach((sku) => {
     const n = cartCountSku(sku.id);
+    const locked = !isUnlocked(sku.id);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.dataset.sku = sku.id;
-    btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
+    btn.className =
+      "good" +
+      (locked ? " locked" : "") +
+      (n ? " ready" : locked || canAddPal(sku) ? "" : " poor");
     btn.innerHTML =
       "<div class=\"shop-stand\">" +
       palMarkup(sku, PALLET_PACKS) +
       "</div><span class=\"good-meta\"><b>" +
       sku.name +
       "</b><em>" +
-      sku.cost +
+      (locked ? "Открыть · " + unlockPrice(sku.id) : sku.cost) +
       "</em></span>";
     if (n) setQty(btn, n);
-    btn.addEventListener("click", () => addPalToCart(sku.id, btn));
+    btn.addEventListener("click", () => {
+      if (locked) tryUnlock(sku.id, btn);
+      else addPalToCart(sku.id, btn);
+    });
     host.appendChild(btn);
   });
   const box = document.createElement("button");
@@ -742,7 +808,13 @@ function syncShop() {
     const btn = host.querySelector('.good[data-sku="' + sku.id + '"]');
     if (!btn) return;
     const n = cartCountSku(sku.id);
-    btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
+    const locked = !isUnlocked(sku.id);
+    btn.className =
+      "good" +
+      (locked ? " locked" : "") +
+      (n ? " ready" : locked || canAddPal(sku) ? "" : " poor");
+    const em = btn.querySelector(".good-meta em");
+    if (em) em.textContent = locked ? "Открыть · " + unlockPrice(sku.id) : String(sku.cost);
     setQty(btn, n);
   });
   const box = host.querySelector('.good[data-sku="boxes"]');
@@ -841,6 +913,7 @@ function paintCart() {
 }
 
 function addPalToCart(skuId, btn) {
+  if (tryUnlock(skuId, btn)) return;
   if (!progress.room) {
     closeShop();
     showScreen(rent);
@@ -1094,10 +1167,13 @@ function linesFrom(picks, total) {
 }
 
 function linesForGrade(grade) {
-  const have = rotateList(onFloor(), progress.nextOrder);
-  if (!have.length) return null;
+  const have = rotateList(
+    onFloor().filter((row) => isUnlocked(row.sku)),
+    progress.nextOrder
+  );
   const pals = floorPals();
-  const missing = offFloor();
+  const locked = SKUS.map((s) => s.id).filter((id) => !isUnlocked(id));
+  if (grade !== "wild" && !have.length) return null;
   if (grade === "easy") {
     return [{ sku: have[0].sku, need: 1, fill: 0 }];
   }
@@ -1122,11 +1198,19 @@ function linesForGrade(grade) {
     const kinds = Math.min(have.length, cap >= 6 ? 3 : 2);
     return linesFrom(have.slice(0, kinds), Math.max(3, cap));
   }
-  const base = linesFrom(have.slice(0, Math.min(2, have.length)), Math.min(3, Math.max(2, pals)));
+  const base = have.length
+    ? linesFrom(have.slice(0, Math.min(2, have.length)), Math.min(3, Math.max(2, pals)))
+    : [];
+  if (locked.length) {
+    base.push({ sku: locked[0], need: 2, fill: 0 });
+    return mergeLines(base);
+  }
+  const missing = offFloor().filter((id) => isUnlocked(id));
   if (missing.length) {
     base.push({ sku: missing[progress.nextOrder % missing.length], need: 2, fill: 0 });
     return mergeLines(base);
   }
+  if (!have.length) return null;
   base.push({ sku: have[0].sku, need: have[0].have + 2, fill: 0 });
   return mergeLines(base);
 }
@@ -1219,7 +1303,9 @@ function startShip(id) {
   paintWaybill(true);
   paintLoad();
   paintSlots();
-  if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
+  if ((order.lines || []).some((line) => !isUnlocked(line.sku))) {
+    toast("Этот вид ещё закрыт. Открой его в магазине");
+  } else if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
     toast("Часть паков нужно докупить в магазине");
   }
 }
