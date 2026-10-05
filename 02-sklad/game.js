@@ -18,11 +18,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 1, b: 30, s: 0.86, lift: 20 },
-  { x: 35, b: 30, s: 0.86, lift: 20 },
-  { x: 69, b: 30, s: 0.86, lift: 20 },
-  { x: 18, b: 2, s: 1, lift: 10 },
-  { x: 52, b: 2, s: 1, lift: 10 },
+  { x: 1, b: 30, s: 0.86, lift: 30 },
+  { x: 35, b: 30, s: 0.86, lift: 30 },
+  { x: 69, b: 30, s: 0.86, lift: 30 },
+  { x: 18, b: 2, s: 1, lift: 20 },
+  { x: 52, b: 2, s: 1, lift: 20 },
 ];
 
 const boot = document.getElementById("boot");
@@ -65,15 +65,7 @@ function loadProgress() {
           .filter((p) => p.id)
       : [];
     base.orders = Array.isArray(raw.orders)
-      ? raw.orders
-          .map((o) => ({
-            id: Number(o.id) || 0,
-            sku: SKUS.some((s) => s.id === o.sku) ? o.sku : "water",
-            need: Math.max(1, Number(o.need) || 1),
-            fill: Math.max(0, Number(o.fill) || 0),
-            pay: Math.max(1, Number(o.pay) || PACK_PAY),
-          }))
-          .filter((o) => o.id)
+      ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length >= 2)
       : [];
     return base;
   } catch (e) {
@@ -90,6 +82,69 @@ const state = { packId: 0, pickId: 0, busy: false };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
+}
+
+function readLine(line) {
+  return {
+    sku: SKUS.some((s) => s.id === line.sku) ? line.sku : "water",
+    need: Math.max(1, Number(line.need) || 1),
+    fill: Math.max(0, Number(line.fill) || 0),
+  };
+}
+
+function normalizeOrder(raw) {
+  const id = Number(raw && raw.id) || 0;
+  let lines = [];
+  if (raw && Array.isArray(raw.lines) && raw.lines.length) {
+    lines = raw.lines.map(readLine);
+  } else if (raw && raw.sku) {
+    lines = [readLine({ sku: raw.sku, need: raw.need, fill: raw.fill })];
+  }
+  const need = lines.reduce((sum, line) => sum + line.need, 0);
+  return {
+    id: id,
+    lines: lines,
+    pay: Math.max(1, Number(raw && raw.pay) || need * PACK_PAY),
+  };
+}
+
+function orderNeed(order) {
+  return (order.lines || []).reduce((sum, line) => sum + line.need, 0);
+}
+
+function orderFill(order) {
+  return (order.lines || []).reduce((sum, line) => sum + line.fill, 0);
+}
+
+function orderDone(order) {
+  return (order.lines || []).every((line) => line.fill >= line.need);
+}
+
+function nextLineFor(order, sku) {
+  return (order.lines || []).find((line) => line.sku === sku && line.fill < line.need);
+}
+
+function stillNeed(order, sku) {
+  return !!(order.lines || []).some((line) => line.sku === sku && line.fill < line.need);
+}
+
+function orderTitle(order) {
+  return (order.lines || []).map((line) => skuOf(line.sku).name).join(" + ");
+}
+
+function stockFree(sku) {
+  const have = progress.pallets
+    .filter((p) => p.sku === sku)
+    .reduce((sum, p) => sum + p.units, 0);
+  const reserved = progress.orders.reduce((sum, order) => {
+    return (
+      sum +
+      (order.lines || [])
+        .filter((line) => line.sku === sku)
+        .reduce((acc, line) => acc + (line.need - line.fill), 0)
+    );
+  }, 0);
+  return have - reserved;
 }
 
 function packsWord(n) {
@@ -357,7 +412,6 @@ function paintJobs() {
     return;
   }
   progress.orders.forEach((order, i) => {
-    const sku = skuOf(order.sku);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "job";
@@ -366,9 +420,7 @@ function paintJobs() {
       "<b>#" +
       order.id +
       " · " +
-      sku.name +
-      " · " +
-      packsWord(order.need) +
+      orderTitle(order) +
       "</b><small>+" +
       order.pay +
       "</small>";
@@ -428,24 +480,40 @@ function openShop() {
   document.getElementById("shop").classList.add("show");
 }
 
+function mixLines() {
+  const inStock = SKUS.map((s) => s.id).filter((id) => stockFree(id) >= 1);
+  if (!inStock.length) return null;
+  const lines = [];
+  if (inStock.length >= 2) {
+    const first = inStock[progress.nextOrder % inStock.length];
+    const second = inStock[(progress.nextOrder + 1) % inStock.length];
+    if (first === second) return null;
+    lines.push({ sku: first, need: 1, fill: 0 });
+    lines.push({ sku: second, need: 1, fill: 0 });
+    if (inStock.length >= 3 && progress.nextOrder % 3 === 0) {
+      const third = inStock[(progress.nextOrder + 2) % inStock.length];
+      if (third !== first && third !== second) {
+        lines.push({ sku: third, need: 1, fill: 0 });
+      }
+    }
+    return lines;
+  }
+  const extra = SKUS.find((s) => s.id !== inStock[0]);
+  if (!extra) return null;
+  lines.push({ sku: inStock[0], need: 1, fill: 0 });
+  lines.push({ sku: extra.id, need: 1, fill: 0 });
+  return lines;
+}
+
 function maybeOrders() {
   if (!progress.pallets.some((p) => p.units > 0)) return;
   while (progress.orders.length < 2) {
-    const ripe = progress.pallets.filter((p) => p.units >= 2);
-    const src = ripe[0] || progress.pallets.find((p) => p.units > 0);
-    if (!src) break;
-    const reserved = progress.orders
-      .filter((o) => o.sku === src.sku)
-      .reduce((sum, o) => sum + (o.need - o.fill), 0);
-    const left = src.units - reserved;
-    if (left < 1) break;
-    const need = Math.max(1, Math.min(left, 1 + (progress.nextOrder % 2)));
+    const lines = mixLines();
+    if (!lines || lines.length < 2) break;
     progress.orders.push({
       id: progress.nextOrder,
-      sku: src.sku,
-      need: need,
-      fill: 0,
-      pay: need * PACK_PAY,
+      lines: lines,
+      pay: lines.reduce((sum, line) => sum + line.need * PACK_PAY, 0),
     });
     progress.nextOrder += 1;
   }
@@ -532,7 +600,7 @@ function openPack(id) {
   const order = progress.orders.find((o) => o.id === id);
   if (!order) return;
   state.packId = id;
-  const own = progress.pallets.find((p) => p.sku === order.sku && p.units > 0);
+  const own = progress.pallets.find((p) => stillNeed(order, p.sku) && p.units > 0);
   state.pickId = own ? own.id : 0;
   paintPack();
   showScreen(pack);
@@ -544,42 +612,42 @@ function paintPack() {
     openFloor();
     return;
   }
-  const sku = skuOf(order.sku);
   document.getElementById("pack-id").textContent = "#" + order.id;
-  document.getElementById("pack-title").textContent = sku.name + " · " + packsWord(order.need);
+  document.getElementById("pack-title").textContent = orderTitle(order);
   document.getElementById("pack-pay").textContent = "+" + order.pay;
   const crate = document.getElementById("crate");
   crate.innerHTML = "";
-  for (let i = 0; i < order.need; i += 1) {
-    const cell = document.createElement("i");
-    cell.className = "cell" + (i < order.fill ? " on" : "");
-    cell.style.setProperty("--sku", sku.tone);
-    cell.style.setProperty("--liq", sku.liq || sku.tone);
-    cell.style.setProperty("--cap", sku.cap || sku.tone);
-    cell.style.setProperty("--paper", sku.paper || "#efe6d4");
-    cell.style.setProperty("--ink", sku.ink || "#2c3438");
-    if (i < order.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
-    crate.appendChild(cell);
-  }
+  (order.lines || []).forEach((line) => {
+    const sku = skuOf(line.sku);
+    for (let i = 0; i < line.need; i += 1) {
+      const cell = document.createElement("i");
+      cell.className = "cell" + (i < line.fill ? " on" : "");
+      cell.style.setProperty("--sku", sku.tone);
+      cell.style.setProperty("--liq", sku.liq || sku.tone);
+      cell.style.setProperty("--cap", sku.cap || sku.tone);
+      cell.style.setProperty("--paper", sku.paper || "#efe6d4");
+      cell.style.setProperty("--ink", sku.ink || "#2c3438");
+      if (i < line.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
+      crate.appendChild(cell);
+    }
+  });
   const hint = document.getElementById("pack-hint");
-  if (order.fill >= order.need) hint.textContent = "Собрано. Сейчас уедет.";
+  if (orderDone(order)) hint.textContent = "Собрано. Сейчас уедет.";
   else if (!progress.boxes) hint.textContent = "Коробки — в магазине сбоку";
-  else hint.textContent = "Клади пак с поддона в заявку";
+  else hint.textContent = "Клади разные паки в заявку";
   const picks = document.getElementById("picks");
   picks.innerHTML = "";
   progress.pallets.forEach((pal) => {
     const s = skuOf(pal.sku);
+    const fit = stillNeed(order, pal.sku) && pal.units > 0;
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className =
-      "pick" +
-      (state.pickId === pal.id ? " on" : "") +
-      (pal.sku !== order.sku || !pal.units ? " dim" : "");
+    btn.className = "pick" + (state.pickId === pal.id ? " on" : "") + (fit ? "" : " dim");
     btn.innerHTML = palMarkup(s, pal.units) + "<b>" + s.name + "</b><small>" + packsWord(pal.units) + "</small>";
     btn.addEventListener("click", () => {
-      if (pal.sku !== order.sku || !pal.units) {
+      if (!fit) {
         shake(btn);
-        toast("Этот поддон не подходит");
+        toast("Этот пак в заявку не нужен");
         return;
       }
       state.pickId = pal.id;
@@ -594,10 +662,11 @@ async function putOne() {
   const order = progress.orders.find((o) => o.id === state.packId);
   const pal = progress.pallets.find((p) => p.id === state.pickId);
   if (!order || !pal) return;
-  if (order.fill >= order.need) return;
-  if (pal.sku !== order.sku || pal.units < 1) {
+  if (orderDone(order)) return;
+  const line = nextLineFor(order, pal.sku);
+  if (!line || pal.units < 1) {
     shake(document.getElementById("picks"));
-    toast("На поддоне нет паков");
+    toast("Этот пак в заявку не нужен");
     return;
   }
   if (!progress.boxes) {
@@ -608,7 +677,7 @@ async function putOne() {
   state.busy = true;
   pal.units -= 1;
   progress.boxes -= 1;
-  order.fill += 1;
+  line.fill += 1;
   if (!pal.units) {
     progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
     if (state.pickId === pal.id) state.pickId = 0;
@@ -617,7 +686,7 @@ async function putOne() {
   paintHud();
   paintSlots();
   paintPack();
-  if (order.fill >= order.need) {
+  if (orderDone(order)) {
     await wait(380);
     progress.coins += order.pay;
     progress.orders = progress.orders.filter((o) => o.id !== order.id);
