@@ -1001,7 +1001,7 @@ body.in-garage .lantern {
 }
 
 .pal-stand .pal-live {
-  transform: perspective(340px) rotateX(10deg);
+  transform: perspective(340px) rotateX(10deg) scale(var(--sc, 1));
   transform-origin: 50% 100%;
 }
 
