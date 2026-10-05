@@ -4,6 +4,8 @@ const PALLET_PACKS = 6;
 const BOX_COST = 80;
 const BOX_PACK = 8;
 const PACK_PAY = 150;
+const DELIVERY_FEE = 40;
+const DELIVERY_MS = 60000;
 const SKUS = [
   { id: "water", name: "Вода", tag: "ВОДА", tone: "#6a7c84", liq: "#6e8792", cap: "#3e4a50", paper: "#efe6d4", ink: "#2c3438", cost: 320 },
   { id: "cola", name: "Кола", tag: "КОЛА", tone: "#5a322c", liq: "#2a1814", cap: "#6a2c26", paper: "#e4d4b8", ink: "#3a1814", cost: 480 },
@@ -38,8 +40,10 @@ function emptyProgress() {
     pallets: [],
     boxes: 0,
     orders: [],
+    incoming: [],
     nextOrder: 1,
     nextPallet: 1,
+    nextShip: 1,
     gifted: false,
   };
 }
@@ -54,7 +58,17 @@ function loadProgress() {
     base.boxes = Math.max(0, Number(raw.boxes) || 0);
     base.nextOrder = Math.max(1, Number(raw.nextOrder) || 1);
     base.nextPallet = Math.max(1, Number(raw.nextPallet) || 1);
+    base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
+    base.incoming = Array.isArray(raw.incoming)
+      ? raw.incoming
+          .map((item) => ({
+            id: Number(item.id) || 0,
+            sku: SKUS.some((s) => s.id === item.sku) ? item.sku : "water",
+            readyAt: Math.max(0, Number(item.readyAt) || 0),
+          }))
+          .filter((item) => item.id && item.readyAt)
+      : [];
     base.pallets = Array.isArray(raw.pallets)
       ? raw.pallets
           .map((p) => ({
@@ -254,14 +268,21 @@ function closeShop() {
   if (pane) pane.classList.remove("show");
 }
 
+function closeJobs() {
+  const pane = document.getElementById("jobs-pane");
+  if (pane) pane.classList.remove("show");
+}
+
 function showScreen(el) {
   closeShop();
+  closeJobs();
   [boot, rent, floor, pack].forEach((node) => node.classList.toggle("show", node === el));
   document.body.classList.toggle("home", el === boot);
   document.body.classList.toggle("on-floor", el === floor);
   if (el !== floor) {
     document.body.classList.remove("in-garage", "in-hangar", "in-depot");
   }
+  if (typeof paintShip === "function") paintShip();
 }
 
 function toast(text) {
@@ -292,7 +313,15 @@ function stockOf(sku) {
 
 function freeSlots() {
   const room = roomOf(progress.room);
-  return room ? Math.max(0, room.slots - progress.pallets.length) : 0;
+  const booked = progress.pallets.length + (progress.incoming || []).length;
+  return room ? Math.max(0, room.slots - booked) : 0;
+}
+
+function fmtEta(ms) {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  const min = Math.floor(sec / 60);
+  const rest = sec % 60;
+  return min + ":" + String(rest).padStart(2, "0");
 }
 
 function seedDust() {
@@ -311,6 +340,7 @@ function giftStart() {
   if (progress.gifted) return;
   progress.gifted = true;
   progress.coins = START_COINS;
+  if (!progress.boxes) progress.boxes = BOX_PACK;
   saveProgress();
   paintHud();
   const chip = document.querySelector(".chip.coin");
@@ -407,7 +437,7 @@ function paintJobs() {
   if (!progress.orders.length) {
     const empty = document.createElement("div");
     empty.className = "job";
-    empty.innerHTML = "<b>Заявок нет</b><small>Открой магазин сбоку</small>";
+    empty.innerHTML = "<b>Заявок нет</b><small>Сначала дождись доставку</small>";
     host.appendChild(empty);
     return;
   }
@@ -424,7 +454,10 @@ function paintJobs() {
       "</b><small>+" +
       order.pay +
       "</small>";
-    btn.addEventListener("click", () => openPack(order.id));
+    btn.addEventListener("click", () => {
+      closeJobs();
+      openPack(order.id);
+    });
     host.appendChild(btn);
   });
 }
@@ -444,7 +477,8 @@ function paintShop() {
   if (!host) return;
   host.innerHTML = "";
   SKUS.forEach((sku, i) => {
-    const can = !!progress.room && progress.coins >= sku.cost && freeSlots() > 0;
+    const total = sku.cost + DELIVERY_FEE;
+    const can = !!progress.room && progress.coins >= total && freeSlots() > 0;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "good" + (can ? " ready" : " poor");
@@ -453,12 +487,12 @@ function paintShop() {
       palMarkup(sku, PALLET_PACKS) +
       "<span><b>" +
       sku.name +
-      "</b><small>поддон · " +
-      packsWord(PALLET_PACKS) +
+      "</b><small>едет 1 мин · доставка " +
+      DELIVERY_FEE +
       "</small></span><em>" +
-      sku.cost +
+      total +
       "</em>";
-    btn.addEventListener("click", () => buyGood(sku.id, btn));
+    btn.addEventListener("click", () => orderGood(sku.id, btn));
     host.appendChild(btn);
   });
   const canBox = progress.coins >= BOX_COST;
@@ -476,8 +510,85 @@ function paintShop() {
 }
 
 function openShop() {
+  closeJobs();
   paintShop();
   document.getElementById("shop").classList.add("show");
+}
+
+function openJobs() {
+  closeShop();
+  paintJobs();
+  document.getElementById("jobs-pane").classList.add("show");
+}
+
+function paintShip() {
+  const host = document.getElementById("ship");
+  if (!host) return;
+  const list = progress.incoming || [];
+  host.classList.toggle("show", list.length > 0 && floor.classList.contains("show"));
+  host.innerHTML = "";
+  list
+    .slice()
+    .sort((a, b) => a.readyAt - b.readyAt)
+    .forEach((item) => {
+      const sku = skuOf(item.sku);
+      const card = document.createElement("div");
+      card.className = "ship-card";
+      card.innerHTML =
+        "<b>Едет</b><span>" +
+        sku.name +
+        "</span><em>" +
+        fmtEta(item.readyAt - Date.now()) +
+        "</em>";
+      host.appendChild(card);
+    });
+}
+
+function settleIncoming() {
+  const now = Date.now();
+  const due = (progress.incoming || []).filter((item) => item.readyAt <= now);
+  if (!due.length) return [];
+  const arrived = [];
+  progress.incoming = (progress.incoming || []).filter((item) => item.readyAt > now);
+  due.forEach((item) => {
+    const room = roomOf(progress.room);
+    const cap = room ? room.slots : 0;
+    if (progress.pallets.length >= cap) {
+      progress.incoming.push({
+        id: item.id,
+        sku: item.sku,
+        readyAt: now + 5000,
+      });
+      return;
+    }
+    progress.pallets.push({
+      id: progress.nextPallet,
+      sku: item.sku,
+      units: PALLET_PACKS,
+    });
+    progress.nextPallet += 1;
+    arrived.push(item);
+  });
+  if (arrived.length || due.length) saveProgress();
+  return arrived;
+}
+
+function tickShip() {
+  const arrived = settleIncoming();
+  paintShip();
+  if (!arrived.length) return;
+  arrived.forEach((item) => {
+    toast("Приехал поддон «" + skuOf(item.sku).name + "»");
+  });
+  if (floor.classList.contains("show")) {
+    paintHud();
+    paintSlots();
+    maybeOrders();
+    paintJobs();
+    paintShop();
+    const last = document.querySelector(".floor-pals .pal-stand:last-child");
+    if (last) last.classList.add("drop-in");
+  }
 }
 
 function mixLines() {
@@ -530,10 +641,12 @@ function openFloor() {
   paintJobs();
   paintShop();
   showScreen(floor);
+  paintShip();
 }
 
-function buyGood(skuId, btn) {
+function orderGood(skuId, btn) {
   const sku = skuOf(skuId);
+  const total = sku.cost + DELIVERY_FEE;
   if (!progress.room) {
     closeShop();
     showScreen(rent);
@@ -545,24 +658,24 @@ function buyGood(skuId, btn) {
     toast("В гараже только " + (room ? room.slots : 5) + " поддонов");
     return;
   }
-  if (progress.coins < sku.cost) {
+  if (progress.coins < total) {
     shake(btn);
-    toast("Не хватает на «" + sku.name + "»");
+    toast("Не хватает на товар и доставку");
     return;
   }
-  progress.coins -= sku.cost;
-  progress.pallets.push({ id: progress.nextPallet, sku: sku.id, units: PALLET_PACKS });
-  progress.nextPallet += 1;
+  progress.coins -= total;
+  progress.incoming.push({
+    id: progress.nextShip,
+    sku: sku.id,
+    readyAt: Date.now() + DELIVERY_MS,
+  });
+  progress.nextShip += 1;
   saveProgress();
   paintHud();
-  paintSlots();
   paintShop();
-  maybeOrders();
-  paintJobs();
-  const last = document.querySelector(".floor-pals .pal-stand:last-child");
-  if (last) last.classList.add("drop-in");
+  paintShip();
   document.querySelector(".chip.coin").classList.add("catch");
-  toast("Поддон с паками «" + sku.name + "» на полу");
+  toast("Заказал «" + sku.name + "». Едет минуту.");
 }
 
 function resetProgress() {
@@ -718,6 +831,10 @@ function goBack() {
     closeShop();
     return;
   }
+  if (document.getElementById("jobs-pane").classList.contains("show")) {
+    closeJobs();
+    return;
+  }
   if (pack.classList.contains("show")) {
     openFloor();
     return;
@@ -737,7 +854,13 @@ document.getElementById("shop-close").addEventListener("click", closeShop);
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });
+document.getElementById("jobs-tab").addEventListener("click", openJobs);
+document.getElementById("jobs-close").addEventListener("click", closeJobs);
+document.getElementById("jobs-pane").addEventListener("click", (e) => {
+  if (e.target.id === "jobs-pane") closeJobs();
+});
 document.getElementById("pack-close").addEventListener("click", openFloor);
+window.setInterval(tickShip, 250);
 
 seedDust();
 paintHud();

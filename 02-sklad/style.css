@@ -77,6 +77,7 @@ body {
 .job,
 .pick,
 .shop-tab,
+.jobs-tab,
 .good,
 .reset {
   border: 0;
@@ -134,6 +135,50 @@ body {
   opacity: 1;
   transform: translateX(-50%);
   transition: 0.25s ease;
+}
+
+.ship {
+  position: fixed;
+  z-index: 9;
+  top: calc(58px + env(safe-area-inset-top));
+  left: 50%;
+  width: min(420px, calc(100% - 88px));
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.ship.show {
+  display: flex;
+}
+
+.ship-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #2f261c;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+  animation: up 0.3s ease both;
+}
+
+.ship-card b {
+  color: var(--tape);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.ship-card em {
+  margin-left: auto;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 20px;
 }
 
 .screen {
@@ -733,11 +778,32 @@ body.in-garage .lantern {
     transparent;
 }
 
+.jobs-tab,
 .shop-tab {
   flex: 0 0 38px;
   align-self: center;
   height: 150px;
   margin-right: 0;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+}
+
+.jobs-tab {
+  border-radius: 0 14px 14px 0;
+  background: #2f261c;
+  color: var(--tape);
+  transform: rotate(180deg);
+  box-shadow: 6px 0 18px rgba(0, 0, 0, 0.28);
+}
+
+.jobs-tab:active {
+  transform: rotate(180deg) scale(0.97);
+}
+
+.shop-tab {
   border-radius: 14px 0 0 14px;
   background: var(--accent);
   color: #1a1410;
@@ -765,6 +831,49 @@ body.in-garage .lantern {
 
 .shop-pane.show {
   display: flex;
+}
+
+.jobs-pane {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: none;
+  justify-content: flex-start;
+  background: rgba(8, 6, 4, 0.46);
+}
+
+.jobs-pane.show {
+  display: flex;
+}
+
+.jobs-card {
+  width: min(340px, 84vw);
+  height: 100%;
+  padding: calc(62px + env(safe-area-inset-top)) 14px 16px;
+  background: #241c14;
+  box-shadow: 12px 0 32px rgba(0, 0, 0, 0.4);
+  overflow: auto;
+  animation: jobsIn 0.32s ease both;
+}
+
+.jobs-card h2 {
+  margin: 0 0 4px;
+}
+
+.jobs-card .lead {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.jobs-card .jobs {
+  flex-direction: column;
+  overflow: visible;
+  padding: 0;
+}
+
+.jobs-card .job {
+  flex: none;
+  width: 100%;
 }
 
 .shop-card {
@@ -975,6 +1084,11 @@ body.in-garage .lantern {
 
 @keyframes shopIn {
   from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes jobsIn {
+  from { transform: translateX(-24px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
 

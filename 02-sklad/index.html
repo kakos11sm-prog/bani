@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=13" />
+    <link rel="stylesheet" href="style.css?v=14" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -24,6 +24,7 @@
     </div>
 
     <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="ship" id="ship" aria-live="polite"></div>
 
     <div class="screen show" id="boot">
       <div class="home">
@@ -59,9 +60,11 @@
         <div class="floor-pals" id="slots"></div>
       </div>
       <div class="floor-row">
+        <button class="jobs-tab" id="jobs-tab" type="button">
+          <span>Заявки</span>
+        </button>
         <div class="yard">
           <p class="yard-name" id="yard-name">Гараж</p>
-          <div class="jobs" id="jobs"></div>
         </div>
         <button class="shop-tab" id="shop-tab" type="button">
           <span>Магазин</span>
@@ -72,9 +75,18 @@
     <div class="shop-pane" id="shop">
       <div class="shop-card">
         <h2>Магазин</h2>
-        <p class="lead">Паки на поддон. Яркий — хватает денег.</p>
+        <p class="lead">Доставка минута. Яркий — хватает на товар и доставку.</p>
         <div class="goods" id="goods"></div>
         <button class="ghost" id="shop-close" type="button">Закрыть</button>
+      </div>
+    </div>
+
+    <div class="jobs-pane" id="jobs-pane">
+      <div class="jobs-card">
+        <h2>Заявки</h2>
+        <p class="lead">Выбери и собери из разных паков.</p>
+        <div class="jobs" id="jobs"></div>
+        <button class="ghost" id="jobs-close" type="button">Закрыть</button>
       </div>
     </div>
 
@@ -99,6 +111,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=13"></script>
+    <script src="game.js?v=14"></script>
   </body>
 </html>
