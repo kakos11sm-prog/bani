@@ -1611,12 +1611,19 @@ body.shipping .jobs-tab {
 .floor-pals {
   position: absolute;
   left: 50%;
-  top: calc(34% + 30px);
-  bottom: calc(28% - 30px);
+  top: calc(34% + 60px);
+  bottom: calc(28% - 60px);
   z-index: 4;
   width: min(400px, 94vw);
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+body.in-garage .floor-pals {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 5px;
 }
 
 .pal-stand {
@@ -1626,6 +1633,14 @@ body.shipping .jobs-tab {
   pointer-events: auto;
   touch-action: none;
   user-select: none;
+}
+
+body.in-garage .pal-stand {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  margin-left: 0;
+  flex: 0 0 72px;
 }
 
 .pal-stand::after {

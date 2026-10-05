@@ -508,8 +508,10 @@ function paintSlots() {
     const take = state.shipId && canTakePal(pal);
     stand.className = "pal-stand" + (state.shipId ? (take ? " can-take" : " no-take") : "");
     stand.dataset.id = String(pal.id);
-    stand.style.left = spot.x + "%";
-    stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + (spot.lift || 0) + "px)";
+    if (progress.room !== "garage") {
+      stand.style.left = spot.x + "%";
+      stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + (spot.lift || 0) + "px)";
+    }
     stand.style.setProperty("--sc", String(spot.s || 1));
     stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
     if (state.shipId) {
