@@ -983,6 +983,8 @@ function checkout(btn) {
   document.getElementById("cart").classList.remove("open");
   saveProgress();
   paintHud();
+  maybeOrders();
+  paintJobs();
   syncShop();
   paintTruck();
   document.querySelector(".chip.coin").classList.add("catch");
@@ -1128,6 +1130,34 @@ function floorPals() {
   return progress.pallets.filter((p) => p.units > 0).length;
 }
 
+function boughtPals() {
+  return floorPals() + (progress.incoming || []).length;
+}
+
+function gradeNeed(grade, pals) {
+  const n = Math.max(1, pals);
+  if (grade === "easy") return Math.min(3, 1 + Math.floor((n - 1) / 3));
+  if (grade === "mid") return Math.min(6, 2 + Math.floor(n / 2));
+  if (grade === "hard") return Math.min(SHIP_SLOTS, Math.max(4, 2 + n));
+  return Math.min(SHIP_SLOTS, Math.max(5, 3 + n));
+}
+
+function orderIdle(order) {
+  return (order.lines || []).every((line) => !line.fill);
+}
+
+function capNeed(lines, max) {
+  const out = [];
+  let left = max;
+  (lines || []).forEach((line) => {
+    if (left < 1) return;
+    const need = Math.max(1, Math.min(line.need, left));
+    out.push({ sku: line.sku, need, fill: 0 });
+    left -= need;
+  });
+  return out;
+}
+
 function onFloor() {
   return SKUS.map((s) => ({ sku: s.id, have: stockHave(s.id) })).filter((row) => row.have > 0);
 }
@@ -1166,61 +1196,61 @@ function linesFrom(picks, total) {
   return pick.map((row, idx) => ({ sku: row.sku, need: need[idx], fill: 0 }));
 }
 
-function linesForGrade(grade) {
+function linesForGrade(grade, shift) {
   const have = rotateList(
     onFloor().filter((row) => isUnlocked(row.sku)),
-    progress.nextOrder
+    shift == null ? progress.nextOrder : shift
   );
-  const pals = floorPals();
+  const pals = boughtPals();
+  const want = gradeNeed(grade, pals);
   const locked = SKUS.map((s) => s.id).filter((id) => !isUnlocked(id));
   if (grade !== "wild" && !have.length) return null;
   if (grade === "easy") {
-    return [{ sku: have[0].sku, need: 1, fill: 0 }];
+    return [{ sku: have[0].sku, need: Math.min(want, have[0].have), fill: 0 }];
   }
-  if (grade === "mid") {
-    if (have.length >= 2 && have[1].have >= 2) {
-      return [
-        { sku: have[0].sku, need: 1, fill: 0 },
-        { sku: have[1].sku, need: 2, fill: 0 },
-      ];
-    }
-    if (have.length >= 2) {
-      return [
-        { sku: have[0].sku, need: 1, fill: 0 },
-        { sku: have[1].sku, need: 1, fill: 0 },
-      ];
-    }
-    return [{ sku: have[0].sku, need: Math.min(3, Math.max(1, have[0].have)), fill: 0 }];
-  }
-  if (grade === "hard") {
+  if (grade === "mid" || grade === "hard") {
     const pool = have.reduce((sum, row) => sum + row.have, 0);
-    const cap = Math.min(SHIP_SLOTS, Math.max(4, pals + 2), pool);
-    const kinds = Math.min(have.length, cap >= 6 ? 3 : 2);
-    return linesFrom(have.slice(0, kinds), Math.max(3, cap));
+    const cap = Math.min(want, pool);
+    if (cap < 1) return null;
+    const kinds =
+      grade === "hard"
+        ? Math.min(have.length, cap >= 6 ? 3 : 2)
+        : Math.min(have.length, have.length >= 2 && cap >= 2 ? 2 : 1);
+    return linesFrom(have.slice(0, kinds), cap);
   }
-  const base = have.length
-    ? linesFrom(have.slice(0, Math.min(2, have.length)), Math.min(3, Math.max(2, pals)))
-    : [];
-  if (locked.length) {
-    base.push({ sku: locked[0], need: 2, fill: 0 });
-    return mergeLines(base);
-  }
+  const extra = 2 + Math.floor(pals / 4);
   const missing = offFloor().filter((id) => isUnlocked(id));
-  if (missing.length) {
-    base.push({ sku: missing[progress.nextOrder % missing.length], need: 2, fill: 0 });
-    return mergeLines(base);
+  const shopSku = locked[0] || (missing.length ? missing[(shift == null ? progress.nextOrder : shift) % missing.length] : "");
+  const stockWant = Math.max(1, want - extra);
+  const pool = have.reduce((sum, row) => sum + row.have, 0);
+  const base = have.length
+    ? linesFrom(
+        have.slice(0, Math.min(have.length, stockWant >= 4 ? 2 : 1)),
+        Math.min(stockWant, Math.max(1, pool))
+      )
+    : [];
+  if (shopSku) {
+    base.push({ sku: shopSku, need: extra, fill: 0 });
+    return capNeed(mergeLines(base), SHIP_SLOTS);
   }
   if (!have.length) return null;
-  base.push({ sku: have[0].sku, need: have[0].have + 2, fill: 0 });
-  return mergeLines(base);
+  base.push({ sku: have[0].sku, need: extra, fill: 0 });
+  return capNeed(mergeLines(base), SHIP_SLOTS);
 }
 
 function maybeOrders() {
   pruneOrders();
   if (!floorPals()) return;
   const used = new Set();
+  const shipId = state.shipId;
   progress.orders.forEach((order) => {
-    if (JOB_GRADES.indexOf(order.grade) >= 0) used.add(order.grade);
+    if (JOB_GRADES.indexOf(order.grade) < 0) return;
+    used.add(order.grade);
+    if (order.id === shipId || !orderIdle(order)) return;
+    const lines = linesForGrade(order.grade, order.id);
+    if (!lines || !lines.length) return;
+    order.lines = lines;
+    order.pay = gradePay(lines, order.grade);
   });
   progress.orders.forEach((order) => {
     if (JOB_GRADES.indexOf(order.grade) >= 0) return;
