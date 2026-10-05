@@ -1011,27 +1011,40 @@ function tickShip() {
   }
 }
 
+function floorPals() {
+  return progress.pallets.filter((p) => p.units > 0).length;
+}
+
 function mixLines() {
-  const inStock = SKUS.map((s) => s.id).filter((id) => stockFree(id) >= 1);
-  if (!inStock.length) return null;
-  if (inStock.length === 1) {
-    const need = Math.max(1, Math.min(stockFree(inStock[0]), 1 + (progress.nextOrder % 2)));
-    return [{ sku: inStock[0], need: need, fill: 0 }];
+  const pals = floorPals();
+  const stock = SKUS.map((s) => s.id)
+    .map((id) => ({ sku: id, free: stockFree(id) }))
+    .filter((row) => row.free >= 1);
+  if (!stock.length) return null;
+  const totalFree = stock.reduce((sum, row) => sum + row.free, 0);
+  const size = Math.max(1, Math.min(SHIP_SLOTS, pals, totalFree));
+  const kinds = Math.min(stock.length, size, pals >= 8 ? 3 : pals >= 3 ? 2 : 1);
+  const shift = progress.nextOrder % stock.length;
+  const pick = [];
+  for (let i = 0; i < stock.length && pick.length < kinds; i += 1) {
+    pick.push(stock[(shift + i) % stock.length]);
   }
-  const first = inStock[progress.nextOrder % inStock.length];
-  const second = inStock[(progress.nextOrder + 1) % inStock.length];
-  if (first === second) return [{ sku: first, need: 1, fill: 0 }];
-  const lines = [
-    { sku: first, need: 1, fill: 0 },
-    { sku: second, need: 1, fill: 0 },
-  ];
-  if (inStock.length >= 3 && progress.nextOrder % 3 === 0) {
-    const third = inStock[(progress.nextOrder + 2) % inStock.length];
-    if (third !== first && third !== second) {
-      lines.push({ sku: third, need: 1, fill: 0 });
+  const need = pick.map(() => 1);
+  let left = size - kinds;
+  while (left > 0) {
+    let grew = false;
+    for (let i = 0; i < pick.length && left > 0; i += 1) {
+      if (need[i] < pick[i].free) {
+        need[i] += 1;
+        left -= 1;
+        grew = true;
+      }
     }
+    if (!grew) break;
   }
-  return lines;
+  return pick
+    .map((row, i) => ({ sku: row.sku, need: need[i], fill: 0 }))
+    .filter((line) => line.need > 0);
 }
 
 function maybeOrders() {
