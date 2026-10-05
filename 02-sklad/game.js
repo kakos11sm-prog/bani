@@ -100,10 +100,22 @@ function packsWord(n) {
   return n + " паков";
 }
 
+function bak() {
+  return "<span class=\"bak\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"></i></span>";
+}
+
 function pakInner() {
   return (
-    "<span class=\"pak-row back\"><i></i><i></i><i></i></span>" +
-    "<span class=\"pak-row front\"><i></i><i></i><i></i></span>" +
+    "<span class=\"pak-row back\">" +
+    bak() +
+    bak() +
+    bak() +
+    "</span>" +
+    "<span class=\"pak-row front\">" +
+    bak() +
+    bak() +
+    bak() +
+    "</span>" +
     "<span class=\"pak-film\"></span>" +
     "<span class=\"pak-tray\"></span>"
   );

@@ -527,8 +527,8 @@ h1 {
 }
 
 .cell {
-  width: 54px;
-  height: 44px;
+  width: 48px;
+  height: 62px;
   border-radius: 7px;
   background: #1a1510;
   box-shadow: inset 0 0 0 2px #4a3c2c;
@@ -541,7 +541,7 @@ h1 {
 }
 
 .cell .pak {
-  height: 40px;
+  height: 58px;
 }
 
 .picks {
@@ -804,7 +804,7 @@ body.in-garage .lantern {
 }
 
 .good .pal-live {
-  height: 148px;
+  height: 210px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -972,17 +972,17 @@ body.in-garage .lantern {
 
 .floor-pals {
   position: absolute;
-  left: 6%;
+  left: 5%;
   right: 12%;
-  top: 30%;
-  bottom: 14%;
+  top: 22%;
+  bottom: 12%;
   z-index: 1;
   pointer-events: none;
 }
 
 .pal-stand {
   position: absolute;
-  width: 34%;
+  width: 32%;
 }
 
 .pal-stand em {
@@ -1011,81 +1011,116 @@ body.in-garage .lantern {
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-content: end;
-  gap: 3px 4px;
+  gap: 2px 3px;
   width: 100%;
-  margin: 0 auto 2px;
+  margin: 0 auto 1px;
 }
 
 .pak {
   position: relative;
-  height: 38px;
-  padding: 4px 4px 7px;
+  height: 64px;
+  padding: 0 1px 5px;
   overflow: hidden;
-  border-radius: 3px;
-  background: rgba(20, 16, 12, 0.2);
+  background: transparent;
 }
 
 .pak-row {
   display: flex;
-  gap: 2px;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1px;
+  height: 56px;
 }
 
 .pak-row.back {
-  transform: translateY(3px) scale(0.9);
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 5px;
+  transform: translate(2px, -3px) scale(0.94);
   transform-origin: 50% 100%;
-  opacity: 0.78;
+  opacity: 0.72;
 }
 
 .pak-row.front {
   position: relative;
   z-index: 1;
-  margin-top: -8px;
 }
 
-.pak-row i {
-  position: relative;
-  flex: 1;
-  height: 16px;
-  border-radius: 4px 4px 2px 2px / 7px 7px 2px 2px;
+.bak {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 30%;
+  height: 56px;
+}
+
+.bak .cap {
+  width: 38%;
+  height: 4px;
+  border-radius: 1px 1px 0 0;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.42) 0 16%, transparent 30%),
-    linear-gradient(180deg, var(--sku) 0 42%, var(--liq) 50% 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent 60%),
+    var(--sku);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+.bak .neck {
+  width: 16%;
+  height: 9px;
+  background: linear-gradient(90deg, rgba(190, 215, 225, 0.35), rgba(255, 255, 255, 0.72), rgba(170, 200, 210, 0.3));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.bak .body {
+  width: 86%;
+  height: 41px;
+  border-radius: 40% 40% 16% 16% / 10% 10% 18% 18%;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.48) 0 14%, transparent 28%, transparent 74%, rgba(0, 0, 0, 0.1)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 10%, var(--sku) 16% 38%, var(--liq) 44% 100%);
   box-shadow:
-    inset 1px 0 0 rgba(255, 255, 255, 0.2),
-    0 1px 1px rgba(0, 0, 0, 0.25);
+    inset 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset -1px 0 0 rgba(0, 0, 0, 0.12);
 }
 
-.pak-row i::before {
-  content: "";
-  position: absolute;
-  left: 28%;
-  right: 28%;
-  top: -3px;
-  height: 3px;
-  border-radius: 1px;
-  background: var(--sku);
-}
-
-.pal-live.sku-water .pak-row i {
+.pal-live.sku-water .bak .body {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 18%, transparent 32%),
-    linear-gradient(180deg, #4aa3d9 0 40%, #8ec8e8 48% 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 16%, transparent 30%),
+    linear-gradient(180deg, rgba(230, 246, 255, 0.45) 0 12%, #4aa3d9 16% 36%, #8ec8e8 42% 100%);
 }
 
-.pal-live.sku-cola .pak-row i {
+.pal-live.sku-cola .bak .body {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 14%, transparent 28%),
-    linear-gradient(180deg, #c43a2a 0 40%, #3d1a12 48% 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 0 14%, transparent 28%),
+    linear-gradient(180deg, rgba(255, 220, 200, 0.18) 0 10%, #c43a2a 16% 36%, #3d1a12 42% 100%);
 }
 
 .pak-film {
   position: absolute;
-  inset: 0 0 5px;
-  border-radius: 3px;
+  inset: 12px 0 5px;
+  border-radius: 8px 8px 2px 2px;
   background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.38) 0 10%, transparent 26%, rgba(210, 235, 255, 0.12) 55%, transparent 72%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    linear-gradient(
+      90deg,
+      transparent 0,
+      rgba(255, 255, 255, 0.16) 15%,
+      transparent 18%,
+      transparent 48%,
+      rgba(255, 255, 255, 0.14) 50%,
+      transparent 53%,
+      transparent 81%,
+      rgba(255, 255, 255, 0.16) 84%,
+      transparent
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 22%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32),
+    inset 0 -10px 8px rgba(255, 255, 255, 0.06);
   pointer-events: none;
+  z-index: 2;
 }
 
 .pak-tray {
@@ -1093,12 +1128,13 @@ body.in-garage .lantern {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 6px;
+  height: 5px;
   border-radius: 0 0 2px 2px;
   background:
     repeating-linear-gradient(90deg, transparent 0 6px, rgba(0, 0, 0, 0.08) 6px 7px),
     linear-gradient(180deg, #d2a86a, #8a5a28);
   box-shadow: 0 1px 0 #5a3816;
+  z-index: 3;
 }
 
 .pal-wood {
@@ -1148,15 +1184,28 @@ body.in-garage .lantern {
 }
 
 .pick .pal-live {
-  width: 88px;
+  width: 86px;
   margin: 0 auto 4px;
 }
 
 .pick .pak {
-  height: 26px;
-  padding: 2px 2px 5px;
+  height: 42px;
+  padding: 0 1px 4px;
 }
 
-.pick .pak-row i {
-  height: 10px;
+.pick .pak-row,
+.pick .bak {
+  height: 36px;
+}
+
+.pick .bak .neck {
+  height: 5px;
+}
+
+.pick .bak .body {
+  height: 26px;
+}
+
+.pick .pak-film {
+  inset: 8px 0 4px;
 }
