@@ -205,7 +205,10 @@ function pakInner(sku) {
     "<span class=\"bots near\">" +
     trio +
     "</span>" +
-    "<span class=\"pak-skin\"></span>" +
+    "<svg class=\"pak-skin\" viewBox=\"0 0 36 54\" preserveAspectRatio=\"none\" aria-hidden=\"true\">" +
+    "<path class=\"pak-edge\" d=\"M1 53 L35 53 L35 24 C35 18 32.5 8 29 2 L27 0.7 L9 0.7 L7 2 C3.5 8 1 18 1 24 Z\" />" +
+    "<path class=\"pak-glare\" d=\"M14 2 L18 2 L18 48 L14 48 Z\" />" +
+    "</svg>" +
     "<span class=\"pak-tray\"></span>"
   );
 }
