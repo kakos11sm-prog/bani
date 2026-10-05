@@ -61,7 +61,7 @@ body {
   z-index: 8;
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
-  width: min(420px, calc(100% - 128px));
+  width: min(420px, calc(100% - 100px));
   display: flex;
   gap: 8px;
   align-items: center;
@@ -145,15 +145,12 @@ body {
   display: none;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 108px;
-  padding: 8px 6px 6px;
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, #3a3024 0%, #241c14 100%);
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 220, 160, 0.12);
+  gap: 3px;
+  width: 78px;
+  padding: 6px 5px 5px;
+  border-radius: 12px;
+  background: #2a2218;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
@@ -166,161 +163,142 @@ body {
 }
 
 .truck em {
-  min-width: 46px;
-  padding: 1px 7px;
-  border-radius: 8px;
-  background: #1a1410;
+  min-width: 38px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #16120e;
   font-style: normal;
   font-weight: 800;
   color: var(--accent);
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  font-size: 11px;
 }
 
 .truck-art {
   position: relative;
-  width: 92px;
-  height: 48px;
-  animation: truckIdle 1.6s ease-in-out infinite;
+  width: 64px;
+  height: 34px;
+  animation: truckIdle 2.2s ease-in-out infinite;
 }
 
 .truck-art .shade {
   position: absolute;
-  left: 10px;
+  left: 8px;
   right: 6px;
-  bottom: 2px;
-  height: 7px;
+  bottom: 1px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  filter: blur(3px);
+  background: rgba(0, 0, 0, 0.4);
+  filter: blur(2px);
 }
 
-.truck-art .bed {
+.truck-art .rail {
   position: absolute;
-  left: 4px;
-  bottom: 12px;
-  width: 52px;
-  height: 26px;
-  border-radius: 3px 2px 2px 3px;
+  left: 6px;
+  right: 8px;
+  bottom: 8px;
+  height: 4px;
+  background: linear-gradient(180deg, #3a342c, #1c1814);
+}
+
+.truck-art .box {
+  position: absolute;
+  left: 3px;
+  bottom: 11px;
+  width: 36px;
+  height: 18px;
+  border-radius: 1px 1px 0 1px;
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 18%),
-    linear-gradient(180deg, #8aa45a 0%, #5a7238 55%, #3e5226 100%);
+    linear-gradient(90deg, rgba(0, 0, 0, 0.22) 0 3px, transparent 3px),
+    linear-gradient(180deg, #b7a27a 0%, #8d7754 42%, #6d5a3c 100%);
   box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 240, 210, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
 }
 
-.truck-art .ribs {
+.truck-art .box::after {
+  content: "";
   position: absolute;
-  left: 10px;
-  bottom: 14px;
-  width: 38px;
-  height: 22px;
+  left: 5px;
+  right: 4px;
+  top: 3px;
+  bottom: 3px;
   background:
     repeating-linear-gradient(
       90deg,
-      transparent 0 6px,
-      rgba(0, 0, 0, 0.16) 6px 7px
+      transparent 0 5px,
+      rgba(70, 50, 28, 0.18) 5px 6px
     );
-  pointer-events: none;
-}
-
-.truck-art .door {
-  position: absolute;
-  left: 2px;
-  bottom: 13px;
-  width: 6px;
-  height: 24px;
-  border-radius: 1px 0 0 1px;
-  background: linear-gradient(90deg, #4a5c2c, #7a9248);
-  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.25);
 }
 
 .truck-art .cab {
   position: absolute;
-  left: 54px;
-  bottom: 12px;
-  width: 30px;
-  height: 22px;
-  border-radius: 3px 8px 3px 2px;
+  left: 38px;
+  bottom: 11px;
+  width: 20px;
+  height: 15px;
+  border-radius: 1px 4px 1px 0;
   background:
-    linear-gradient(180deg, #f0c14a 0%, #c48a28 48%, #8a5a14 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 240, 180, 0.35),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+    linear-gradient(180deg, #d8c6a2 0%, #b39a74 50%, #8a7352 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .truck-art .cab::before {
   content: "";
   position: absolute;
-  left: 2px;
-  top: -6px;
-  width: 26px;
-  height: 8px;
-  border-radius: 6px 8px 0 0;
-  background: linear-gradient(180deg, #d4a038, #a66e18);
+  left: 1px;
+  top: -5px;
+  width: 18px;
+  height: 6px;
+  border-radius: 3px 5px 0 0;
+  background: linear-gradient(180deg, #c4b089, #9a8560);
 }
 
 .truck-art .glass {
   position: absolute;
-  left: 62px;
-  bottom: 22px;
-  width: 18px;
-  height: 10px;
-  border-radius: 2px 5px 2px 1px;
-  background:
-    linear-gradient(135deg, #d8f2ff 0%, #5aa8c8 55%, #2e6e88 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
-}
-
-.truck-art .light {
-  position: absolute;
-  left: 80px;
-  bottom: 16px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ffe7a0;
-  box-shadow: 0 0 8px rgba(255, 220, 120, 0.85);
-  animation: lampBlink 1.6s ease-in-out infinite;
-}
-
-.truck-art .bumper {
-  position: absolute;
-  left: 80px;
-  bottom: 12px;
-  width: 6px;
+  left: 44px;
+  bottom: 17px;
+  width: 11px;
   height: 7px;
-  border-radius: 0 2px 2px 0;
-  background: linear-gradient(90deg, #8a7a66, #d4c4a8);
+  border-radius: 1px 3px 1px 0;
+  background:
+    linear-gradient(160deg, rgba(210, 230, 235, 0.55), #3d5a62 40%, #243840);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.truck-art .mirror {
+  position: absolute;
+  left: 56px;
+  bottom: 20px;
+  width: 3px;
+  height: 4px;
+  border-radius: 1px;
+  background: #6a5a46;
+}
+
+.truck-art .lamp {
+  position: absolute;
+  left: 56px;
+  bottom: 13px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #f3d27a;
+  box-shadow: 0 0 4px rgba(243, 210, 122, 0.7);
 }
 
 .truck-art .whl {
   position: absolute;
-  bottom: 4px;
-  width: 12px;
-  height: 12px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #c8b8a0 0 18%, #3a3228 19% 42%, #14110d 43%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
-  animation: wheelSpin 0.7s linear infinite;
+    radial-gradient(circle at 32% 30%, #9a8c7a 0 16%, #2c261e 17% 38%, #0e0c0a 39%);
+  animation: wheelSpin 1.1s linear infinite;
 }
 
-.truck-art .whl.a { left: 14px; }
-.truck-art .whl.b { left: 32px; }
-.truck-art .whl.c { left: 62px; }
-
-.truck-art .puff {
-  position: absolute;
-  left: 50px;
-  bottom: 14px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(200, 200, 200, 0.35);
-  animation: puff 1.4s ease-out infinite;
-}
+.truck-art .whl.a { left: 12px; }
+.truck-art .whl.b { left: 42px; }
 
 .ship-pane {
   position: fixed;
