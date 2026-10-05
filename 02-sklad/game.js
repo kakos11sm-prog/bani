@@ -79,7 +79,7 @@ function loadProgress() {
           .filter((p) => p.id)
       : [];
     base.orders = Array.isArray(raw.orders)
-      ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length >= 2)
+      ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length)
       : [];
     return base;
   } catch (e) {
@@ -144,6 +144,25 @@ function stillNeed(order, sku) {
 
 function orderTitle(order) {
   return (order.lines || []).map((line) => skuOf(line.sku).name).join(" + ");
+}
+
+function skuOnFloor(sku) {
+  return progress.pallets.some((p) => p.sku === sku && p.units > 0);
+}
+
+function orderPossible(order) {
+  return (order.lines || []).every((line) => {
+    if (line.fill >= line.need) return true;
+    return skuOnFloor(line.sku);
+  });
+}
+
+function pruneOrders() {
+  const keep = (progress.orders || []).filter(orderPossible);
+  if (keep.length !== progress.orders.length) {
+    progress.orders = keep;
+    saveProgress();
+  }
 }
 
 function stockFree(sku) {
@@ -649,33 +668,32 @@ function tickShip() {
 function mixLines() {
   const inStock = SKUS.map((s) => s.id).filter((id) => stockFree(id) >= 1);
   if (!inStock.length) return null;
-  const lines = [];
-  if (inStock.length >= 2) {
-    const first = inStock[progress.nextOrder % inStock.length];
-    const second = inStock[(progress.nextOrder + 1) % inStock.length];
-    if (first === second) return null;
-    lines.push({ sku: first, need: 1, fill: 0 });
-    lines.push({ sku: second, need: 1, fill: 0 });
-    if (inStock.length >= 3 && progress.nextOrder % 3 === 0) {
-      const third = inStock[(progress.nextOrder + 2) % inStock.length];
-      if (third !== first && third !== second) {
-        lines.push({ sku: third, need: 1, fill: 0 });
-      }
-    }
-    return lines;
+  if (inStock.length === 1) {
+    const need = Math.max(1, Math.min(stockFree(inStock[0]), 1 + (progress.nextOrder % 2)));
+    return [{ sku: inStock[0], need: need, fill: 0 }];
   }
-  const extra = SKUS.find((s) => s.id !== inStock[0]);
-  if (!extra) return null;
-  lines.push({ sku: inStock[0], need: 1, fill: 0 });
-  lines.push({ sku: extra.id, need: 1, fill: 0 });
+  const first = inStock[progress.nextOrder % inStock.length];
+  const second = inStock[(progress.nextOrder + 1) % inStock.length];
+  if (first === second) return [{ sku: first, need: 1, fill: 0 }];
+  const lines = [
+    { sku: first, need: 1, fill: 0 },
+    { sku: second, need: 1, fill: 0 },
+  ];
+  if (inStock.length >= 3 && progress.nextOrder % 3 === 0) {
+    const third = inStock[(progress.nextOrder + 2) % inStock.length];
+    if (third !== first && third !== second) {
+      lines.push({ sku: third, need: 1, fill: 0 });
+    }
+  }
   return lines;
 }
 
 function maybeOrders() {
+  pruneOrders();
   if (!progress.pallets.some((p) => p.units > 0)) return;
   while (progress.orders.length < 2) {
     const lines = mixLines();
-    if (!lines || lines.length < 2) break;
+    if (!lines || !lines.length) break;
     progress.orders.push({
       id: progress.nextOrder,
       lines: lines,
