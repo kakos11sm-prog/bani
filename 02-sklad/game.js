@@ -5,12 +5,12 @@ const BOX_COST = 80;
 const BOX_PACK = 8;
 const UNIT_PAY = 55;
 const SKUS = [
-  { id: "water", name: "Вода", tone: "#4aa3d9", cost: 320 },
-  { id: "cola", name: "Кола", tone: "#8b3a2a", cost: 480 },
-  { id: "lemon", name: "Лимонад", tone: "#d4c04a", cost: 450 },
-  { id: "orange", name: "Апельсин", tone: "#e07a3a", cost: 460 },
-  { id: "grape", name: "Виноград", tone: "#7b4aa8", cost: 500 },
-  { id: "cherry", name: "Вишня", tone: "#c43a4a", cost: 520 },
+  { id: "water", name: "Вода", tone: "#4aa3d9", liq: "#8ec8e8", cost: 320 },
+  { id: "cola", name: "Кола", tone: "#c43a2a", liq: "#3d1a12", cost: 480 },
+  { id: "lemon", name: "Лимонад", tone: "#d4c04a", liq: "#e8dc6a", cost: 450 },
+  { id: "orange", name: "Апельсин", tone: "#e07a3a", liq: "#f0a040", cost: 460 },
+  { id: "grape", name: "Виноград", tone: "#7b4aa8", liq: "#5a2888", cost: 500 },
+  { id: "cherry", name: "Вишня", tone: "#c43a4a", liq: "#8a1020", cost: 520 },
 ];
 const ROOMS = [
   { id: "garage", name: "Гараж", slots: 5, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
@@ -98,18 +98,21 @@ function packCount(units) {
 }
 
 function palMarkup(sku, units) {
-  const fill = Math.max(0, Math.min(1, units / PALLET_UNITS));
   const n = packCount(units);
+  let bots = "";
+  for (let i = 0; i < n; i += 1) {
+    bots += "<span class=\"bot\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"></i></span>";
+  }
   return (
     "<div class=\"pal-live sku-" +
     sku.id +
-    "\" style=\"--fill:" +
-    fill +
-    ";--sku:" +
+    "\" style=\"--sku:" +
     sku.tone +
+    ";--liq:" +
+    (sku.liq || sku.tone) +
     "\">" +
     "<div class=\"pal-load\">" +
-    "<b></b>".repeat(n) +
+    bots +
     "</div>" +
     "<div class=\"pal-deck\"><i></i><i></i><i></i></div>" +
     "<div class=\"pal-skid\"><i></i><i></i><i></i></div>" +
