@@ -506,21 +506,39 @@ function cartTotal() {
   return pals + state.cart.boxes * BOX_COST;
 }
 
+function canAddPal(sku) {
+  return (
+    !!progress.room &&
+    state.cart.pals.length < freeSlots() &&
+    progress.coins >= cartTotal() + sku.cost + DELIVERY_FEE
+  );
+}
+
+function setQty(btn, n) {
+  let qty = btn.querySelector(".qty");
+  if (n) {
+    if (!qty) {
+      qty = document.createElement("i");
+      qty.className = "qty";
+      btn.appendChild(qty);
+    }
+    qty.textContent = String(n);
+  } else if (qty) {
+    qty.remove();
+  }
+}
+
 function paintShop() {
   const host = document.getElementById("goods");
   if (!host) return;
   host.innerHTML = "";
-  SKUS.forEach((sku, i) => {
+  SKUS.forEach((sku) => {
     const total = sku.cost + DELIVERY_FEE;
     const n = cartCountSku(sku.id);
-    const can =
-      !!progress.room &&
-      state.cart.pals.length < freeSlots() &&
-      progress.coins >= cartTotal() + total;
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "good" + (n ? " ready" : can ? "" : " poor");
-    btn.style.animationDelay = i * 40 + "ms";
+    btn.dataset.sku = sku.id;
+    btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
     btn.innerHTML =
       palMarkup(sku, PALLET_PACKS) +
       "<span><b>" +
@@ -529,32 +547,59 @@ function paintShop() {
       DELIVERY_FEE +
       "</small></span><em>" +
       total +
-      "</em>" +
-      (n ? "<i class=\"qty\">" + n + "</i>" : "");
+      "</em>";
+    if (n) setQty(btn, n);
     btn.addEventListener("click", () => addPalToCart(sku.id, btn));
     host.appendChild(btn);
   });
-  const canBox = progress.coins >= cartTotal() + BOX_COST;
   const box = document.createElement("button");
   box.type = "button";
-  box.className = "good boxes" + (state.cart.boxes ? " ready" : canBox ? "" : " poor");
+  box.dataset.sku = "boxes";
+  box.className =
+    "good boxes" + (state.cart.boxes ? " ready" : progress.coins >= cartTotal() + BOX_COST ? "" : " poor");
   box.innerHTML =
     "<div class=\"box-draw\"><i></i><i></i><i></i></div><span><b>Коробки</b><small>" +
     BOX_PACK +
     " шт в пачке</small></span><em>" +
     BOX_COST +
-    "</em>" +
-    (state.cart.boxes ? "<i class=\"qty\">" + state.cart.boxes + "</i>" : "");
+    "</em>";
+  if (state.cart.boxes) setQty(box, state.cart.boxes);
   box.addEventListener("click", () => addBoxToCart(box));
   host.appendChild(box);
   paintCart();
+}
+
+function syncShop() {
+  const host = document.getElementById("goods");
+  if (!host || !host.children.length) {
+    paintShop();
+    return;
+  }
+  SKUS.forEach((sku) => {
+    const btn = host.querySelector('.good[data-sku="' + sku.id + '"]');
+    if (!btn) return;
+    const n = cartCountSku(sku.id);
+    btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
+    setQty(btn, n);
+  });
+  const box = host.querySelector('.good[data-sku="boxes"]');
+  if (box) {
+    box.className =
+      "good boxes" + (state.cart.boxes ? " ready" : progress.coins >= cartTotal() + BOX_COST ? "" : " poor");
+    setQty(box, state.cart.boxes);
+  }
+  paintCart();
+}
+
+function fillCartLine(row, title, sum) {
+  row.innerHTML =
+    "<b>" + title + "</b><small>нажми чтобы убрать</small><em>" + sum + "</em>";
 }
 
 function paintCart() {
   const host = document.getElementById("cart-lines");
   const buy = document.getElementById("cart-buy");
   if (!host || !buy) return;
-  host.innerHTML = "";
   const counts = {};
   state.cart.pals.forEach((id) => {
     counts[id] = (counts[id] || 0) + 1;
@@ -566,29 +611,37 @@ function paintCart() {
     buy.textContent = "Купить";
     return;
   }
+  const empty = host.querySelector(".cart-empty");
+  if (empty) empty.remove();
+  const keep = new Set(ids.concat(state.cart.boxes ? ["boxes"] : []));
+  host.querySelectorAll(".cart-line").forEach((row) => {
+    if (!keep.has(row.dataset.sku)) row.remove();
+  });
   ids.forEach((id) => {
     const sku = skuOf(id);
     const n = counts[id];
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "cart-line";
-    row.innerHTML =
-      "<b>" + sku.name + " ×" + n + "</b><small>нажми чтобы убрать</small><em>" + (sku.cost + DELIVERY_FEE) * n + "</em>";
-    row.addEventListener("click", () => dropPalFromCart(id));
-    host.appendChild(row);
+    let row = host.querySelector('.cart-line[data-sku="' + id + '"]');
+    if (!row) {
+      row = document.createElement("button");
+      row.type = "button";
+      row.className = "cart-line";
+      row.dataset.sku = id;
+      row.addEventListener("click", () => dropPalFromCart(id));
+      host.appendChild(row);
+    }
+    fillCartLine(row, sku.name + " ×" + n, (sku.cost + DELIVERY_FEE) * n);
   });
   if (state.cart.boxes) {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "cart-line";
-    row.innerHTML =
-      "<b>Коробки ×" +
-      state.cart.boxes +
-      "</b><small>нажми чтобы убрать</small><em>" +
-      BOX_COST * state.cart.boxes +
-      "</em>";
-    row.addEventListener("click", dropBoxFromCart);
-    host.appendChild(row);
+    let row = host.querySelector('.cart-line[data-sku="boxes"]');
+    if (!row) {
+      row = document.createElement("button");
+      row.type = "button";
+      row.className = "cart-line";
+      row.dataset.sku = "boxes";
+      row.addEventListener("click", dropBoxFromCart);
+      host.appendChild(row);
+    }
+    fillCartLine(row, "Коробки ×" + state.cart.boxes, BOX_COST * state.cart.boxes);
   }
   buy.disabled = false;
   buy.textContent = "Купить · " + cartTotal();
@@ -606,23 +659,23 @@ function addPalToCart(skuId, btn) {
     return;
   }
   state.cart.pals.push(skuId);
-  paintShop();
+  syncShop();
 }
 
 function addBoxToCart() {
   state.cart.boxes += 1;
-  paintShop();
+  syncShop();
 }
 
 function dropPalFromCart(skuId) {
   const i = state.cart.pals.lastIndexOf(skuId);
   if (i >= 0) state.cart.pals.splice(i, 1);
-  paintShop();
+  syncShop();
 }
 
 function dropBoxFromCart() {
   if (state.cart.boxes > 0) state.cart.boxes -= 1;
-  paintShop();
+  syncShop();
 }
 
 function checkout(btn) {
@@ -663,7 +716,7 @@ function checkout(btn) {
   state.cart.boxes = 0;
   saveProgress();
   paintHud();
-  paintShop();
+  syncShop();
   paintTruck();
   document.querySelector(".chip.coin").classList.add("catch");
   if (boxes) document.querySelector(".chip.box").classList.add("catch");
@@ -674,7 +727,8 @@ function checkout(btn) {
 function openShop() {
   closeJobs();
   closeShip();
-  paintShop();
+  if (document.querySelector("#goods .good")) syncShop();
+  else paintShop();
   document.getElementById("shop").classList.add("show");
 }
 
@@ -794,7 +848,7 @@ function tickShip() {
     paintSlots();
     maybeOrders();
     paintJobs();
-    paintShop();
+    syncShop();
     const stands = document.querySelectorAll(".floor-pals .pal-stand");
     arrived.forEach((_, i) => {
       const stand = stands[stands.length - arrived.length + i];
