@@ -61,7 +61,7 @@ body {
   z-index: 8;
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
-  width: min(420px, calc(100% - 96px));
+  width: min(420px, calc(100% - 128px));
   display: flex;
   gap: 8px;
   align-items: center;
