@@ -1033,30 +1033,37 @@ body.shipping .yard-name {
     transparent;
 }
 
-.jobs-tab,
-.shop-tab {
-  flex: 0 0 38px;
-  align-self: center;
-  height: 150px;
-  margin-right: 0;
+.jobs-tab {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #2f261c;
+  color: var(--tape);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  writing-mode: vertical-rl;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
   cursor: pointer;
 }
 
-.jobs-tab {
-  pointer-events: auto;
-  border-radius: 0 14px 14px 0;
-  background: #2f261c;
-  color: var(--tape);
-  transform: rotate(180deg);
-  box-shadow: 6px 0 18px rgba(0, 0, 0, 0.28);
+body.on-floor .jobs-tab {
+  display: flex;
+}
+
+body.shipping .jobs-tab {
+  display: none;
 }
 
 .jobs-tab:active {
-  transform: rotate(180deg) scale(0.97);
+  transform: translateX(-50%) scale(0.97);
 }
 
 .shop-tab {
@@ -1604,8 +1611,8 @@ body.shipping .yard-name {
 .floor-pals {
   position: absolute;
   left: 50%;
-  top: 34%;
-  bottom: 28%;
+  top: calc(34% + 30px);
+  bottom: calc(28% - 30px);
   z-index: 4;
   width: min(400px, 94vw);
   transform: translateX(-50%);
