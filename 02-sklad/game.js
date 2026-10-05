@@ -228,12 +228,15 @@ function palSkin(sku) {
   );
 }
 
-function palWood() {
+function palWood(name) {
   return (
     "<div class=\"pal-wood\">" +
     "<div class=\"pal-boards\"><i></i><i></i><i></i><i></i><i></i></div>" +
     "<div class=\"pal-stringers\"><i></i><i></i><i></i></div>" +
     "<div class=\"pal-base\"><i></i><i></i><i></i></div>" +
+    (name
+      ? "<div class=\"pal-plate\"><i></i><i></i><b>" + name + "</b></div>"
+      : "") +
     "</div>"
   );
 }
@@ -265,7 +268,7 @@ function palMarkup(sku, packs) {
     "<div class=\"pal-load\">" +
     load +
     "</div>" +
-    palWood() +
+    palWood(sku.name) +
     "</div>"
   );
 }
@@ -291,7 +294,7 @@ function mixPalMarkup(skuIds) {
     "<div class=\"pal-load\">" +
     load +
     "</div>" +
-    palWood() +
+    palWood("Сборка") +
     "</div>"
   );
 }
@@ -513,7 +516,7 @@ function paintSlots() {
       stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + (spot.lift || 0) + "px)";
     }
     stand.style.setProperty("--sc", String(spot.s || 1));
-    stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
+    stand.innerHTML = palMarkup(sku, pal.units);
     if (state.shipId) {
       stand.addEventListener("pointerdown", (e) => startDrag(e, pal.id));
     }
@@ -1125,6 +1128,17 @@ function overLoad(x, y) {
   return x >= box.left - 12 && x <= box.right + 12 && y >= box.top - 12 && y <= box.bottom + 12;
 }
 
+function restoreHeld(drag) {
+  if (!drag || !drag.held) return;
+  let pal = progress.pallets.find((p) => p.id === drag.palId);
+  if (!pal) {
+    pal = { id: drag.palId, sku: drag.sku, units: 0 };
+    progress.pallets.push(pal);
+  }
+  pal.units += 1;
+  drag.held = false;
+}
+
 function startDrag(e, palId) {
   if (state.busy || state.drag) return;
   const pal = progress.pallets.find((p) => p.id === palId);
@@ -1136,10 +1150,12 @@ function startDrag(e, palId) {
   e.preventDefault();
   if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
   const sku = skuOf(pal.sku);
-  state.drag = { palId: pal.id, sku: pal.sku };
+  pal.units -= 1;
+  state.drag = { palId: pal.id, sku: pal.sku, held: true };
+  e.currentTarget.innerHTML = palMarkup(sku, pal.units);
   const ghost = document.getElementById("drag-ghost");
   ghost.hidden = false;
-  ghost.style.cssText = palSkin(sku);
+  ghost.setAttribute("style", palSkin(sku));
   ghost.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
   moveGhost(e.clientX, e.clientY);
   window.addEventListener("pointermove", onDragMove);
@@ -1164,31 +1180,36 @@ async function onDragEnd(e) {
     return;
   }
   if (!overLoad(e.clientX, e.clientY)) {
+    restoreHeld(drag);
     hideGhost();
+    paintSlots();
     return;
   }
   const ghost = document.getElementById("drag-ghost");
   const dest = document.getElementById("load-pal").getBoundingClientRect();
-  ghost.style.transition = "left 0.22s ease, top 0.22s ease";
+  ghost.style.transition = "left 0.18s ease, top 0.18s ease";
   moveGhost(dest.left + dest.width / 2, dest.top + dest.height / 2);
-  await wait(220);
+  await wait(180);
   hideGhost();
-  await takePack(drag.palId);
+  await takePack(drag);
 }
 
-async function takePack(palId) {
-  if (state.busy) return;
+async function takePack(drag) {
+  if (state.busy || !drag) return;
   const order = currentOrder();
-  const pal = progress.pallets.find((p) => p.id === palId);
-  if (!order || !pal) return;
-  const line = nextLineFor(order, pal.sku);
-  if (!line || pal.units < 1) {
+  const pal = progress.pallets.find((p) => p.id === drag.palId);
+  const line = nextLineFor(order, drag.sku);
+  if (!order || !line) {
+    restoreHeld(drag);
+    paintSlots();
     toast("Этот пак в заявку не нужен");
     return;
   }
-  pal.units -= 1;
+  drag.held = false;
   line.fill += 1;
-  if (!pal.units) progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
+  if (pal && pal.units < 1) {
+    progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
+  }
   saveProgress();
   paintHud();
   paintSlots();

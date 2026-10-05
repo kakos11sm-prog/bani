@@ -1855,7 +1855,52 @@ body.in-garage .pal-stand {
 }
 
 .pal-wood {
+  position: relative;
   padding: 0 1px;
+}
+
+.pal-plate {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 6px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 13px;
+  padding: 0 8px;
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, #f3e2b8, #c9a056 55%, #a07830);
+  box-shadow:
+    0 1px 0 #3a2410,
+    inset 0 1px 0 rgba(255, 244, 210, 0.55);
+  color: #2a1c10;
+}
+
+.pal-plate i {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8e8e8, #6a6a6a 55%, #2a2a2a);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.pal-plate i:first-child { left: 3px; }
+.pal-plate i:nth-child(2) { right: 3px; }
+
+.pal-plate b {
+  overflow: hidden;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .pal-boards {
@@ -2018,10 +2063,10 @@ body.in-garage .pal-stand {
 .load-bay {
   position: absolute;
   left: 50%;
-  bottom: 7%;
+  bottom: calc(7% - 25px);
   z-index: 5;
   display: none;
-  width: 72px;
+  width: 144px;
   transform: translateX(-50%);
 }
 
@@ -2066,13 +2111,13 @@ body.in-garage .pal-stand {
   bottom: 5%;
   z-index: 7;
   width: min(220px, 48vw);
-  height: 128px;
+  height: 192px;
   pointer-events: none;
   transition: right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 body.shipping.loading .out-truck {
-  right: -10%;
+  right: -38%;
 }
 
 body.shipping.gone .out-truck {
@@ -2132,14 +2177,33 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 .drag-ghost {
   position: fixed;
   z-index: 40;
-  width: 72px;
-  margin: -40px 0 0 -36px;
+  width: 92px;
+  margin: -52px 0 0 -46px;
   pointer-events: none;
   filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.4));
 }
 
 .drag-ghost .pak {
+  height: 78px;
+  overflow: visible;
+  padding: 0 2px 8px;
+}
+
+.drag-ghost .pak-row,
+.drag-ghost .bak {
   height: 64px;
+}
+
+.drag-ghost .pak-row.back {
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
+  transform: translateY(-8px) scale(0.9);
+  opacity: 0.78;
+}
+
+.drag-ghost .bak .body {
+  height: 46px;
 }
 
 @keyframes paperIn {
