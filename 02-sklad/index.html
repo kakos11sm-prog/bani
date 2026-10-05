@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=2" />
+    <link rel="stylesheet" href="style.css?v=3" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -48,20 +48,41 @@
     </div>
 
     <div class="screen" id="floor">
-      <div class="yard">
-        <p class="yard-name" id="yard-name">Гараж</p>
-        <div class="slots" id="slots"></div>
-        <div class="jobs" id="jobs"></div>
+      <div class="inside" id="inside" aria-hidden="true">
+        <div class="inside-pic" id="inside-pic"></div>
+        <div class="shelves left"></div>
+        <div class="shelves right"></div>
+        <div class="lantern"></div>
+        <div class="lantern-glow"></div>
+        <div class="floor-lit"></div>
       </div>
-      <div class="dock">
-        <button class="dock-btn" id="buy-pallet" type="button">
-          <b>Поддон</b>
-          <small id="pallet-price"></small>
+      <div class="floor-row">
+        <div class="yard">
+          <p class="yard-name" id="yard-name">Гараж</p>
+          <div class="slots" id="slots"></div>
+          <div class="jobs" id="jobs"></div>
+        </div>
+        <button class="shop-tab" id="shop-tab" type="button">
+          <span>Магазин</span>
         </button>
-        <button class="dock-btn" id="buy-boxes" type="button">
-          <b>Коробки</b>
-          <small id="box-price"></small>
-        </button>
+      </div>
+    </div>
+
+    <div class="shop-pane" id="shop">
+      <div class="shop-card">
+        <h2>Магазин</h2>
+        <p class="lead">На склад. Яркий — хватает денег.</p>
+        <div class="goods" id="goods"></div>
+        <button class="ghost" id="shop-close" type="button">Закрыть</button>
+      </div>
+    </div>
+
+    <div class="buy-fx" id="buy-fx" aria-hidden="true">
+      <div class="buy-shot">
+        <img id="buy-fx-pic" alt="" />
+        <div class="door left"></div>
+        <div class="door right"></div>
+        <b class="buy-stamp">Куплено</b>
       </div>
     </div>
 
@@ -77,6 +98,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=2"></script>
+    <script src="game.js?v=3"></script>
   </body>
 </html>
