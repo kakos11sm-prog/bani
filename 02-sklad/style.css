@@ -1012,6 +1012,7 @@ body.in-garage .lantern {
   align-items: stretch;
   gap: 6px;
   min-height: 0;
+  pointer-events: none;
 }
 
 .floor-row .yard {
@@ -1020,6 +1021,10 @@ body.in-garage .lantern {
 
 .yard-name {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+body.shipping .yard-name {
+  opacity: 0;
 }
 
 .slot {
@@ -1042,6 +1047,7 @@ body.in-garage .lantern {
 }
 
 .jobs-tab {
+  pointer-events: auto;
   border-radius: 0 14px 14px 0;
   background: #2f261c;
   color: var(--tape);
@@ -1597,17 +1603,25 @@ body.in-garage .lantern {
 
 .floor-pals {
   position: absolute;
-  left: 8%;
-  right: 14%;
-  top: 50%;
-  bottom: 10%;
-  z-index: 1;
+  left: 4%;
+  right: 4%;
+  top: 34%;
+  bottom: 28%;
+  z-index: 4;
   pointer-events: none;
 }
 
 .pal-stand {
   position: absolute;
-  width: 31%;
+  width: 18%;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+body.in-hangar .pal-stand,
+body.in-depot .pal-stand {
+  width: 28%;
 }
 
 .pal-stand::after {
@@ -1902,4 +1916,223 @@ body.in-garage .lantern {
 .pick .bak .tag {
   font-size: 4px;
   height: 34%;
+}
+
+.pal-stand.can-take {
+  cursor: grab;
+}
+
+.pal-stand.no-take {
+  filter: grayscale(0.35) brightness(0.82);
+}
+
+.waybill {
+  position: absolute;
+  left: 50%;
+  top: calc(56px + env(safe-area-inset-top));
+  z-index: 6;
+  display: none;
+  width: min(280px, 78vw);
+  padding: 10px 14px 12px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 22px, rgba(80, 50, 20, 0.05) 22px 23px),
+    #f7f0de;
+  color: #2a2218;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    3px 4px 0 #d4c6a8;
+  transform: translateX(-50%) rotate(-1.4deg);
+}
+
+.waybill.show {
+  display: block;
+  animation: paperIn 0.38s cubic-bezier(0.2, 1.1, 0.3, 1);
+}
+
+.way-head {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a5a32;
+}
+
+.way-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.way-lines li {
+  display: grid;
+  grid-template-columns: 1fr auto 22px;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  border-bottom: 1px dashed rgba(80, 50, 20, 0.16);
+  font-weight: 700;
+}
+
+.way-lines li.ok {
+  color: #2f7a48;
+}
+
+.way-lines .tick {
+  font-style: normal;
+  font-weight: 800;
+  color: #2f7a48;
+}
+
+.way-lines li.ok .tick {
+  animation: pop 0.28s cubic-bezier(0.2, 1.5, 0.3, 1);
+}
+
+.way-pay {
+  margin: 8px 0 0;
+  font-weight: 800;
+  color: #b07a12;
+  text-align: right;
+}
+
+.load-bay {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  z-index: 5;
+  display: none;
+  width: min(150px, 34vw);
+  transform: translateX(-50%);
+}
+
+.load-bay.show {
+  display: block;
+  animation: loadUp 0.46s cubic-bezier(0.2, 1.15, 0.3, 1);
+}
+
+.load-bay.hot .load-pal {
+  filter: drop-shadow(0 0 12px rgba(240, 180, 41, 0.55));
+}
+
+.load-bay.into-truck {
+  animation: loadIn 0.62s ease forwards;
+}
+
+.load-bay.away {
+  opacity: 0;
+}
+
+.load-pal {
+  width: 100%;
+  pointer-events: auto;
+}
+
+.load-pal .pal-live {
+  transform: perspective(280px) rotateX(8deg);
+  transform-origin: 50% 100%;
+}
+
+.load-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-shadow: 0 1px 6px #000;
+}
+
+.out-truck {
+  position: absolute;
+  right: -72%;
+  bottom: 5%;
+  z-index: 7;
+  width: min(220px, 48vw);
+  height: 128px;
+  pointer-events: none;
+  transition: right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.shipping.loading .out-truck {
+  right: -10%;
+}
+
+body.shipping.gone .out-truck {
+  right: -80%;
+  transition-duration: 0.55s;
+}
+
+.out-box {
+  position: absolute;
+  inset: 8px 0 22px;
+  border-radius: 6px 0 0 4px;
+  background:
+    linear-gradient(180deg, #6a5340, #3a2c22 40%, #2a2018);
+  box-shadow: -8px 10px 18px rgba(0, 0, 0, 0.4);
+}
+
+.out-door {
+  position: absolute;
+  top: 8%;
+  bottom: 18%;
+  width: 42%;
+  background:
+    linear-gradient(90deg, #4a3a2c, #2e241c);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+  transition: transform 0.4s ease;
+}
+
+.out-door.l { left: 6%; }
+.out-door.r { right: 6%; }
+
+body.shipping.loading .out-door.l { transform: rotateY(62deg); }
+body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
+
+.out-bumper {
+  position: absolute;
+  left: 4%;
+  right: 8%;
+  bottom: 8%;
+  height: 10px;
+  border-radius: 2px;
+  background: #1a1410;
+}
+
+.out-whl {
+  position: absolute;
+  bottom: -14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #666, #111 60%);
+  box-shadow: 0 2px 0 #000;
+}
+
+.out-whl.a { left: 18%; }
+.out-whl.b { right: 16%; }
+
+.drag-ghost {
+  position: fixed;
+  z-index: 40;
+  width: 72px;
+  margin: -40px 0 0 -36px;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.4));
+}
+
+.drag-ghost .pak {
+  height: 64px;
+}
+
+@keyframes paperIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px) rotate(-4deg); }
+  to { opacity: 1; transform: translateX(-50%) rotate(-1.4deg); }
+}
+
+@keyframes loadUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(48px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes loadIn {
+  to { transform: translateX(42vw) translateY(-6px) scale(0.72); }
 }

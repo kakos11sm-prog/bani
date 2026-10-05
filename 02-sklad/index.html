@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=24" />
+    <link rel="stylesheet" href="style.css?v=25" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -75,6 +75,24 @@
         <div class="floor-lit"></div>
         <div class="floor-pals" id="slots"></div>
       </div>
+      <div class="waybill" id="waybill">
+        <p class="way-head">Накладная <span id="way-id">#1</span></p>
+        <ul class="way-lines" id="way-lines"></ul>
+        <p class="way-pay" id="way-pay">+0</p>
+      </div>
+      <div class="load-bay" id="load-bay">
+        <div class="load-pal" id="load-pal"></div>
+        <p class="load-hint">Тяни пак сюда</p>
+      </div>
+      <div class="out-truck" id="out-truck" aria-hidden="true">
+        <div class="out-box">
+          <i class="out-door l"></i>
+          <i class="out-door r"></i>
+          <i class="out-bumper"></i>
+          <i class="out-whl a"></i>
+          <i class="out-whl b"></i>
+        </div>
+      </div>
       <div class="floor-row">
         <button class="jobs-tab" id="jobs-tab" type="button">
           <span>Заявки</span>
@@ -84,6 +102,7 @@
         </div>
       </div>
     </div>
+    <div class="drag-ghost" id="drag-ghost" hidden></div>
 
     <div class="shop-pane" id="shop">
       <div class="shop-card">
@@ -117,7 +136,7 @@
     <div class="jobs-pane" id="jobs-pane">
       <div class="jobs-card">
         <h2>Заявки</h2>
-        <p class="lead">Выбери и собери из разных паков.</p>
+        <p class="lead">Выбери заявку. Собери на поддон по накладной.</p>
         <div class="jobs" id="jobs"></div>
         <button class="ghost" id="jobs-close" type="button">Закрыть</button>
       </div>
@@ -144,6 +163,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=24"></script>
+    <script src="game.js?v=25"></script>
   </body>
 </html>

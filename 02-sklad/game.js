@@ -20,11 +20,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 1, b: 30, s: 0.86, lift: 30 },
-  { x: 35, b: 30, s: 0.86, lift: 30 },
-  { x: 69, b: 30, s: 0.86, lift: 30 },
-  { x: 18, b: 2, s: 1, lift: 20 },
-  { x: 52, b: 2, s: 1, lift: 20 },
+  { x: 0, b: 28, s: 0.68, lift: 26 },
+  { x: 20.5, b: 28, s: 0.68, lift: 26 },
+  { x: 41, b: 28, s: 0.68, lift: 26 },
+  { x: 61.5, b: 28, s: 0.68, lift: 26 },
+  { x: 82, b: 28, s: 0.68, lift: 26 },
 ];
 
 const boot = document.getElementById("boot");
@@ -92,7 +92,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, busy: false, cart: { pals: [], boxes: 0 } };
+const state = { packId: 0, pickId: 0, shipId: 0, busy: false, drag: null, cart: { pals: [], boxes: 0 } };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -270,6 +270,32 @@ function palMarkup(sku, packs) {
   );
 }
 
+function mixPalMarkup(skuIds) {
+  const list = (skuIds || []).slice(0, PALLET_PACKS);
+  const start = PALLET_PACKS - list.length;
+  let load = "";
+  for (let row = 0; row < 3; row += 1) {
+    const vacant = row * 2 + 1 < start;
+    load += "<span class=\"pak-layer" + (vacant ? " vacant" : "") + "\">";
+    for (let col = 0; col < 2; col += 1) {
+      const slot = row * 2 + col;
+      const sku = slot >= start ? skuOf(list[slot - start]) : null;
+      load += sku
+        ? "<span class=\"pak\" style=\"" + palSkin(sku) + "\">" + pakInner(sku) + "</span>"
+        : "<span class=\"pak empty\"></span>";
+    }
+    load += "</span>";
+  }
+  return (
+    "<div class=\"pal-live\">" +
+    "<div class=\"pal-load\">" +
+    load +
+    "</div>" +
+    palWood() +
+    "</div>"
+  );
+}
+
 function palSpots() {
   const room = roomOf(progress.room);
   const n = room ? room.slots : 5;
@@ -320,6 +346,7 @@ function showScreen(el) {
   document.body.classList.toggle("on-floor", el === floor);
   if (el !== floor) {
     document.body.classList.remove("in-garage", "in-hangar", "in-depot");
+    endShip();
   }
   if (typeof paintTruck === "function") paintTruck();
 }
@@ -453,6 +480,23 @@ async function playBuyRoom(room) {
   fx.classList.remove("show", "stamp", "open");
 }
 
+function currentOrder() {
+  return progress.orders.find((o) => o.id === state.shipId) || null;
+}
+
+function shipPacks(order) {
+  const packs = [];
+  (order.lines || []).forEach((line) => {
+    for (let i = 0; i < line.fill; i += 1) packs.push(line.sku);
+  });
+  return packs;
+}
+
+function canTakePal(pal) {
+  const order = currentOrder();
+  return !!(order && pal && pal.units > 0 && stillNeed(order, pal.sku));
+}
+
 function paintSlots() {
   const host = document.getElementById("slots");
   host.innerHTML = "";
@@ -461,13 +505,64 @@ function paintSlots() {
     const sku = skuOf(pal.sku);
     const spot = spots[i] || spots[spots.length - 1] || { x: 40, b: 6, s: 1 };
     const stand = document.createElement("div");
-    stand.className = "pal-stand";
+    const take = state.shipId && canTakePal(pal);
+    stand.className = "pal-stand" + (state.shipId ? (take ? " can-take" : " no-take") : "");
+    stand.dataset.id = String(pal.id);
     stand.style.left = spot.x + "%";
     stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + (spot.lift || 0) + "px)";
     stand.style.setProperty("--sc", String(spot.s || 1));
     stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
+    if (state.shipId) {
+      stand.addEventListener("pointerdown", (e) => startDrag(e, pal.id));
+    }
     host.appendChild(stand);
   });
+}
+
+function paintWaybill() {
+  const sheet = document.getElementById("waybill");
+  if (!sheet) return;
+  const order = currentOrder();
+  if (!order) {
+    sheet.classList.remove("show");
+    return;
+  }
+  sheet.classList.add("show");
+  document.getElementById("way-id").textContent = "#" + order.id;
+  document.getElementById("way-pay").textContent = "+" + order.pay;
+  const host = document.getElementById("way-lines");
+  host.innerHTML = "";
+  (order.lines || []).forEach((line) => {
+    const sku = skuOf(line.sku);
+    const row = document.createElement("li");
+    const done = line.fill >= line.need;
+    row.className = done ? "ok" : "";
+    row.innerHTML =
+      "<b>" +
+      sku.name +
+      "</b><span>" +
+      line.fill +
+      "/" +
+      line.need +
+      "</span><i class=\"tick\">" +
+      (done ? "✓" : "") +
+      "</i>";
+    host.appendChild(row);
+  });
+}
+
+function paintLoad() {
+  const bay = document.getElementById("load-bay");
+  const host = document.getElementById("load-pal");
+  if (!bay || !host) return;
+  const order = currentOrder();
+  if (!order) {
+    bay.classList.remove("show");
+    host.innerHTML = "";
+    return;
+  }
+  bay.classList.add("show");
+  host.innerHTML = mixPalMarkup(shipPacks(order));
 }
 
 function paintJobs() {
@@ -495,7 +590,7 @@ function paintJobs() {
       "</small>";
     btn.addEventListener("click", () => {
       closeJobs();
-      openPack(order.id);
+      startShip(order.id);
     });
     host.appendChild(btn);
   });
@@ -949,6 +1044,10 @@ function openFloor() {
   paintJobs();
   paintShop();
   showScreen(floor);
+  if (state.shipId) {
+    paintWaybill();
+    paintLoad();
+  }
   paintTruck();
 }
 
@@ -974,109 +1073,148 @@ function resetProgress() {
   toast("Начинаешь заново");
 }
 
-function openPack(id) {
+function startShip(id) {
+  if (state.busy) return;
   const order = progress.orders.find((o) => o.id === id);
   if (!order) return;
-  state.packId = id;
-  const own = progress.pallets.find((p) => stillNeed(order, p.sku) && p.units > 0);
-  state.pickId = own ? own.id : 0;
-  paintPack();
-  showScreen(pack);
+  closeShop();
+  closeJobs();
+  closeShip();
+  state.shipId = id;
+  document.body.classList.add("shipping");
+  document.body.classList.remove("loading", "gone");
+  const bay = document.getElementById("load-bay");
+  if (bay) bay.classList.remove("into-truck", "away");
+  paintWaybill();
+  paintLoad();
+  paintSlots();
 }
 
-function paintPack() {
-  const order = progress.orders.find((o) => o.id === state.packId);
-  if (!order) {
-    openFloor();
-    return;
-  }
-  document.getElementById("pack-id").textContent = "#" + order.id;
-  document.getElementById("pack-title").textContent = orderTitle(order);
-  document.getElementById("pack-pay").textContent = "+" + order.pay;
-  const crate = document.getElementById("crate");
-  crate.innerHTML = "";
-  (order.lines || []).forEach((line) => {
-    const sku = skuOf(line.sku);
-    for (let i = 0; i < line.need; i += 1) {
-      const cell = document.createElement("i");
-      cell.className = "cell" + (i < line.fill ? " on" : "");
-      cell.style.setProperty("--sku", sku.tone);
-      cell.style.setProperty("--liq", sku.liq || sku.tone);
-      cell.style.setProperty("--cap", sku.cap || sku.tone);
-      cell.style.setProperty("--paper", sku.paper || "#efe6d4");
-      cell.style.setProperty("--ink", sku.ink || "#2c3438");
-      if (i < line.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
-      crate.appendChild(cell);
-    }
-  });
-  const hint = document.getElementById("pack-hint");
-  if (orderDone(order)) hint.textContent = "Собрано. Сейчас уедет.";
-  else if (!progress.boxes) hint.textContent = "Коробки — в магазине сбоку";
-  else hint.textContent = "Клади разные паки в заявку";
-  const picks = document.getElementById("picks");
-  picks.innerHTML = "";
-  progress.pallets.forEach((pal) => {
-    const s = skuOf(pal.sku);
-    const fit = stillNeed(order, pal.sku) && pal.units > 0;
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "pick" + (state.pickId === pal.id ? " on" : "") + (fit ? "" : " dim");
-    btn.innerHTML = palMarkup(s, pal.units) + "<b>" + s.name + "</b><small>" + packsWord(pal.units) + "</small>";
-    btn.addEventListener("click", () => {
-      if (!fit) {
-        shake(btn);
-        toast("Этот пак в заявку не нужен");
-        return;
-      }
-      state.pickId = pal.id;
-      putOne();
-    });
-    picks.appendChild(btn);
-  });
+function endShip() {
+  hideGhost();
+  state.shipId = 0;
+  state.drag = null;
+  document.body.classList.remove("shipping", "loading", "gone");
+  const bay = document.getElementById("load-bay");
+  if (bay) bay.classList.remove("show", "into-truck", "away");
+  const sheet = document.getElementById("waybill");
+  if (sheet) sheet.classList.remove("show");
 }
 
-async function putOne() {
-  if (state.busy) return;
-  const order = progress.orders.find((o) => o.id === state.packId);
-  const pal = progress.pallets.find((p) => p.id === state.pickId);
-  if (!order || !pal) return;
-  if (orderDone(order)) return;
-  const line = nextLineFor(order, pal.sku);
-  if (!line || pal.units < 1) {
-    shake(document.getElementById("picks"));
+function hideGhost() {
+  const ghost = document.getElementById("drag-ghost");
+  if (!ghost) return;
+  ghost.hidden = true;
+  ghost.innerHTML = "";
+  ghost.style.transition = "";
+}
+
+function moveGhost(x, y) {
+  const ghost = document.getElementById("drag-ghost");
+  if (!ghost) return;
+  ghost.style.left = x + "px";
+  ghost.style.top = y + "px";
+}
+
+function overLoad(x, y) {
+  const load = document.getElementById("load-pal");
+  if (!load) return false;
+  const box = load.getBoundingClientRect();
+  return x >= box.left - 12 && x <= box.right + 12 && y >= box.top - 12 && y <= box.bottom + 12;
+}
+
+function startDrag(e, palId) {
+  if (state.busy || state.drag) return;
+  const pal = progress.pallets.find((p) => p.id === palId);
+  if (!canTakePal(pal)) {
+    shake(e.currentTarget);
     toast("Этот пак в заявку не нужен");
     return;
   }
-  if (!progress.boxes) {
-    shake(document.getElementById("pack"));
-    toast("Нужны коробки");
+  e.preventDefault();
+  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  const sku = skuOf(pal.sku);
+  state.drag = { palId: pal.id, sku: pal.sku };
+  const ghost = document.getElementById("drag-ghost");
+  ghost.hidden = false;
+  ghost.style.cssText = palSkin(sku);
+  ghost.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
+  moveGhost(e.clientX, e.clientY);
+  window.addEventListener("pointermove", onDragMove);
+  window.addEventListener("pointerup", onDragEnd);
+}
+
+function onDragMove(e) {
+  if (!state.drag) return;
+  moveGhost(e.clientX, e.clientY);
+  document.getElementById("load-bay").classList.toggle("hot", overLoad(e.clientX, e.clientY));
+}
+
+async function onDragEnd(e) {
+  window.removeEventListener("pointermove", onDragMove);
+  window.removeEventListener("pointerup", onDragEnd);
+  const drag = state.drag;
+  state.drag = null;
+  const bay = document.getElementById("load-bay");
+  if (bay) bay.classList.remove("hot");
+  if (!drag) {
+    hideGhost();
     return;
   }
-  state.busy = true;
-  pal.units -= 1;
-  progress.boxes -= 1;
-  line.fill += 1;
-  if (!pal.units) {
-    progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
-    if (state.pickId === pal.id) state.pickId = 0;
+  if (!overLoad(e.clientX, e.clientY)) {
+    hideGhost();
+    return;
   }
+  const ghost = document.getElementById("drag-ghost");
+  const dest = document.getElementById("load-pal").getBoundingClientRect();
+  ghost.style.transition = "left 0.22s ease, top 0.22s ease";
+  moveGhost(dest.left + dest.width / 2, dest.top + dest.height / 2);
+  await wait(220);
+  hideGhost();
+  await takePack(drag.palId);
+}
+
+async function takePack(palId) {
+  if (state.busy) return;
+  const order = currentOrder();
+  const pal = progress.pallets.find((p) => p.id === palId);
+  if (!order || !pal) return;
+  const line = nextLineFor(order, pal.sku);
+  if (!line || pal.units < 1) {
+    toast("Этот пак в заявку не нужен");
+    return;
+  }
+  pal.units -= 1;
+  line.fill += 1;
+  if (!pal.units) progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
   saveProgress();
   paintHud();
   paintSlots();
-  paintPack();
-  if (orderDone(order)) {
-    await wait(380);
-    progress.coins += order.pay;
-    progress.orders = progress.orders.filter((o) => o.id !== order.id);
-    saveProgress();
-    paintHud();
-    document.querySelector(".chip.coin").classList.add("catch");
-    toast("Заявка #" + order.id + " ушла. +" + order.pay);
-    await wait(420);
-    state.busy = false;
-    openFloor();
-    return;
-  }
+  paintWaybill();
+  paintLoad();
+  if (orderDone(order)) await finishShip(order);
+}
+
+async function finishShip(order) {
+  state.busy = true;
+  document.body.classList.add("loading");
+  await wait(420);
+  const bay = document.getElementById("load-bay");
+  if (bay) bay.classList.add("into-truck");
+  await wait(620);
+  document.body.classList.add("gone");
+  if (bay) bay.classList.add("away");
+  await wait(520);
+  progress.coins += order.pay;
+  progress.orders = progress.orders.filter((o) => o.id !== order.id);
+  endShip();
+  saveProgress();
+  paintHud();
+  paintSlots();
+  maybeOrders();
+  paintJobs();
+  document.querySelector(".chip.coin").classList.add("catch");
+  toast("Заявка #" + order.id + " ушла. +" + order.pay);
   state.busy = false;
 }
 
@@ -1102,6 +1240,11 @@ function goBack() {
   }
   if (document.getElementById("jobs-pane").classList.contains("show")) {
     closeJobs();
+    return;
+  }
+  if (state.shipId) {
+    endShip();
+    paintSlots();
     return;
   }
   if (pack.classList.contains("show")) {
