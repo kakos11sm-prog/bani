@@ -2182,12 +2182,18 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   z-index: 40;
   width: 35px;
   margin: -40px 0 0 -17px;
+  background: transparent;
   pointer-events: none;
-  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.4));
 }
 
 .drag-ghost .pak {
   overflow: visible;
+  background: transparent;
+  filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.35));
+}
+
+.drag-ghost .pak-film {
+  display: none;
 }
 
 .drag-ghost .pak-row.back {
