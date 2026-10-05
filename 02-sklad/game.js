@@ -20,11 +20,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 0, b: 28, s: 0.68, lift: 26 },
-  { x: 20.5, b: 28, s: 0.68, lift: 26 },
-  { x: 41, b: 28, s: 0.68, lift: 26 },
-  { x: 61.5, b: 28, s: 0.68, lift: 26 },
-  { x: 82, b: 28, s: 0.68, lift: 26 },
+  { x: 10, b: 28, s: 1, lift: 26 },
+  { x: 30, b: 28, s: 1, lift: 26 },
+  { x: 50, b: 28, s: 1, lift: 26 },
+  { x: 70, b: 28, s: 1, lift: 26 },
+  { x: 90, b: 28, s: 1, lift: 26 },
 ];
 
 const boot = document.getElementById("boot");
@@ -306,7 +306,7 @@ function palSpots() {
     const col = i % cols;
     const row = Math.floor(i / cols);
     spots.push({
-      x: 8 + col * (80 / Math.max(1, cols - 1)),
+      x: 16 + col * (68 / Math.max(1, cols - 1)),
       b: 6 + (Math.floor((n - 1) / cols) - row) * 22,
       s: row === 0 ? 0.86 : 1,
     });

@@ -1183,7 +1183,7 @@ body.shipping .yard-name {
 
 .shop-stand {
   position: relative;
-  width: 88%;
+  width: 72px;
   margin: 0 auto 16px;
 }
 
@@ -1603,25 +1603,22 @@ body.shipping .yard-name {
 
 .floor-pals {
   position: absolute;
-  left: 4%;
-  right: 4%;
+  left: 50%;
   top: 34%;
   bottom: 28%;
   z-index: 4;
+  width: min(400px, 94vw);
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
 .pal-stand {
   position: absolute;
-  width: 18%;
+  width: 72px;
+  margin-left: -36px;
   pointer-events: auto;
   touch-action: none;
   user-select: none;
-}
-
-body.in-hangar .pal-stand,
-body.in-depot .pal-stand {
-  width: 28%;
 }
 
 .pal-stand::after {
@@ -1659,7 +1656,7 @@ body.in-depot .pal-stand {
 }
 
 .pal-stand .pal-live {
-  transform: perspective(340px) rotateX(10deg) scale(calc(var(--sc, 1) * 1.1));
+  transform: perspective(340px) rotateX(10deg);
   transform-origin: 50% 100%;
 }
 
@@ -2002,7 +1999,7 @@ body.in-depot .pal-stand {
   bottom: 7%;
   z-index: 5;
   display: none;
-  width: min(150px, 34vw);
+  width: 72px;
   transform: translateX(-50%);
 }
 
