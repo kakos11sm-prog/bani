@@ -1611,8 +1611,8 @@ body.shipping .jobs-tab {
 .floor-pals {
   position: absolute;
   left: 50%;
-  top: calc(34% + 45px);
-  bottom: calc(28% - 45px);
+  top: calc(34% + 35px);
+  bottom: calc(28% - 35px);
   z-index: 4;
   width: min(400px, 94vw);
   transform: translateX(-50%);
