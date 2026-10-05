@@ -1432,7 +1432,7 @@ body.shipping .jobs-tab {
 }
 
 .good .pak-layer {
-  display: grid;
+  display: flex;
 }
 
 .good .pak-row {
@@ -1693,14 +1693,15 @@ body.in-garage .pal-stand {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  align-items: center;
   gap: 0;
   width: 100%;
 }
 
 .pak-layer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 2px;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
   margin-bottom: -8px;
 }
 
@@ -1718,6 +1719,8 @@ body.in-garage .pal-stand {
 
 .pak {
   position: relative;
+  flex: 0 0 35px;
+  width: 35px;
   height: 64px;
   padding: 0 1px 5px;
   overflow: hidden;
@@ -2111,7 +2114,7 @@ body.in-garage .pal-stand {
   bottom: 5%;
   z-index: 7;
   width: min(220px, 48vw);
-  height: 192px;
+  height: 288px;
   pointer-events: none;
   transition: right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -2177,33 +2180,18 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 .drag-ghost {
   position: fixed;
   z-index: 40;
-  width: 92px;
-  margin: -52px 0 0 -46px;
+  width: 35px;
+  margin: -40px 0 0 -17px;
   pointer-events: none;
   filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.4));
 }
 
 .drag-ghost .pak {
-  height: 78px;
   overflow: visible;
-  padding: 0 2px 8px;
-}
-
-.drag-ghost .pak-row,
-.drag-ghost .bak {
-  height: 64px;
 }
 
 .drag-ghost .pak-row.back {
-  left: 6px;
-  right: 6px;
-  bottom: 8px;
-  transform: translateY(-8px) scale(0.9);
-  opacity: 0.78;
-}
-
-.drag-ghost .bak .body {
-  height: 46px;
+  transform: translateY(-6px) scale(0.92);
 }
 
 @keyframes paperIn {
