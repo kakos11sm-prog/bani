@@ -9,6 +9,13 @@ const BOX_PACK = 8;
 const PACK_MARGIN = 20;
 const DELIVERY_FEE = 40;
 const DELIVERY_MS = 60000;
+const JOB_GRADES = ["easy", "mid", "hard", "wild"];
+const GRADE_NAME = {
+  easy: "Лёгкая",
+  mid: "Средняя",
+  hard: "Тяжёлая",
+  wild: "Нереальная",
+};
 const SKUS = [
   { id: "water", name: "Вода", tag: "ВОДА", tone: "#6a7c84", liq: "#6e8792", cap: "#3e4a50", paper: "#efe6d4", ink: "#2c3438", cost: 320 },
   { id: "cola", name: "Кола", tag: "КОЛА", tone: "#5a322c", liq: "#2a1814", cap: "#6a2c26", paper: "#e4d4b8", ink: "#3a1814", cost: 480 },
@@ -110,6 +117,13 @@ function linesPay(lines) {
   return (lines || []).reduce((sum, line) => sum + line.need * packPayOf(line.sku), 0);
 }
 
+function gradePay(lines, grade) {
+  const base = linesPay(lines);
+  if (grade === "hard") return Math.round(base * 1.2);
+  if (grade === "wild") return Math.round(base * 1.45);
+  return base;
+}
+
 function readLine(line) {
   return {
     sku: SKUS.some((s) => s.id === line.sku) ? line.sku : "water",
@@ -130,7 +144,8 @@ function normalizeOrder(raw) {
   return {
     id: id,
     lines: lines,
-    pay: Math.max(1, linesPay(lines)),
+    grade: JOB_GRADES.indexOf(raw && raw.grade) >= 0 ? raw.grade : "",
+    pay: Math.max(1, gradePay(lines, raw && raw.grade)),
   };
 }
 
@@ -170,11 +185,17 @@ function orderPossible(order) {
 }
 
 function pruneOrders() {
-  const keep = (progress.orders || []).filter(orderPossible);
+  const keep = (progress.orders || []).filter((order) => order.lines && order.lines.length);
   if (keep.length !== progress.orders.length) {
     progress.orders = keep;
     saveProgress();
   }
+}
+
+function stockHave(sku) {
+  return progress.pallets
+    .filter((p) => p.sku === sku)
+    .reduce((sum, p) => sum + p.units, 0);
 }
 
 function stockFree(sku) {
@@ -591,18 +612,28 @@ function paintJobs() {
     host.appendChild(empty);
     return;
   }
-  progress.orders.forEach((order, i) => {
+  const list = progress.orders.slice().sort((a, b) => {
+    return JOB_GRADES.indexOf(a.grade) - JOB_GRADES.indexOf(b.grade);
+  });
+  list.forEach((order, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "job";
+    btn.className = "job" + (order.grade ? " " + order.grade : "");
     btn.style.animationDelay = i * 60 + "ms";
+    const mix = (order.lines || [])
+      .map((line) => line.need + "× " + skuOf(line.sku).name)
+      .join(" · ");
+    const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
     btn.innerHTML =
-      "<b>#" +
+      "<em>" +
+      (GRADE_NAME[order.grade] || "Заявка") +
+      "</em><b>#" +
       order.id +
       " · " +
-      orderTitle(order) +
+      mix +
       "</b><small>+" +
       order.pay +
+      (shop ? " · докупить" : "") +
       "</small>";
     btn.addEventListener("click", () => {
       closeJobs();
@@ -1015,51 +1046,113 @@ function floorPals() {
   return progress.pallets.filter((p) => p.units > 0).length;
 }
 
-function mixLines() {
-  const pals = floorPals();
-  const stock = SKUS.map((s) => s.id)
-    .map((id) => ({ sku: id, free: stockFree(id) }))
-    .filter((row) => row.free >= 1);
-  if (!stock.length) return null;
-  const totalFree = stock.reduce((sum, row) => sum + row.free, 0);
-  const size = Math.max(1, Math.min(SHIP_SLOTS, pals, totalFree));
-  const kinds = Math.min(stock.length, size, pals >= 8 ? 3 : pals >= 3 ? 2 : 1);
-  const shift = progress.nextOrder % stock.length;
-  const pick = [];
-  for (let i = 0; i < stock.length && pick.length < kinds; i += 1) {
-    pick.push(stock[(shift + i) % stock.length]);
-  }
+function onFloor() {
+  return SKUS.map((s) => ({ sku: s.id, have: stockHave(s.id) })).filter((row) => row.have > 0);
+}
+
+function offFloor() {
+  return SKUS.map((s) => s.id).filter((id) => stockHave(id) < 1);
+}
+
+function rotateList(list, shift) {
+  if (!list.length) return list.slice();
+  const i = ((shift % list.length) + list.length) % list.length;
+  return list.slice(i).concat(list.slice(0, i));
+}
+
+function mergeLines(lines) {
+  const map = {};
+  (lines || []).forEach((line) => {
+    if (!map[line.sku]) map[line.sku] = { sku: line.sku, need: 0, fill: 0 };
+    map[line.sku].need += line.need;
+  });
+  return Object.keys(map).map((key) => map[key]);
+}
+
+function linesFrom(picks, total) {
+  if (!picks.length || total < 1) return [];
+  const n = Math.min(picks.length, total);
+  const pick = picks.slice(0, n);
   const need = pick.map(() => 1);
-  let left = size - kinds;
+  let left = total - n;
+  let i = pick.length - 1;
   while (left > 0) {
-    let grew = false;
-    for (let i = 0; i < pick.length && left > 0; i += 1) {
-      if (need[i] < pick[i].free) {
-        need[i] += 1;
-        left -= 1;
-        grew = true;
-      }
-    }
-    if (!grew) break;
+    need[i] += 1;
+    left -= 1;
+    i = i <= 0 ? pick.length - 1 : i - 1;
   }
-  return pick
-    .map((row, i) => ({ sku: row.sku, need: need[i], fill: 0 }))
-    .filter((line) => line.need > 0);
+  return pick.map((row, idx) => ({ sku: row.sku, need: need[idx], fill: 0 }));
+}
+
+function linesForGrade(grade) {
+  const have = rotateList(onFloor(), progress.nextOrder);
+  if (!have.length) return null;
+  const pals = floorPals();
+  const missing = offFloor();
+  if (grade === "easy") {
+    return [{ sku: have[0].sku, need: 1, fill: 0 }];
+  }
+  if (grade === "mid") {
+    if (have.length >= 2 && have[1].have >= 2) {
+      return [
+        { sku: have[0].sku, need: 1, fill: 0 },
+        { sku: have[1].sku, need: 2, fill: 0 },
+      ];
+    }
+    if (have.length >= 2) {
+      return [
+        { sku: have[0].sku, need: 1, fill: 0 },
+        { sku: have[1].sku, need: 1, fill: 0 },
+      ];
+    }
+    return [{ sku: have[0].sku, need: Math.min(3, Math.max(1, have[0].have)), fill: 0 }];
+  }
+  if (grade === "hard") {
+    const pool = have.reduce((sum, row) => sum + row.have, 0);
+    const cap = Math.min(SHIP_SLOTS, Math.max(4, pals + 2), pool);
+    const kinds = Math.min(have.length, cap >= 6 ? 3 : 2);
+    return linesFrom(have.slice(0, kinds), Math.max(3, cap));
+  }
+  const base = linesFrom(have.slice(0, Math.min(2, have.length)), Math.min(3, Math.max(2, pals)));
+  if (missing.length) {
+    base.push({ sku: missing[progress.nextOrder % missing.length], need: 2, fill: 0 });
+    return mergeLines(base);
+  }
+  base.push({ sku: have[0].sku, need: have[0].have + 2, fill: 0 });
+  return mergeLines(base);
 }
 
 function maybeOrders() {
   pruneOrders();
-  if (!progress.pallets.some((p) => p.units > 0)) return;
-  while (progress.orders.length < 2) {
-    const lines = mixLines();
-    if (!lines || !lines.length) break;
+  if (!floorPals()) return;
+  const used = new Set();
+  progress.orders.forEach((order) => {
+    if (JOB_GRADES.indexOf(order.grade) >= 0) used.add(order.grade);
+  });
+  progress.orders.forEach((order) => {
+    if (JOB_GRADES.indexOf(order.grade) >= 0) return;
+    const n = orderNeed(order);
+    let grade = n <= 1 ? "easy" : n <= 3 ? "mid" : n <= 6 ? "hard" : "wild";
+    if (used.has(grade)) grade = JOB_GRADES.find((g) => !used.has(g)) || "";
+    if (grade) {
+      order.grade = grade;
+      order.pay = gradePay(order.lines, grade);
+      used.add(grade);
+    }
+  });
+  JOB_GRADES.forEach((grade) => {
+    if (used.has(grade)) return;
+    const lines = linesForGrade(grade);
+    if (!lines || !lines.length) return;
     progress.orders.push({
       id: progress.nextOrder,
+      grade: grade,
       lines: lines,
-      pay: linesPay(lines),
+      pay: gradePay(lines, grade),
     });
     progress.nextOrder += 1;
-  }
+    used.add(grade);
+  });
   saveProgress();
 }
 
@@ -1117,6 +1210,9 @@ function startShip(id) {
   paintWaybill();
   paintLoad();
   paintSlots();
+  if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
+    toast("Часть паков нужно докупить в магазине");
+  }
 }
 
 function endShip() {
