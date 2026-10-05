@@ -821,7 +821,7 @@ h1 {
 }
 
 @keyframes truckIdle {
-  50% { transform: translateY(-2px); }
+  50% { transform: translateY(-1px); }
 }
 
 @keyframes wheelSpin {
