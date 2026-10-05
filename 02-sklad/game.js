@@ -238,21 +238,6 @@ function palWood() {
   );
 }
 
-function shopPalMarkup(sku) {
-  return (
-    "<div class=\"pal-live shop-one sku-" +
-    sku.id +
-    "\" style=\"" +
-    palSkin(sku) +
-    "\">" +
-    "<div class=\"pal-load\"><span class=\"pak-layer\"><span class=\"pak\">" +
-    pakInner(sku) +
-    "</span></span></div>" +
-    palWood() +
-    "</div>"
-  );
-}
-
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
   const cols = 2;
@@ -562,21 +547,19 @@ function paintShop() {
   if (!host) return;
   host.innerHTML = "";
   SKUS.forEach((sku) => {
-    const total = sku.cost + DELIVERY_FEE;
     const n = cartCountSku(sku.id);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.dataset.sku = sku.id;
     btn.className = "good" + (n ? " ready" : canAddPal(sku) ? "" : " poor");
     btn.innerHTML =
-      shopPalMarkup(sku) +
-      "<span><b>" +
+      "<div class=\"shop-stand\">" +
+      palMarkup(sku, PALLET_PACKS) +
+      "</div><span class=\"good-meta\"><b>" +
       sku.name +
-      "</b><small>едет 1 мин · доставка " +
-      DELIVERY_FEE +
-      "</small></span><em>" +
-      total +
-      "</em>";
+      "</b><em>" +
+      sku.cost +
+      "</em></span>";
     if (n) setQty(btn, n);
     btn.addEventListener("click", () => addPalToCart(sku.id, btn));
     host.appendChild(btn);
@@ -636,6 +619,11 @@ function paintCart() {
   const ids = Object.keys(counts);
   if (!ids.length && !state.cart.boxes) {
     host.innerHTML = "<p class=\"cart-empty\">Корзина пустая. Нажми товар.</p>";
+    const fee = document.getElementById("cart-fee");
+    if (fee) {
+      fee.hidden = true;
+      fee.innerHTML = "";
+    }
     buy.disabled = true;
     buy.textContent = "Купить";
     return;
@@ -658,7 +646,7 @@ function paintCart() {
       row.addEventListener("click", () => dropPalFromCart(id));
       host.appendChild(row);
     }
-    fillCartLine(row, sku.name + " ×" + n, (sku.cost + DELIVERY_FEE) * n);
+    fillCartLine(row, sku.name + " ×" + n, sku.cost * n);
   });
   if (state.cart.boxes) {
     let row = host.querySelector('.cart-line[data-sku="boxes"]');
@@ -671,6 +659,18 @@ function paintCart() {
       host.appendChild(row);
     }
     fillCartLine(row, "Коробки ×" + state.cart.boxes, BOX_COST * state.cart.boxes);
+  }
+  const fee = document.getElementById("cart-fee");
+  if (fee) {
+    const pals = state.cart.pals.length;
+    if (pals) {
+      fee.hidden = false;
+      fee.innerHTML =
+        "<span>Доставка ×" + pals + "</span><em>" + DELIVERY_FEE * pals + "</em>";
+    } else {
+      fee.hidden = true;
+      fee.innerHTML = "";
+    }
   }
   buy.disabled = false;
   buy.textContent = "Купить · " + cartTotal();

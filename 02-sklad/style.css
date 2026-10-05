@@ -1174,46 +1174,42 @@ body.in-garage .lantern {
   animation: none;
 }
 
+.shop-stand {
+  position: relative;
+  width: 88%;
+  margin: 0 auto 16px;
+}
+
+.shop-stand::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -6px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(40, 24, 8, 0.38);
+  filter: blur(6px);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .shop-card .good .pal-live {
+  position: relative;
+  z-index: 1;
   height: auto;
-  width: 56%;
+  width: 100%;
   overflow: visible;
-  transform: none;
-  margin: 0 auto 8px;
-  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.2));
+  transform: perspective(280px) rotateX(8deg);
+  transform-origin: 50% 100%;
+  margin: 0;
 }
 
-.shop-card .good .pak-layer {
-  display: grid;
-  grid-template-columns: 1fr;
-  margin-bottom: 0;
-}
-
-.shop-card .good .pak {
-  height: 52px;
-  padding: 0 1px 4px;
-}
-
-.shop-card .good .pak-row,
-.shop-card .good .bak {
-  height: 44px;
-}
-
-.shop-card .good .bak .neck {
-  height: 6px;
-}
-
-.shop-card .good .bak .body {
-  height: 32px;
-}
-
-.shop-card .good .pak-film {
-  inset: 10px 0 4px;
-}
-
-.shop-card .good .bak .tag {
-  font-size: 5px;
-  height: 36%;
+.shop-card .good-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .shop-card .good small {
@@ -1265,6 +1261,27 @@ body.in-garage .lantern {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 8px;
+}
+
+.cart-fee {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  padding: 0 4px;
+  color: #6e5c48;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cart-fee[hidden] {
+  display: none;
+}
+
+.cart-fee em {
+  font-style: normal;
+  font-weight: 800;
+  color: #b07a12;
 }
 
 .cart-empty {
