@@ -2050,11 +2050,70 @@ body.in-garage .pal-stand {
     0 12px 26px rgba(0, 0, 0, 0.38),
     3px 4px 0 #d4c6a8;
   transform: translateX(-50%) rotate(-1.4deg);
+  transform-origin: 50% 0;
 }
 
 .waybill.show {
   display: block;
-  animation: paperIn 0.38s cubic-bezier(0.2, 1.1, 0.3, 1);
+  animation: paperLay 0.72s cubic-bezier(0.2, 1.05, 0.3, 1);
+}
+
+.waybill.ready {
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    3px 4px 0 #d4c6a8,
+    0 0 0 2px rgba(212, 160, 23, 0.55);
+}
+
+.waybill.big {
+  top: 18%;
+  z-index: 32;
+  width: min(92vw, 380px);
+  min-height: 42vh;
+  padding: 22px 20px 18px;
+  animation: none;
+  transform: translateX(-50%) rotate(0);
+  transition:
+    top 0.42s ease,
+    width 0.42s ease,
+    min-height 0.42s ease,
+    padding 0.42s ease,
+    transform 0.42s ease;
+}
+
+.waybill.big .way-pay {
+  margin-top: 18px;
+  font-size: 34px;
+  text-align: center;
+}
+
+.waybill.fly {
+  animation: paperFly 0.55s ease-in forwards;
+}
+
+.ship-go {
+  display: block;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f3d27a, #d4a017);
+  color: #2a1c10;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: pop 0.32s cubic-bezier(0.2, 1.6, 0.3, 1);
+}
+
+.ship-go:active {
+  transform: scale(0.97);
+}
+
+.ship-go[hidden] {
+  display: none !important;
 }
 
 .way-head {
@@ -2287,9 +2346,26 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   background: transparent;
 }
 
-@keyframes paperIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(-16px) rotate(-4deg); }
-  to { opacity: 1; transform: translateX(-50%) rotate(-1.4deg); }
+@keyframes paperLay {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-72px) rotate(-16deg) scale(0.72);
+  }
+  58% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(10px) rotate(2.6deg) scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) rotate(-1.4deg) scale(1);
+  }
+}
+
+@keyframes paperFly {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-130px) rotate(14deg) scale(0.18);
+  }
 }
 
 @keyframes loadUp {
@@ -2299,4 +2375,23 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 @keyframes loadIn {
   to { transform: translateX(42vw) translateY(-6px) scale(0.72); }
+}
+
+.coin-fly {
+  position: fixed;
+  z-index: 50;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, #f0b429 55%, #a66a10);
+  box-shadow: 0 0 8px rgba(240, 180, 41, 0.55);
+  pointer-events: none;
+  animation: coinFly 0.72s cubic-bezier(0.2, 0.75, 0.2, 1) forwards;
+}
+
+@keyframes coinFly {
+  0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
+  18% { transform: translate(calc(var(--dx) * 0.12), calc(var(--dy) * 0.08 - 28px)) scale(1.15); }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.35); opacity: 0.15; }
 }

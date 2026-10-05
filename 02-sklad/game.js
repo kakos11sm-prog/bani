@@ -556,13 +556,19 @@ function paintSlots() {
   });
 }
 
-function paintWaybill() {
+function paintWaybill(fresh) {
   const sheet = document.getElementById("waybill");
   if (!sheet) return;
   const order = currentOrder();
+  const go = document.getElementById("ship-go");
   if (!order) {
-    sheet.classList.remove("show");
+    sheet.classList.remove("show", "ready", "big", "fly");
+    if (go) go.hidden = true;
     return;
+  }
+  if (fresh) {
+    sheet.classList.remove("show", "ready", "big", "fly");
+    void sheet.offsetWidth;
   }
   sheet.classList.add("show");
   document.getElementById("way-id").textContent = "#" + order.id;
@@ -586,6 +592,9 @@ function paintWaybill() {
       "</i>";
     host.appendChild(row);
   });
+  const ready = orderDone(order) && !state.busy;
+  sheet.classList.toggle("ready", ready);
+  if (go) go.hidden = !ready;
 }
 
 function paintLoad() {
@@ -1207,7 +1216,7 @@ function startShip(id) {
   document.body.classList.remove("loading", "gone");
   const bay = document.getElementById("load-bay");
   if (bay) bay.classList.remove("into-truck", "away");
-  paintWaybill();
+  paintWaybill(true);
   paintLoad();
   paintSlots();
   if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
@@ -1223,7 +1232,9 @@ function endShip() {
   const bay = document.getElementById("load-bay");
   if (bay) bay.classList.remove("show", "into-truck", "away");
   const sheet = document.getElementById("waybill");
-  if (sheet) sheet.classList.remove("show");
+  if (sheet) sheet.classList.remove("show", "ready", "big", "fly");
+  const go = document.getElementById("ship-go");
+  if (go) go.hidden = true;
 }
 
 function hideGhost() {
@@ -1335,30 +1346,71 @@ async function takePack(drag) {
   paintSlots();
   paintWaybill();
   paintLoad();
-  if (orderDone(order)) await finishShip(order);
+  if (orderDone(order)) {
+    toast("Собрано. Можно отгрузить");
+  }
 }
 
 async function finishShip(order) {
+  if (state.busy || !order) return;
   state.busy = true;
+  const go = document.getElementById("ship-go");
+  if (go) go.hidden = true;
+  const sheet = document.getElementById("waybill");
+  if (sheet) sheet.classList.remove("ready");
   document.body.classList.add("loading");
-  await wait(420);
+  await wait(720);
   const bay = document.getElementById("load-bay");
   if (bay) bay.classList.add("into-truck");
   await wait(620);
-  document.body.classList.add("gone");
-  if (bay) bay.classList.add("away");
-  await wait(520);
+  if (sheet) sheet.classList.add("big");
+  await wait(420);
+  flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
+  await wait(780);
   progress.coins += order.pay;
   progress.orders = progress.orders.filter((o) => o.id !== order.id);
-  endShip();
   saveProgress();
   paintHud();
+  const chip = document.querySelector(".chip.coin");
+  if (chip) {
+    chip.classList.remove("catch");
+    void chip.offsetWidth;
+    chip.classList.add("catch");
+  }
+  if (sheet) {
+    sheet.classList.remove("big");
+    sheet.classList.add("fly");
+  }
+  document.body.classList.add("gone");
+  if (bay) bay.classList.add("away");
+  await wait(580);
+  endShip();
   paintSlots();
   maybeOrders();
   paintJobs();
-  document.querySelector(".chip.coin").classList.add("catch");
   toast("Заявка #" + order.id + " ушла. +" + order.pay);
   state.busy = false;
+}
+
+function flyCoins(fromEl, toEl, n) {
+  if (!fromEl || !toEl) return;
+  const a = fromEl.getBoundingClientRect();
+  const b = toEl.getBoundingClientRect();
+  const x0 = a.left + a.width / 2;
+  const y0 = a.top + a.height / 2;
+  const dx = b.left + b.width / 2 - x0;
+  const dy = b.top + b.height / 2 - y0;
+  for (let i = 0; i < n; i += 1) {
+    const bit = document.createElement("i");
+    bit.className = "coin-fly";
+    bit.style.left = x0 + "px";
+    bit.style.top = y0 + "px";
+    bit.style.setProperty("--dx", dx + "px");
+    bit.style.setProperty("--dy", dy + "px");
+    bit.style.animationDelay = i * 55 + "ms";
+    document.body.appendChild(bit);
+    window.setTimeout(() => bit.remove(), 880 + i * 55);
+  }
 }
 
 function goPlay() {
@@ -1373,6 +1425,7 @@ function goPlay() {
 }
 
 function goBack() {
+  if (state.busy) return;
   if (document.getElementById("shop").classList.contains("show")) {
     closeShop();
     return;
@@ -1414,6 +1467,10 @@ document.getElementById("cart-toggle").addEventListener("click", () => {
   document.getElementById("cart").classList.toggle("open");
 });
 document.getElementById("cart-buy").addEventListener("click", (e) => checkout(e.currentTarget));
+document.getElementById("ship-go").addEventListener("click", () => {
+  const order = currentOrder();
+  if (order && orderDone(order)) finishShip(order);
+});
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });
