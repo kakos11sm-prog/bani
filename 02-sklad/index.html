@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=3" />
+    <link rel="stylesheet" href="style.css?v=4" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -35,6 +35,7 @@
         <h1>Склад</h1>
         <p class="tag">Сними помещение. Собери заявку. Отправь.</p>
         <button class="play" id="boot-play" type="button">Играть</button>
+        <button class="ghost reset" id="boot-reset" type="button">Сбросить прогресс</button>
         <a class="more" href="../index.html">Ещё игры</a>
       </div>
     </div>
@@ -55,11 +56,11 @@
         <div class="lantern"></div>
         <div class="lantern-glow"></div>
         <div class="floor-lit"></div>
+        <div class="floor-pals" id="slots"></div>
       </div>
       <div class="floor-row">
         <div class="yard">
           <p class="yard-name" id="yard-name">Гараж</p>
-          <div class="slots" id="slots"></div>
           <div class="jobs" id="jobs"></div>
         </div>
         <button class="shop-tab" id="shop-tab" type="button">
@@ -98,6 +99,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=3"></script>
+    <script src="game.js?v=4"></script>
   </body>
 </html>

@@ -13,9 +13,16 @@ const SKUS = [
   { id: "cherry", name: "Вишня", tone: "#c43a4a", cost: 520 },
 ];
 const ROOMS = [
-  { id: "garage", name: "Гараж", slots: 1, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
-  { id: "hangar", name: "Ангар", slots: 2, price: 2400, pic: "room-hangar.jpg", inside: "" },
-  { id: "depot", name: "Склад", slots: 4, price: 6200, pic: "room-depot.jpg", inside: "" },
+  { id: "garage", name: "Гараж", slots: 5, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
+  { id: "hangar", name: "Ангар", slots: 8, price: 2400, pic: "room-hangar.jpg", inside: "" },
+  { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
+];
+const GARAGE_SPOTS = [
+  { x: 6, y: 20 },
+  { x: 38, y: 8 },
+  { x: 70, y: 20 },
+  { x: 16, y: 58 },
+  { x: 54, y: 58 },
 ];
 
 const boot = document.getElementById("boot");
@@ -83,6 +90,48 @@ const state = { packId: 0, pickId: 0, busy: false };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
+}
+
+function packCount(units) {
+  if (units < 1) return 0;
+  return Math.max(1, Math.round((units / PALLET_UNITS) * 12));
+}
+
+function palMarkup(sku, units) {
+  const fill = Math.max(0, Math.min(1, units / PALLET_UNITS));
+  const n = packCount(units);
+  return (
+    "<div class=\"pal-live sku-" +
+    sku.id +
+    "\" style=\"--fill:" +
+    fill +
+    ";--sku:" +
+    sku.tone +
+    "\">" +
+    "<div class=\"pal-load\">" +
+    "<b></b>".repeat(n) +
+    "</div>" +
+    "<div class=\"pal-deck\"><i></i><i></i><i></i></div>" +
+    "<div class=\"pal-skid\"><i></i><i></i><i></i></div>" +
+    "</div>"
+  );
+}
+
+function palSpots() {
+  const room = roomOf(progress.room);
+  const n = room ? room.slots : 5;
+  if (progress.room === "garage") return GARAGE_SPOTS;
+  const spots = [];
+  const cols = n <= 4 ? 2 : 3;
+  for (let i = 0; i < n; i += 1) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    spots.push({
+      x: 8 + col * (80 / Math.max(1, cols - 1)),
+      y: 10 + row * 28,
+    });
+  }
+  return spots;
 }
 
 function roomOf(id) {
@@ -229,30 +278,19 @@ async function playBuyRoom(room) {
 }
 
 function paintSlots() {
-  const room = roomOf(progress.room);
   const host = document.getElementById("slots");
   host.innerHTML = "";
-  const n = room ? room.slots : 1;
-  for (let i = 0; i < n; i += 1) {
-    const slot = document.createElement("div");
-    const pal = progress.pallets[i];
-    slot.className = "slot" + (pal ? "" : " empty");
-    if (pal) {
-      const sku = skuOf(pal.sku);
-      const layers = Math.max(1, Math.min(4, Math.ceil(pal.units / 3)));
-      slot.innerHTML =
-        "<div class=\"pallet sku-" +
-        pal.sku +
-        "\">" +
-        "<i></i>".repeat(layers) +
-        "<b>" +
-        sku.name +
-        " · " +
-        pal.units +
-        "</b></div>";
-    }
-    host.appendChild(slot);
-  }
+  const spots = palSpots();
+  progress.pallets.forEach((pal, i) => {
+    const sku = skuOf(pal.sku);
+    const spot = spots[i] || spots[spots.length - 1] || { x: 40, y: 40 };
+    const stand = document.createElement("div");
+    stand.className = "pal-stand";
+    stand.style.left = spot.x + "%";
+    stand.style.top = spot.y + "%";
+    stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
+    host.appendChild(stand);
+  });
 }
 
 function paintJobs() {
@@ -307,9 +345,8 @@ function paintShop() {
     btn.className = "good" + (can ? " ready" : " poor");
     btn.style.animationDelay = i * 40 + "ms";
     btn.innerHTML =
-      "<i style=\"background:" +
-      sku.tone +
-      "\"></i><span><b>" +
+      palMarkup(sku, PALLET_UNITS) +
+      "<span><b>" +
       sku.name +
       "</b><small>поддон · " +
       PALLET_UNITS +
@@ -324,7 +361,7 @@ function paintShop() {
   box.type = "button";
   box.className = "good boxes" + (canBox ? " ready" : " poor");
   box.innerHTML =
-    "<i class=\"box-ico\">📦</i><span><b>Коробки</b><small>" +
+    "<div class=\"box-draw\"><i></i><i></i><i></i></div><span><b>Коробки</b><small>" +
     BOX_PACK +
     " шт в пачке</small></span><em>" +
     BOX_COST +
@@ -383,7 +420,8 @@ function buyGood(skuId, btn) {
   }
   if (!freeSlots()) {
     shake(btn);
-    toast("Места нет. Сними помещение больше.");
+    const room = roomOf(progress.room);
+    toast("В гараже только " + (room ? room.slots : 5) + " поддонов");
     return;
   }
   if (progress.coins < sku.cost) {
@@ -400,8 +438,25 @@ function buyGood(skuId, btn) {
   paintShop();
   maybeOrders();
   paintJobs();
+  const last = document.querySelector(".floor-pals .pal-stand:last-child");
+  if (last) last.classList.add("drop-in");
   document.querySelector(".chip.coin").classList.add("catch");
   toast("Поддон «" + sku.name + "» на полу");
+}
+
+function resetProgress() {
+  if (!window.confirm("Сбросить весь прогресс?")) return;
+  localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem("sklad-progress-v1");
+  const fresh = emptyProgress();
+  Object.keys(progress).forEach((key) => {
+    delete progress[key];
+  });
+  Object.assign(progress, fresh);
+  saveProgress();
+  paintHud();
+  showScreen(boot);
+  toast("Начинаешь заново");
 }
 
 function buyBoxes(btn) {
@@ -461,7 +516,7 @@ function paintPack() {
       "pick" +
       (state.pickId === pal.id ? " on" : "") +
       (pal.sku !== order.sku || !pal.units ? " dim" : "");
-    btn.innerHTML = "<b>" + s.name + "</b><small>" + pal.units + " шт</small>";
+    btn.innerHTML = palMarkup(s, pal.units) + "<b>" + s.name + "</b><small>" + pal.units + " шт</small>";
     btn.addEventListener("click", () => {
       if (pal.sku !== order.sku || !pal.units) {
         shake(btn);
@@ -501,6 +556,7 @@ async function putOne() {
   }
   saveProgress();
   paintHud();
+  paintSlots();
   paintPack();
   if (order.fill >= order.need) {
     await wait(380);
@@ -545,6 +601,7 @@ function goBack() {
 }
 
 document.getElementById("boot-play").addEventListener("click", goPlay);
+document.getElementById("boot-reset").addEventListener("click", resetProgress);
 document.getElementById("rent-back").addEventListener("click", () => showScreen(boot));
 document.getElementById("btn-back").addEventListener("click", goBack);
 document.getElementById("shop-tab").addEventListener("click", openShop);
