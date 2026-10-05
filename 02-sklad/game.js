@@ -18,11 +18,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 2, b: 32, s: 0.84 },
-  { x: 35, b: 36, s: 0.8 },
-  { x: 66, b: 32, s: 0.84 },
-  { x: 12, b: 2, s: 1 },
-  { x: 50, b: 2, s: 1 },
+  { x: 1, b: 30, s: 0.86 },
+  { x: 35, b: 30, s: 0.86 },
+  { x: 69, b: 30, s: 0.86 },
+  { x: 18, b: 2, s: 1 },
+  { x: 52, b: 2, s: 1 },
 ];
 
 const boot = document.getElementById("boot");
