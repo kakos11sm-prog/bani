@@ -1651,28 +1651,38 @@ body.shipping .jobs-tab {
 
 .floor-pals {
   position: absolute;
-  left: 50%;
-  top: calc(34% + 35px);
-  bottom: calc(28% - 35px);
+  left: 0;
+  right: 0;
+  top: calc(34% + 20px);
+  bottom: calc(28% - 20px);
   z-index: 4;
-  width: min(400px, 94vw);
-  transform: translateX(-50%);
-  pointer-events: none;
+  width: auto;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  pointer-events: auto;
+  scrollbar-width: none;
+}
+
+.floor-pals::-webkit-scrollbar {
+  display: none;
 }
 
 body.in-garage .floor-pals {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-end;
-  gap: 2px;
+  gap: 12px;
+  padding: 0 16px 15px;
 }
 
 .pal-stand {
   position: absolute;
-  width: 72px;
-  margin-left: -36px;
+  width: 108px;
+  margin-left: -54px;
   pointer-events: auto;
-  touch-action: none;
+  touch-action: pan-x;
   user-select: none;
 }
 
@@ -1681,7 +1691,18 @@ body.in-garage .pal-stand {
   left: auto;
   bottom: auto;
   margin-left: 0;
-  flex: 0 0 72px;
+  flex: 0 0 108px;
+}
+
+.floor-pals .pal-stand .pal-live {
+  width: 72px;
+  margin: 0 auto;
+  transform: perspective(340px) rotateX(10deg) scale(1.5);
+  transform-origin: 50% 100%;
+}
+
+body.shipping .pal-stand.can-take {
+  touch-action: none;
 }
 
 .pal-stand::after {
