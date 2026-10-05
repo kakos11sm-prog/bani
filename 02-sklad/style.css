@@ -145,11 +145,15 @@ body {
   display: none;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: 72px;
-  padding: 6px 4px 4px;
-  border-radius: 12px;
-  background: #2a2218;
+  gap: 4px;
+  width: 108px;
+  padding: 8px 6px 6px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, #3a3024 0%, #241c14 100%);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 220, 160, 0.12);
   cursor: pointer;
 }
 
@@ -157,63 +161,166 @@ body {
   display: flex;
 }
 
+.truck:active {
+  transform: scale(0.97);
+}
+
 .truck em {
+  min-width: 46px;
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: #1a1410;
   font-style: normal;
   font-weight: 800;
   color: var(--accent);
   font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
 .truck-art {
   position: relative;
-  width: 58px;
-  height: 28px;
+  width: 92px;
+  height: 48px;
+  animation: truckIdle 1.6s ease-in-out infinite;
 }
 
-.truck-art .cab {
+.truck-art .shade {
   position: absolute;
-  left: 0;
-  bottom: 6px;
-  width: 18px;
-  height: 16px;
-  border-radius: 4px 2px 0 0;
-  background: linear-gradient(180deg, #d4a24a, #8a5a18);
-}
-
-.truck-art .cab::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 8px;
+  left: 10px;
+  right: 6px;
+  bottom: 2px;
   height: 7px;
-  border-radius: 2px;
-  background: #7ec8e0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  filter: blur(3px);
 }
 
 .truck-art .bed {
   position: absolute;
-  left: 17px;
-  bottom: 6px;
+  left: 4px;
+  bottom: 12px;
+  width: 52px;
+  height: 26px;
+  border-radius: 3px 2px 2px 3px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 18%),
+    linear-gradient(180deg, #8aa45a 0%, #5a7238 55%, #3e5226 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.truck-art .ribs {
+  position: absolute;
+  left: 10px;
+  bottom: 14px;
   width: 38px;
-  height: 18px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #6a8a4a, #3a5228);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  height: 22px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 6px,
+      rgba(0, 0, 0, 0.16) 6px 7px
+    );
+  pointer-events: none;
+}
+
+.truck-art .door {
+  position: absolute;
+  left: 2px;
+  bottom: 13px;
+  width: 6px;
+  height: 24px;
+  border-radius: 1px 0 0 1px;
+  background: linear-gradient(90deg, #4a5c2c, #7a9248);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.25);
+}
+
+.truck-art .cab {
+  position: absolute;
+  left: 54px;
+  bottom: 12px;
+  width: 30px;
+  height: 22px;
+  border-radius: 3px 8px 3px 2px;
+  background:
+    linear-gradient(180deg, #f0c14a 0%, #c48a28 48%, #8a5a14 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 240, 180, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.truck-art .cab::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: -6px;
+  width: 26px;
+  height: 8px;
+  border-radius: 6px 8px 0 0;
+  background: linear-gradient(180deg, #d4a038, #a66e18);
+}
+
+.truck-art .glass {
+  position: absolute;
+  left: 62px;
+  bottom: 22px;
+  width: 18px;
+  height: 10px;
+  border-radius: 2px 5px 2px 1px;
+  background:
+    linear-gradient(135deg, #d8f2ff 0%, #5aa8c8 55%, #2e6e88 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.truck-art .light {
+  position: absolute;
+  left: 80px;
+  bottom: 16px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffe7a0;
+  box-shadow: 0 0 8px rgba(255, 220, 120, 0.85);
+  animation: lampBlink 1.6s ease-in-out infinite;
+}
+
+.truck-art .bumper {
+  position: absolute;
+  left: 80px;
+  bottom: 12px;
+  width: 6px;
+  height: 7px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, #8a7a66, #d4c4a8);
 }
 
 .truck-art .whl {
   position: absolute;
-  bottom: 0;
-  width: 8px;
-  height: 8px;
+  bottom: 4px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: #1a1410;
-  box-shadow: inset 0 0 0 2px #6a5a48;
+  background:
+    radial-gradient(circle at 35% 30%, #c8b8a0 0 18%, #3a3228 19% 42%, #14110d 43%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: wheelSpin 0.7s linear infinite;
 }
 
-.truck-art .whl.a { left: 8px; }
-.truck-art .whl.b { right: 6px; }
+.truck-art .whl.a { left: 14px; }
+.truck-art .whl.b { left: 32px; }
+.truck-art .whl.c { left: 62px; }
+
+.truck-art .puff {
+  position: absolute;
+  left: 50px;
+  bottom: 14px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(200, 200, 200, 0.35);
+  animation: puff 1.4s ease-out infinite;
+}
 
 .ship-pane {
   position: fixed;
@@ -733,6 +840,23 @@ h1 {
 @keyframes fallIn {
   from { transform: translateY(-70vh); opacity: 0; }
   to { transform: none; opacity: 1; }
+}
+
+@keyframes truckIdle {
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes wheelSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes puff {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0.4; }
+  100% { transform: translate(-10px, -10px) scale(1.4); opacity: 0; }
+}
+
+@keyframes lampBlink {
+  50% { opacity: 0.45; }
 }
 
 @keyframes playPulse {
