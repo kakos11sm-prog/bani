@@ -608,10 +608,23 @@ function fillCartLine(row, title, sum) {
     "<b>" + title + "</b><small>нажми чтобы убрать</small><em>" + sum + "</em>";
 }
 
+function cartCount() {
+  return state.cart.pals.length + state.cart.boxes;
+}
+
+function paintCartBar() {
+  const label = document.getElementById("cart-label");
+  const sum = document.getElementById("cart-sum");
+  const n = cartCount();
+  if (label) label.textContent = n ? "Корзина · " + n : "Корзина";
+  if (sum) sum.textContent = String(cartTotal());
+}
+
 function paintCart() {
   const host = document.getElementById("cart-lines");
   const buy = document.getElementById("cart-buy");
   if (!host || !buy) return;
+  paintCartBar();
   const counts = {};
   state.cart.pals.forEach((id) => {
     counts[id] = (counts[id] || 0) + 1;
@@ -743,6 +756,7 @@ function checkout(btn) {
   if (boxes) progress.boxes += boxes * BOX_PACK;
   state.cart.pals = [];
   state.cart.boxes = 0;
+  document.getElementById("cart").classList.remove("open");
   saveProgress();
   paintHud();
   syncShop();
@@ -1110,6 +1124,9 @@ document.getElementById("shop-btn").addEventListener("click", () => {
   else openShop();
 });
 document.getElementById("shop-close").addEventListener("click", closeShop);
+document.getElementById("cart-toggle").addEventListener("click", () => {
+  document.getElementById("cart").classList.toggle("open");
+});
 document.getElementById("cart-buy").addEventListener("click", (e) => checkout(e.currentTarget));
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();

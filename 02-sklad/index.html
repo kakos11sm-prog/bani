@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=23" />
+    <link rel="stylesheet" href="style.css?v=24" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -91,8 +91,14 @@
         <p class="lead">Сначала в корзину, потом купить. Доставка минута.</p>
         <div class="goods" id="goods"></div>
         <div class="cart" id="cart">
-          <div class="cart-lines" id="cart-lines"></div>
-          <div class="cart-fee" id="cart-fee" hidden></div>
+          <button class="cart-toggle" id="cart-toggle" type="button">
+            <span id="cart-label">Корзина</span>
+            <em id="cart-sum">0</em>
+          </button>
+          <div class="cart-body" id="cart-body">
+            <div class="cart-lines" id="cart-lines"></div>
+            <div class="cart-fee" id="cart-fee" hidden></div>
+          </div>
           <button class="cart-buy" id="cart-buy" type="button">Купить</button>
         </div>
         <button class="ghost" id="shop-close" type="button">Закрыть</button>
@@ -138,6 +144,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=23"></script>
+    <script src="game.js?v=24"></script>
   </body>
 </html>
