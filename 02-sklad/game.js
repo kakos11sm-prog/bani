@@ -188,27 +188,24 @@ function packsWord(n) {
   return n + " паков";
 }
 
-function bak(sku) {
+function bot(sku) {
   return (
-    "<span class=\"bak\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"><b class=\"tag\">" +
+    "<i class=\"bot\"><b class=\"bot-cap\"></b><b class=\"bot-n\"></b><b class=\"bot-g\"><em>" +
     (sku.tag || sku.name) +
-    "</b></i></span>"
+    "</em></b></i>"
   );
 }
 
 function pakInner(sku) {
+  const trio = bot(sku) + bot(sku) + bot(sku);
   return (
-    "<span class=\"pak-row back\">" +
-    bak(sku) +
-    bak(sku) +
-    bak(sku) +
+    "<span class=\"bots rear\">" +
+    trio +
     "</span>" +
-    "<span class=\"pak-row front\">" +
-    bak(sku) +
-    bak(sku) +
-    bak(sku) +
+    "<span class=\"bots near\">" +
+    trio +
     "</span>" +
-    "<span class=\"pak-film\"></span>" +
+    "<span class=\"pak-skin\"></span>" +
     "<span class=\"pak-tray\"></span>"
   );
 }
