@@ -11,9 +11,9 @@ const SKUS = [
   { id: "grain", name: "Крупа", tone: "#d4b35a" },
 ];
 const ROOMS = [
-  { id: "garage", name: "Гараж", slots: 1, price: 800, blurb: "Одно место под поддон" },
-  { id: "hangar", name: "Ангар", slots: 2, price: 2400, blurb: "Два поддона, уже теснее не будет" },
-  { id: "depot", name: "База", slots: 4, price: 6200, blurb: "Четыре места. На вырост" },
+  { id: "garage", name: "Гараж", slots: 1, price: 800, pic: "room-garage.jpg" },
+  { id: "hangar", name: "Ангар", slots: 2, price: 2400, pic: "room-hangar.jpg" },
+  { id: "depot", name: "Склад", slots: 4, price: 6200, pic: "room-depot.jpg" },
 ];
 
 const boot = document.getElementById("boot");
@@ -147,7 +147,7 @@ function giftStart() {
   paintHud();
   const chip = document.querySelector(".chip.coin");
   if (chip) chip.classList.add("catch");
-  toast("На старт " + START_COINS + ". Хватит на гараж и один поддон.");
+  toast("На старт " + START_COINS);
 }
 
 function paintRooms() {
@@ -156,16 +156,18 @@ function paintRooms() {
   ROOMS.forEach((room, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "room" + (progress.coins < room.price ? " poor" : "");
+    const can = progress.coins >= room.price;
+    btn.className = "room" + (can ? " ready" : " poor");
     btn.style.animationDelay = i * 70 + "ms";
     btn.innerHTML =
-      "<b>" +
+      "<img src=\"" +
+      room.pic +
+      "?v=2\" alt=\"\" />" +
+      "<span class=\"room-meta\"><b>" +
       room.name +
-      "</b><small>" +
-      room.blurb +
-      "</small><em>" +
+      "</b><em>" +
       room.price +
-      "</em>";
+      "</em></span>";
     btn.addEventListener("click", () => rentRoom(room.id, btn));
     host.appendChild(btn);
   });
