@@ -18,11 +18,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 1, b: 30, s: 0.86 },
-  { x: 35, b: 30, s: 0.86 },
-  { x: 69, b: 30, s: 0.86 },
-  { x: 18, b: 2, s: 1 },
-  { x: 52, b: 2, s: 1 },
+  { x: 1, b: 30, s: 0.86, lift: 20 },
+  { x: 35, b: 30, s: 0.86, lift: 20 },
+  { x: 69, b: 30, s: 0.86, lift: 20 },
+  { x: 18, b: 2, s: 1, lift: 10 },
+  { x: 52, b: 2, s: 1, lift: 10 },
 ];
 
 const boot = document.getElementById("boot");
@@ -339,7 +339,7 @@ function paintSlots() {
     const stand = document.createElement("div");
     stand.className = "pal-stand";
     stand.style.left = spot.x + "%";
-    stand.style.bottom = (spot.b ?? 6) + "%";
+    stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + (spot.lift || 0) + "px)";
     stand.style.setProperty("--sc", String(spot.s || 1));
     stand.innerHTML = palMarkup(sku, pal.units) + "<em>" + sku.name + "</em>";
     host.appendChild(stand);

@@ -1003,6 +1003,25 @@ body.in-garage .lantern {
   width: 28%;
 }
 
+.pal-stand::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -3px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(8, 6, 4, 0.42);
+  filter: blur(5px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pal-stand .pal-live,
+.pal-stand em {
+  z-index: 1;
+}
+
 .pal-stand em {
   position: absolute;
   left: 0;
