@@ -1,6 +1,9 @@
 const SAVE_KEY = "sklad-progress-v3";
 const START_COINS = 1200;
 const PALLET_PACKS = 6;
+const SHIP_COLS = 3;
+const SHIP_ROWS = 3;
+const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
 const BOX_COST = 80;
 const BOX_PACK = 8;
 const PACK_PAY = 150;
@@ -274,14 +277,13 @@ function palMarkup(sku, packs) {
 }
 
 function mixPalMarkup(skuIds) {
-  const list = (skuIds || []).slice(0, PALLET_PACKS);
-  const start = PALLET_PACKS - list.length;
+  const list = (skuIds || []).slice(0, SHIP_SLOTS);
+  const start = SHIP_SLOTS - list.length;
   let load = "";
-  for (let row = 0; row < 3; row += 1) {
-    const vacant = row * 2 + 1 < start;
-    load += "<span class=\"pak-layer" + (vacant ? " vacant" : "") + "\">";
-    for (let col = 0; col < 2; col += 1) {
-      const slot = row * 2 + col;
+  for (let row = 0; row < SHIP_ROWS; row += 1) {
+    load += "<span class=\"pak-layer depth-" + row + "\">";
+    for (let col = 0; col < SHIP_COLS; col += 1) {
+      const slot = row * SHIP_COLS + col;
       const sku = slot >= start ? skuOf(list[slot - start]) : null;
       load += sku
         ? "<span class=\"pak\" style=\"" + palSkin(sku) + "\">" + pakInner(sku) + "</span>"
@@ -290,7 +292,7 @@ function mixPalMarkup(skuIds) {
     load += "</span>";
   }
   return (
-    "<div class=\"pal-live\">" +
+    "<div class=\"pal-live ship-pal\">" +
     "<div class=\"pal-load\">" +
     load +
     "</div>" +
