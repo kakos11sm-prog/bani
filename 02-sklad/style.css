@@ -2191,7 +2191,8 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 }
 
 .drag-ghost .pak-row.back {
-  transform: translateY(-6px) scale(0.92);
+  bottom: 16px;
+  transform: translateY(-12px) scale(0.9);
 }
 
 @keyframes paperIn {
