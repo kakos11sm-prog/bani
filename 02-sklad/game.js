@@ -273,16 +273,22 @@ function closeJobs() {
   if (pane) pane.classList.remove("show");
 }
 
+function closeShip() {
+  const pane = document.getElementById("ship-pane");
+  if (pane) pane.classList.remove("show");
+}
+
 function showScreen(el) {
   closeShop();
   closeJobs();
+  closeShip();
   [boot, rent, floor, pack].forEach((node) => node.classList.toggle("show", node === el));
   document.body.classList.toggle("home", el === boot);
   document.body.classList.toggle("on-floor", el === floor);
   if (el !== floor) {
     document.body.classList.remove("in-garage", "in-hangar", "in-depot");
   }
-  if (typeof paintShip === "function") paintShip();
+  if (typeof paintTruck === "function") paintTruck();
 }
 
 function toast(text) {
@@ -521,27 +527,70 @@ function openJobs() {
   document.getElementById("jobs-pane").classList.add("show");
 }
 
-function paintShip() {
-  const host = document.getElementById("ship");
-  if (!host) return;
+function nearestReady() {
   const list = progress.incoming || [];
-  host.classList.toggle("show", list.length > 0 && floor.classList.contains("show"));
+  if (!list.length) return 0;
+  return Math.min.apply(null, list.map((item) => item.readyAt));
+}
+
+function paintTruck() {
+  const btn = document.getElementById("truck");
+  if (!btn) return;
+  const list = progress.incoming || [];
+  const on = list.length > 0 && floor.classList.contains("show");
+  btn.classList.toggle("show", on);
+  if (!on) {
+    closeShip();
+    return;
+  }
+  document.getElementById("truck-eta").textContent = fmtEta(nearestReady() - Date.now());
+  refreshShipTimes();
+}
+
+function paintShipList() {
+  const host = document.getElementById("ship-list");
+  if (!host) return;
   host.innerHTML = "";
-  list
-    .slice()
-    .sort((a, b) => a.readyAt - b.readyAt)
-    .forEach((item) => {
-      const sku = skuOf(item.sku);
-      const card = document.createElement("div");
-      card.className = "ship-card";
-      card.innerHTML =
-        "<b>Едет</b><span>" +
-        sku.name +
-        "</span><em>" +
-        fmtEta(item.readyAt - Date.now()) +
-        "</em>";
-      host.appendChild(card);
-    });
+  const list = (progress.incoming || []).slice().sort((a, b) => a.readyAt - b.readyAt);
+  if (!list.length) {
+    host.innerHTML = "<p class=\"lead\">Сейчас ничего не едет.</p>";
+    return;
+  }
+  list.forEach((item) => {
+    const sku = skuOf(item.sku);
+    const row = document.createElement("div");
+    row.className = "ship-row";
+    row.dataset.id = String(item.id);
+    row.innerHTML =
+      "<b>" +
+      sku.name +
+      "</b><small>поддон · " +
+      packsWord(PALLET_PACKS) +
+      "</small><em>" +
+      fmtEta(item.readyAt - Date.now()) +
+      "</em>";
+    host.appendChild(row);
+  });
+}
+
+function refreshShipTimes() {
+  const pane = document.getElementById("ship-pane");
+  if (!pane || !pane.classList.contains("show")) return;
+  document.querySelectorAll(".ship-row").forEach((row) => {
+    const id = Number(row.dataset.id);
+    const item = (progress.incoming || []).find((entry) => entry.id === id);
+    const eta = row.querySelector("em");
+    if (!item || !eta) return;
+    eta.textContent = fmtEta(item.readyAt - Date.now());
+  });
+}
+
+function openShip() {
+  if (!(progress.incoming || []).length) return;
+  closeShop();
+  closeJobs();
+  paintShipList();
+  document.getElementById("ship-pane").classList.add("show");
 }
 
 function settleIncoming() {
@@ -575,19 +624,25 @@ function settleIncoming() {
 
 function tickShip() {
   const arrived = settleIncoming();
-  paintShip();
+  paintTruck();
   if (!arrived.length) return;
   arrived.forEach((item) => {
     toast("Приехал поддон «" + skuOf(item.sku).name + "»");
   });
+  if (document.getElementById("ship-pane").classList.contains("show")) {
+    paintShipList();
+  }
   if (floor.classList.contains("show")) {
     paintHud();
     paintSlots();
     maybeOrders();
     paintJobs();
     paintShop();
-    const last = document.querySelector(".floor-pals .pal-stand:last-child");
-    if (last) last.classList.add("drop-in");
+    const stands = document.querySelectorAll(".floor-pals .pal-stand");
+    arrived.forEach((_, i) => {
+      const stand = stands[stands.length - arrived.length + i];
+      if (stand) stand.classList.add("drop-in");
+    });
   }
 }
 
@@ -641,7 +696,7 @@ function openFloor() {
   paintJobs();
   paintShop();
   showScreen(floor);
-  paintShip();
+  paintTruck();
 }
 
 function orderGood(skuId, btn) {
@@ -673,7 +728,7 @@ function orderGood(skuId, btn) {
   saveProgress();
   paintHud();
   paintShop();
-  paintShip();
+  paintTruck();
   document.querySelector(".chip.coin").classList.add("catch");
   toast("Заказал «" + sku.name + "». Едет минуту.");
 }
@@ -831,6 +886,10 @@ function goBack() {
     closeShop();
     return;
   }
+  if (document.getElementById("ship-pane").classList.contains("show")) {
+    closeShip();
+    return;
+  }
   if (document.getElementById("jobs-pane").classList.contains("show")) {
     closeJobs();
     return;
@@ -860,6 +919,11 @@ document.getElementById("jobs-pane").addEventListener("click", (e) => {
   if (e.target.id === "jobs-pane") closeJobs();
 });
 document.getElementById("pack-close").addEventListener("click", openFloor);
+document.getElementById("truck").addEventListener("click", openShip);
+document.getElementById("ship-close").addEventListener("click", closeShip);
+document.getElementById("ship-pane").addEventListener("click", (e) => {
+  if (e.target.id === "ship-pane") closeShip();
+});
 window.setInterval(tickShip, 250);
 
 seedDust();

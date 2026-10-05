@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=14" />
+    <link rel="stylesheet" href="style.css?v=15" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -24,7 +24,15 @@
     </div>
 
     <div class="toast" id="toast" aria-live="polite"></div>
-    <div class="ship" id="ship" aria-live="polite"></div>
+    <button class="truck" id="truck" type="button" aria-label="Доставка">
+      <span class="truck-art" aria-hidden="true">
+        <i class="cab"></i>
+        <i class="bed"></i>
+        <i class="whl a"></i>
+        <i class="whl b"></i>
+      </span>
+      <em id="truck-eta">0:00</em>
+    </button>
 
     <div class="screen show" id="boot">
       <div class="home">
@@ -81,6 +89,15 @@
       </div>
     </div>
 
+    <div class="ship-pane" id="ship-pane">
+      <div class="ship-box">
+        <h2>Доставка</h2>
+        <p class="lead">Что едет на склад.</p>
+        <div class="ship-list" id="ship-list"></div>
+        <button class="ghost" id="ship-close" type="button">Закрыть</button>
+      </div>
+    </div>
+
     <div class="jobs-pane" id="jobs-pane">
       <div class="jobs-card">
         <h2>Заявки</h2>
@@ -111,6 +128,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=14"></script>
+    <script src="game.js?v=15"></script>
   </body>
 </html>
