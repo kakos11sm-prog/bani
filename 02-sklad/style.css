@@ -527,17 +527,21 @@ h1 {
 }
 
 .cell {
-  width: 36px;
-  height: 36px;
+  width: 54px;
+  height: 44px;
   border-radius: 7px;
   background: #1a1510;
   box-shadow: inset 0 0 0 2px #4a3c2c;
 }
 
 .cell.on {
-  background: #4aa3d9;
+  background: transparent;
   box-shadow: none;
   animation: pop 0.28s cubic-bezier(0.2, 1.6, 0.3, 1);
+}
+
+.cell .pak {
+  height: 40px;
 }
 
 .picks {
@@ -800,12 +804,12 @@ body.in-garage .lantern {
 }
 
 .good .pal-live {
-  height: 124px;
+  height: 148px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   margin: 0 auto 8px;
-  width: 88%;
+  width: 92%;
 }
 
 .good.boxes {
@@ -995,7 +999,7 @@ body.in-garage .lantern {
 }
 
 .pal-stand .pal-live {
-  transform: perspective(320px) rotateX(12deg);
+  transform: perspective(340px) rotateX(10deg);
   transform-origin: 50% 100%;
 }
 
@@ -1005,122 +1009,154 @@ body.in-garage .lantern {
 
 .pal-load {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 34px;
+  grid-template-columns: 1fr 1fr;
   align-content: end;
-  gap: 1px 2px;
-  width: 96%;
-  margin: 0 auto 1px;
+  gap: 3px 4px;
+  width: 100%;
+  margin: 0 auto 2px;
 }
 
-.bot {
+.pak {
   position: relative;
+  height: 38px;
+  padding: 4px 4px 7px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(20, 16, 12, 0.2);
+}
+
+.pak-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 34px;
+  gap: 2px;
 }
 
-.bot .cap {
-  width: 38%;
-  height: 4px;
-  border-radius: 2px 2px 1px 1px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 55%),
-    var(--sku);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-  z-index: 2;
+.pak-row.back {
+  transform: translateY(3px) scale(0.9);
+  transform-origin: 50% 100%;
+  opacity: 0.78;
 }
 
-.bot .neck {
-  width: 20%;
-  height: 6px;
-  background: linear-gradient(90deg, rgba(180, 210, 220, 0.45), rgba(255, 255, 255, 0.7), rgba(170, 200, 210, 0.35));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-}
-
-.bot .body {
+.pak-row.front {
   position: relative;
-  width: 86%;
-  height: 22px;
-  border-radius: 7px 7px 4px 4px / 10px 10px 6px 6px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 12%, transparent 26%, transparent 72%, rgba(0, 0, 0, 0.12)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0 14%, var(--sku) 20% 46%, var(--liq) 50% 100%);
-  box-shadow:
-    inset 2px 0 0 rgba(255, 255, 255, 0.22),
-    inset -2px 0 0 rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.28);
+  z-index: 1;
+  margin-top: -8px;
 }
 
-.bot .body::after {
+.pak-row i {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  border-radius: 4px 4px 2px 2px / 7px 7px 2px 2px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.42) 0 16%, transparent 30%),
+    linear-gradient(180deg, var(--sku) 0 42%, var(--liq) 50% 100%);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+.pak-row i::before {
   content: "";
   position: absolute;
-  left: 16%;
-  top: 10%;
-  width: 18%;
-  height: 62%;
-  border-radius: 40%;
-  background: rgba(255, 255, 255, 0.38);
+  left: 28%;
+  right: 28%;
+  top: -3px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--sku);
 }
 
-.pal-live.sku-water .bot .body {
+.pal-live.sku-water .pak-row i {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 14%, transparent 28%),
-    linear-gradient(180deg, rgba(230, 246, 255, 0.55) 0 16%, #4aa3d9 20% 44%, #8ec8e8 48% 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0 18%, transparent 32%),
+    linear-gradient(180deg, #4aa3d9 0 40%, #8ec8e8 48% 100%);
 }
 
-.pal-live.sku-cola .bot .body {
+.pal-live.sku-cola .pak-row i {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 0 12%, transparent 26%),
-    linear-gradient(180deg, rgba(255, 220, 200, 0.2) 0 14%, #c43a2a 18% 44%, #3d1a12 48% 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 14%, transparent 28%),
+    linear-gradient(180deg, #c43a2a 0 40%, #3d1a12 48% 100%);
 }
 
-.pal-deck {
-  display: flex;
-  gap: 3px;
-  height: 9px;
+.pak-film {
+  position: absolute;
+  inset: 0 0 5px;
+  border-radius: 3px;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.38) 0 10%, transparent 26%, rgba(210, 235, 255, 0.12) 55%, transparent 72%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
+
+.pak-tray {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  border-radius: 0 0 2px 2px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(0, 0, 0, 0.08) 6px 7px),
+    linear-gradient(180deg, #d2a86a, #8a5a28);
+  box-shadow: 0 1px 0 #5a3816;
+}
+
+.pal-wood {
   padding: 0 1px;
-  background: #5a3816;
 }
 
-.pal-deck i {
+.pal-boards {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  padding: 0 1px;
+  background: #4a2c10;
+}
+
+.pal-boards i {
   flex: 1;
-  background: linear-gradient(180deg, #d4a05a, #8a5a28);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 4px, rgba(80, 40, 10, 0.18) 4px 5px),
+    linear-gradient(180deg, #e0b46a, #b87a3a 55%, #7a4a1c);
   box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.35);
 }
 
-.pal-skid {
+.pal-stringers {
   display: flex;
   justify-content: space-between;
-  height: 8px;
-  padding: 0 3px;
+  height: 11px;
+  padding: 0 2px;
 }
 
-.pal-skid i {
-  width: 22%;
+.pal-stringers i {
+  width: 14%;
+  background:
+    linear-gradient(90deg, #5a3816, #c48a40 40%, #6a4218);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+.pal-base {
+  display: flex;
+  justify-content: space-between;
+  height: 5px;
+  padding: 0 1px;
+}
+
+.pal-base i {
+  width: 28%;
   background: linear-gradient(180deg, #8a5a28, #4a2c10);
-  border-radius: 0 0 2px 2px;
 }
 
 .pick .pal-live {
-  width: 72px;
+  width: 88px;
   margin: 0 auto 4px;
 }
 
-.pick .pal-load {
-  grid-auto-rows: 22px;
+.pick .pak {
+  height: 26px;
+  padding: 2px 2px 5px;
 }
 
-.pick .bot {
-  height: 22px;
-}
-
-.pick .bot .neck {
-  height: 4px;
-}
-
-.pick .bot .body {
-  height: 13px;
+.pick .pak-row i {
+  height: 10px;
 }

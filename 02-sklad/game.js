@@ -1,9 +1,9 @@
-const SAVE_KEY = "sklad-progress-v2";
+const SAVE_KEY = "sklad-progress-v3";
 const START_COINS = 1200;
-const PALLET_UNITS = 12;
+const PALLET_PACKS = 6;
 const BOX_COST = 80;
 const BOX_PACK = 8;
-const UNIT_PAY = 55;
+const PACK_PAY = 150;
 const SKUS = [
   { id: "water", name: "Вода", tone: "#4aa3d9", liq: "#8ec8e8", cost: 320 },
   { id: "cola", name: "Кола", tone: "#c43a2a", liq: "#3d1a12", cost: 480 },
@@ -71,7 +71,7 @@ function loadProgress() {
             sku: SKUS.some((s) => s.id === o.sku) ? o.sku : "water",
             need: Math.max(1, Number(o.need) || 1),
             fill: Math.max(0, Number(o.fill) || 0),
-            pay: Math.max(1, Number(o.pay) || UNIT_PAY),
+            pay: Math.max(1, Number(o.pay) || PACK_PAY),
           }))
           .filter((o) => o.id)
       : [];
@@ -92,16 +92,28 @@ function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
 }
 
-function packCount(units) {
-  if (units < 1) return 0;
-  return Math.max(1, Math.round((units / PALLET_UNITS) * 12));
+function packsWord(n) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return n + " пак";
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return n + " пака";
+  return n + " паков";
 }
 
-function palMarkup(sku, units) {
-  const n = packCount(units);
-  let bots = "";
+function pakInner() {
+  return (
+    "<span class=\"pak-row back\"><i></i><i></i><i></i></span>" +
+    "<span class=\"pak-row front\"><i></i><i></i><i></i></span>" +
+    "<span class=\"pak-film\"></span>" +
+    "<span class=\"pak-tray\"></span>"
+  );
+}
+
+function palMarkup(sku, packs) {
+  const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
+  let load = "";
   for (let i = 0; i < n; i += 1) {
-    bots += "<span class=\"bot\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"></i></span>";
+    load += "<span class=\"pak\">" + pakInner() + "</span>";
   }
   return (
     "<div class=\"pal-live sku-" +
@@ -112,11 +124,13 @@ function palMarkup(sku, units) {
     (sku.liq || sku.tone) +
     "\">" +
     "<div class=\"pal-load\">" +
-    bots +
+    load +
     "</div>" +
-    "<div class=\"pal-deck\"><i></i><i></i><i></i></div>" +
-    "<div class=\"pal-skid\"><i></i><i></i><i></i></div>" +
-    "</div>"
+    "<div class=\"pal-wood\">" +
+    "<div class=\"pal-boards\"><i></i><i></i><i></i><i></i><i></i></div>" +
+    "<div class=\"pal-stringers\"><i></i><i></i><i></i></div>" +
+    "<div class=\"pal-base\"><i></i><i></i><i></i></div>" +
+    "</div></div>"
   );
 }
 
@@ -317,8 +331,8 @@ function paintJobs() {
       order.id +
       " · " +
       sku.name +
-      " ×" +
-      order.need +
+      " · " +
+      packsWord(order.need) +
       "</b><small>+" +
       order.pay +
       "</small>";
@@ -348,12 +362,12 @@ function paintShop() {
     btn.className = "good" + (can ? " ready" : " poor");
     btn.style.animationDelay = i * 40 + "ms";
     btn.innerHTML =
-      palMarkup(sku, PALLET_UNITS) +
+      palMarkup(sku, PALLET_PACKS) +
       "<span><b>" +
       sku.name +
       "</b><small>поддон · " +
-      PALLET_UNITS +
-      " шт</small></span><em>" +
+      packsWord(PALLET_PACKS) +
+      "</small></span><em>" +
       sku.cost +
       "</em>";
     btn.addEventListener("click", () => buyGood(sku.id, btn));
@@ -381,7 +395,7 @@ function openShop() {
 function maybeOrders() {
   if (!progress.pallets.some((p) => p.units > 0)) return;
   while (progress.orders.length < 2) {
-    const ripe = progress.pallets.filter((p) => p.units >= 3);
+    const ripe = progress.pallets.filter((p) => p.units >= 2);
     const src = ripe[0] || progress.pallets.find((p) => p.units > 0);
     if (!src) break;
     const reserved = progress.orders
@@ -389,13 +403,13 @@ function maybeOrders() {
       .reduce((sum, o) => sum + (o.need - o.fill), 0);
     const left = src.units - reserved;
     if (left < 1) break;
-    const need = Math.max(1, Math.min(left, 3 + (progress.nextOrder % 3)));
+    const need = Math.max(1, Math.min(left, 1 + (progress.nextOrder % 2)));
     progress.orders.push({
       id: progress.nextOrder,
       sku: src.sku,
       need: need,
       fill: 0,
-      pay: need * UNIT_PAY,
+      pay: need * PACK_PAY,
     });
     progress.nextOrder += 1;
   }
@@ -433,7 +447,7 @@ function buyGood(skuId, btn) {
     return;
   }
   progress.coins -= sku.cost;
-  progress.pallets.push({ id: progress.nextPallet, sku: sku.id, units: PALLET_UNITS });
+  progress.pallets.push({ id: progress.nextPallet, sku: sku.id, units: PALLET_PACKS });
   progress.nextPallet += 1;
   saveProgress();
   paintHud();
@@ -444,13 +458,14 @@ function buyGood(skuId, btn) {
   const last = document.querySelector(".floor-pals .pal-stand:last-child");
   if (last) last.classList.add("drop-in");
   document.querySelector(".chip.coin").classList.add("catch");
-  toast("Поддон «" + sku.name + "» на полу");
+  toast("Поддон с паками «" + sku.name + "» на полу");
 }
 
 function resetProgress() {
   if (!window.confirm("Сбросить весь прогресс?")) return;
   localStorage.removeItem(SAVE_KEY);
   localStorage.removeItem("sklad-progress-v1");
+  localStorage.removeItem("sklad-progress-v2");
   const fresh = emptyProgress();
   Object.keys(progress).forEach((key) => {
     delete progress[key];
@@ -495,20 +510,22 @@ function paintPack() {
   }
   const sku = skuOf(order.sku);
   document.getElementById("pack-id").textContent = "#" + order.id;
-  document.getElementById("pack-title").textContent = sku.name + " ×" + order.need;
+  document.getElementById("pack-title").textContent = sku.name + " · " + packsWord(order.need);
   document.getElementById("pack-pay").textContent = "+" + order.pay;
   const crate = document.getElementById("crate");
   crate.innerHTML = "";
   for (let i = 0; i < order.need; i += 1) {
     const cell = document.createElement("i");
     cell.className = "cell" + (i < order.fill ? " on" : "");
-    if (i < order.fill) cell.style.background = sku.tone;
+    cell.style.setProperty("--sku", sku.tone);
+    cell.style.setProperty("--liq", sku.liq || sku.tone);
+    if (i < order.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner() + "</span>";
     crate.appendChild(cell);
   }
   const hint = document.getElementById("pack-hint");
   if (order.fill >= order.need) hint.textContent = "Собрано. Сейчас уедет.";
   else if (!progress.boxes) hint.textContent = "Коробки — в магазине сбоку";
-  else hint.textContent = "Возьми свой поддон и клади в заявку";
+  else hint.textContent = "Клади пак с поддона в заявку";
   const picks = document.getElementById("picks");
   picks.innerHTML = "";
   progress.pallets.forEach((pal) => {
@@ -519,7 +536,7 @@ function paintPack() {
       "pick" +
       (state.pickId === pal.id ? " on" : "") +
       (pal.sku !== order.sku || !pal.units ? " dim" : "");
-    btn.innerHTML = palMarkup(s, pal.units) + "<b>" + s.name + "</b><small>" + pal.units + " шт</small>";
+    btn.innerHTML = palMarkup(s, pal.units) + "<b>" + s.name + "</b><small>" + packsWord(pal.units) + "</small>";
     btn.addEventListener("click", () => {
       if (pal.sku !== order.sku || !pal.units) {
         shake(btn);
@@ -541,7 +558,7 @@ async function putOne() {
   if (order.fill >= order.need) return;
   if (pal.sku !== order.sku || pal.units < 1) {
     shake(document.getElementById("picks"));
-    toast("На поддоне нет этого товара");
+    toast("На поддоне нет паков");
     return;
   }
   if (!progress.boxes) {
