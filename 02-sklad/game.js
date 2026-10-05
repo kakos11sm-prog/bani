@@ -5,12 +5,12 @@ const BOX_COST = 80;
 const BOX_PACK = 8;
 const PACK_PAY = 150;
 const SKUS = [
-  { id: "water", name: "Вода", tone: "#4aa3d9", liq: "#8ec8e8", cost: 320 },
-  { id: "cola", name: "Кола", tone: "#c43a2a", liq: "#3d1a12", cost: 480 },
-  { id: "lemon", name: "Лимонад", tone: "#d4c04a", liq: "#e8dc6a", cost: 450 },
-  { id: "orange", name: "Апельсин", tone: "#e07a3a", liq: "#f0a040", cost: 460 },
-  { id: "grape", name: "Виноград", tone: "#7b4aa8", liq: "#5a2888", cost: 500 },
-  { id: "cherry", name: "Вишня", tone: "#c43a4a", liq: "#8a1020", cost: 520 },
+  { id: "water", name: "Вода", tag: "ВОДА", tone: "#6a7c84", liq: "#6e8792", cap: "#3e4a50", paper: "#efe6d4", ink: "#2c3438", cost: 320 },
+  { id: "cola", name: "Кола", tag: "КОЛА", tone: "#5a322c", liq: "#2a1814", cap: "#6a2c26", paper: "#e4d4b8", ink: "#3a1814", cost: 480 },
+  { id: "lemon", name: "Лимонад", tag: "ЛИМОН", tone: "#9a8e4a", liq: "#b4a85a", cap: "#5a6230", paper: "#efe6c8", ink: "#3a3820", cost: 450 },
+  { id: "orange", name: "Апельсин", tag: "АПЕЛЬ", tone: "#a86a3a", liq: "#b87840", cap: "#6a3a20", paper: "#ead8bc", ink: "#3c2414", cost: 460 },
+  { id: "grape", name: "Виноград", tag: "ВИНО", tone: "#5a4a68", liq: "#4a3a58", cap: "#3a2c48", paper: "#e6dce8", ink: "#2c2038", cost: 500 },
+  { id: "cherry", name: "Вишня", tag: "ВИШНЯ", tone: "#6a3a40", liq: "#5a242c", cap: "#4a2024", paper: "#ead8d0", ink: "#3a181c", cost: 520 },
 ];
 const ROOMS = [
   { id: "garage", name: "Гараж", slots: 5, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
@@ -100,21 +100,25 @@ function packsWord(n) {
   return n + " паков";
 }
 
-function bak() {
-  return "<span class=\"bak\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"></i></span>";
+function bak(sku) {
+  return (
+    "<span class=\"bak\"><i class=\"cap\"></i><i class=\"neck\"></i><i class=\"body\"><b class=\"tag\">" +
+    (sku.tag || sku.name) +
+    "</b></i></span>"
+  );
 }
 
-function pakInner() {
+function pakInner(sku) {
   return (
     "<span class=\"pak-row back\">" +
-    bak() +
-    bak() +
-    bak() +
+    bak(sku) +
+    bak(sku) +
+    bak(sku) +
     "</span>" +
     "<span class=\"pak-row front\">" +
-    bak() +
-    bak() +
-    bak() +
+    bak(sku) +
+    bak(sku) +
+    bak(sku) +
     "</span>" +
     "<span class=\"pak-film\"></span>" +
     "<span class=\"pak-tray\"></span>"
@@ -125,7 +129,7 @@ function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
   let load = "";
   for (let i = 0; i < n; i += 1) {
-    load += "<span class=\"pak\">" + pakInner() + "</span>";
+    load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
   }
   return (
     "<div class=\"pal-live sku-" +
@@ -134,6 +138,12 @@ function palMarkup(sku, packs) {
     sku.tone +
     ";--liq:" +
     (sku.liq || sku.tone) +
+    ";--cap:" +
+    (sku.cap || sku.tone) +
+    ";--paper:" +
+    (sku.paper || "#efe6d4") +
+    ";--ink:" +
+    (sku.ink || "#2c3438") +
     "\">" +
     "<div class=\"pal-load\">" +
     load +
@@ -531,7 +541,10 @@ function paintPack() {
     cell.className = "cell" + (i < order.fill ? " on" : "");
     cell.style.setProperty("--sku", sku.tone);
     cell.style.setProperty("--liq", sku.liq || sku.tone);
-    if (i < order.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner() + "</span>";
+    cell.style.setProperty("--cap", sku.cap || sku.tone);
+    cell.style.setProperty("--paper", sku.paper || "#efe6d4");
+    cell.style.setProperty("--ink", sku.ink || "#2c3438");
+    if (i < order.fill) cell.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
     crate.appendChild(cell);
   }
   const hint = document.getElementById("pack-hint");
