@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Склад</title>
+    <meta name="theme-color" content="#14110d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css?v=1" />
+  </head>
+  <body>
+    <div class="scene" aria-hidden="true">
+      <div class="scene-wash"></div>
+      <div class="scene-lamp"></div>
+      <div class="scene-dust" id="dust"></div>
+    </div>
+
+    <div class="hud">
+      <button class="back" id="btn-back" type="button" aria-label="Назад">↩</button>
+      <div class="chip coin"><i></i><b id="hud-coins">0</b></div>
+      <div class="chip box">📦 <b id="hud-boxes">0</b></div>
+    </div>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
+
+    <div class="screen show" id="boot">
+      <div class="home">
+        <div class="home-art" aria-hidden="true">
+          <span class="fork"></span>
+          <span class="home-pal p1"><i></i><i></i><i></i></span>
+          <span class="home-pal p2"><i></i><i></i></span>
+        </div>
+        <h1>Склад</h1>
+        <p class="tag">Сними помещение. Собери заявку. Отправь.</p>
+        <button class="play" id="boot-play" type="button">Играть</button>
+        <a class="more" href="../index.html">Ещё игры</a>
+      </div>
+    </div>
+
+    <div class="screen" id="rent">
+      <div class="panel">
+        <h2>Что снимаешь</h2>
+        <p class="lead" id="rent-lead">На старт хватит только на гараж и один поддон.</p>
+        <div class="rooms" id="rooms"></div>
+        <button class="ghost" id="rent-back" type="button">Назад</button>
+      </div>
+    </div>
+
+    <div class="screen" id="floor">
+      <div class="yard">
+        <p class="yard-name" id="yard-name">Гараж</p>
+        <div class="slots" id="slots"></div>
+        <div class="jobs" id="jobs"></div>
+      </div>
+      <div class="dock">
+        <button class="dock-btn" id="buy-pallet" type="button">
+          <b>Поддон</b>
+          <small id="pallet-price"></small>
+        </button>
+        <button class="dock-btn" id="buy-boxes" type="button">
+          <b>Коробки</b>
+          <small id="box-price"></small>
+        </button>
+      </div>
+    </div>
+
+    <div class="screen" id="pack">
+      <div class="sheet">
+        <p class="sheet-kicker">Заявка <span id="pack-id">#1</span></p>
+        <h2 id="pack-title">Вода ×4</h2>
+        <p class="sheet-pay" id="pack-pay">+220</p>
+        <div class="crate" id="crate"></div>
+        <p class="sheet-hint" id="pack-hint">Снизу возьми поддон и клади в заявку</p>
+        <div class="picks" id="picks"></div>
+        <button class="ghost" id="pack-close" type="button">Пока нет</button>
+      </div>
+    </div>
+
+    <script src="game.js?v=1"></script>
+  </body>
+</html>
