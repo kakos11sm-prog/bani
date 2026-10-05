@@ -6,7 +6,7 @@ const SHIP_ROWS = 3;
 const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
 const BOX_COST = 80;
 const BOX_PACK = 8;
-const PACK_PAY = 150;
+const PACK_MARGIN = 20;
 const DELIVERY_FEE = 40;
 const DELIVERY_MS = 60000;
 const SKUS = [
@@ -101,6 +101,15 @@ function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
 }
 
+function packPayOf(skuId) {
+  const sku = skuOf(skuId);
+  return Math.round((sku.cost + DELIVERY_FEE) / PALLET_PACKS) + PACK_MARGIN;
+}
+
+function linesPay(lines) {
+  return (lines || []).reduce((sum, line) => sum + line.need * packPayOf(line.sku), 0);
+}
+
 function readLine(line) {
   return {
     sku: SKUS.some((s) => s.id === line.sku) ? line.sku : "water",
@@ -121,7 +130,7 @@ function normalizeOrder(raw) {
   return {
     id: id,
     lines: lines,
-    pay: Math.max(1, Number(raw && raw.pay) || need * PACK_PAY),
+    pay: Math.max(1, linesPay(lines)),
   };
 }
 
@@ -1034,7 +1043,7 @@ function maybeOrders() {
     progress.orders.push({
       id: progress.nextOrder,
       lines: lines,
-      pay: lines.reduce((sum, line) => sum + line.need * PACK_PAY, 0),
+      pay: linesPay(lines),
     });
     progress.nextOrder += 1;
   }
