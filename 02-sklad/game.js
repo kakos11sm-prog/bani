@@ -92,7 +92,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, busy: false };
+const state = { packId: 0, pickId: 0, busy: false, cart: { pals: [], boxes: 0 } };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -497,16 +497,29 @@ function applyInside() {
   pic.style.backgroundImage = room && room.inside ? "url(\"" + room.inside + "?v=3\")" : "";
 }
 
+function cartCountSku(id) {
+  return state.cart.pals.filter((sku) => sku === id).length;
+}
+
+function cartTotal() {
+  const pals = state.cart.pals.reduce((sum, id) => sum + skuOf(id).cost + DELIVERY_FEE, 0);
+  return pals + state.cart.boxes * BOX_COST;
+}
+
 function paintShop() {
   const host = document.getElementById("goods");
   if (!host) return;
   host.innerHTML = "";
   SKUS.forEach((sku, i) => {
     const total = sku.cost + DELIVERY_FEE;
-    const can = !!progress.room && progress.coins >= total && freeSlots() > 0;
+    const n = cartCountSku(sku.id);
+    const can =
+      !!progress.room &&
+      state.cart.pals.length < freeSlots() &&
+      progress.coins >= cartTotal() + total;
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "good" + (can ? " ready" : " poor");
+    btn.className = "good" + (n ? " ready" : can ? "" : " poor");
     btn.style.animationDelay = i * 40 + "ms";
     btn.innerHTML =
       palMarkup(sku, PALLET_PACKS) +
@@ -516,26 +529,151 @@ function paintShop() {
       DELIVERY_FEE +
       "</small></span><em>" +
       total +
-      "</em>";
-    btn.addEventListener("click", () => orderGood(sku.id, btn));
+      "</em>" +
+      (n ? "<i class=\"qty\">" + n + "</i>" : "");
+    btn.addEventListener("click", () => addPalToCart(sku.id, btn));
     host.appendChild(btn);
   });
-  const canBox = progress.coins >= BOX_COST;
+  const canBox = progress.coins >= cartTotal() + BOX_COST;
   const box = document.createElement("button");
   box.type = "button";
-  box.className = "good boxes" + (canBox ? " ready" : " poor");
+  box.className = "good boxes" + (state.cart.boxes ? " ready" : canBox ? "" : " poor");
   box.innerHTML =
     "<div class=\"box-draw\"><i></i><i></i><i></i></div><span><b>Коробки</b><small>" +
     BOX_PACK +
     " шт в пачке</small></span><em>" +
     BOX_COST +
-    "</em>";
-  box.addEventListener("click", () => buyBoxes(box));
+    "</em>" +
+    (state.cart.boxes ? "<i class=\"qty\">" + state.cart.boxes + "</i>" : "");
+  box.addEventListener("click", () => addBoxToCart(box));
   host.appendChild(box);
+  paintCart();
+}
+
+function paintCart() {
+  const host = document.getElementById("cart-lines");
+  const buy = document.getElementById("cart-buy");
+  if (!host || !buy) return;
+  host.innerHTML = "";
+  const counts = {};
+  state.cart.pals.forEach((id) => {
+    counts[id] = (counts[id] || 0) + 1;
+  });
+  const ids = Object.keys(counts);
+  if (!ids.length && !state.cart.boxes) {
+    host.innerHTML = "<p class=\"cart-empty\">Корзина пустая. Нажми товар.</p>";
+    buy.disabled = true;
+    buy.textContent = "Купить";
+    return;
+  }
+  ids.forEach((id) => {
+    const sku = skuOf(id);
+    const n = counts[id];
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "cart-line";
+    row.innerHTML =
+      "<b>" + sku.name + " ×" + n + "</b><small>нажми чтобы убрать</small><em>" + (sku.cost + DELIVERY_FEE) * n + "</em>";
+    row.addEventListener("click", () => dropPalFromCart(id));
+    host.appendChild(row);
+  });
+  if (state.cart.boxes) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "cart-line";
+    row.innerHTML =
+      "<b>Коробки ×" +
+      state.cart.boxes +
+      "</b><small>нажми чтобы убрать</small><em>" +
+      BOX_COST * state.cart.boxes +
+      "</em>";
+    row.addEventListener("click", dropBoxFromCart);
+    host.appendChild(row);
+  }
+  buy.disabled = false;
+  buy.textContent = "Купить · " + cartTotal();
+}
+
+function addPalToCart(skuId, btn) {
+  if (!progress.room) {
+    closeShop();
+    showScreen(rent);
+    return;
+  }
+  if (state.cart.pals.length >= freeSlots()) {
+    shake(btn);
+    toast("В гараже нет места");
+    return;
+  }
+  state.cart.pals.push(skuId);
+  paintShop();
+}
+
+function addBoxToCart() {
+  state.cart.boxes += 1;
+  paintShop();
+}
+
+function dropPalFromCart(skuId) {
+  const i = state.cart.pals.lastIndexOf(skuId);
+  if (i >= 0) state.cart.pals.splice(i, 1);
+  paintShop();
+}
+
+function dropBoxFromCart() {
+  if (state.cart.boxes > 0) state.cart.boxes -= 1;
+  paintShop();
+}
+
+function checkout(btn) {
+  const pals = state.cart.pals.slice();
+  const boxes = state.cart.boxes;
+  if (!pals.length && !boxes) {
+    shake(btn);
+    toast("Корзина пустая");
+    return;
+  }
+  if (!progress.room) {
+    closeShop();
+    showScreen(rent);
+    return;
+  }
+  if (pals.length > freeSlots()) {
+    shake(btn);
+    toast("В гараже нет места");
+    return;
+  }
+  const total = cartTotal();
+  if (progress.coins < total) {
+    shake(btn);
+    toast("Не хватает денег");
+    return;
+  }
+  progress.coins -= total;
+  pals.forEach((skuId) => {
+    progress.incoming.push({
+      id: progress.nextShip,
+      sku: skuId,
+      readyAt: Date.now() + DELIVERY_MS,
+    });
+    progress.nextShip += 1;
+  });
+  if (boxes) progress.boxes += boxes * BOX_PACK;
+  state.cart.pals = [];
+  state.cart.boxes = 0;
+  saveProgress();
+  paintHud();
+  paintShop();
+  paintTruck();
+  document.querySelector(".chip.coin").classList.add("catch");
+  if (boxes) document.querySelector(".chip.box").classList.add("catch");
+  if (pals.length) toast("Заказал. Едет минуту.");
+  else toast("+" + boxes * BOX_PACK + " коробок");
 }
 
 function openShop() {
   closeJobs();
+  closeShip();
   paintShop();
   document.getElementById("shop").classList.add("show");
 }
@@ -717,38 +855,9 @@ function openFloor() {
   paintTruck();
 }
 
-function orderGood(skuId, btn) {
-  const sku = skuOf(skuId);
-  const total = sku.cost + DELIVERY_FEE;
-  if (!progress.room) {
-    closeShop();
-    showScreen(rent);
-    return;
-  }
-  if (!freeSlots()) {
-    shake(btn);
-    const room = roomOf(progress.room);
-    toast("В гараже только " + (room ? room.slots : 5) + " поддонов");
-    return;
-  }
-  if (progress.coins < total) {
-    shake(btn);
-    toast("Не хватает на товар и доставку");
-    return;
-  }
-  progress.coins -= total;
-  progress.incoming.push({
-    id: progress.nextShip,
-    sku: sku.id,
-    readyAt: Date.now() + DELIVERY_MS,
-  });
-  progress.nextShip += 1;
-  saveProgress();
-  paintHud();
-  paintShop();
-  paintTruck();
-  document.querySelector(".chip.coin").classList.add("catch");
-  toast("Заказал «" + sku.name + "». Едет минуту.");
+function clearCart() {
+  state.cart.pals = [];
+  state.cart.boxes = 0;
 }
 
 function resetProgress() {
@@ -761,25 +870,11 @@ function resetProgress() {
     delete progress[key];
   });
   Object.assign(progress, fresh);
+  clearCart();
   saveProgress();
   paintHud();
   showScreen(boot);
   toast("Начинаешь заново");
-}
-
-function buyBoxes(btn) {
-  if (progress.coins < BOX_COST) {
-    shake(btn);
-    toast("Не хватает на коробки");
-    return;
-  }
-  progress.coins -= BOX_COST;
-  progress.boxes += BOX_PACK;
-  saveProgress();
-  paintHud();
-  paintShop();
-  document.querySelector(".chip.box").classList.add("catch");
-  toast("+" + BOX_PACK + " коробок");
 }
 
 function openPack(id) {
@@ -926,8 +1021,13 @@ document.getElementById("boot-play").addEventListener("click", goPlay);
 document.getElementById("boot-reset").addEventListener("click", resetProgress);
 document.getElementById("rent-back").addEventListener("click", () => showScreen(boot));
 document.getElementById("btn-back").addEventListener("click", goBack);
-document.getElementById("shop-tab").addEventListener("click", openShop);
+document.getElementById("shop-btn").addEventListener("click", () => {
+  const pane = document.getElementById("shop");
+  if (pane.classList.contains("show")) closeShop();
+  else openShop();
+});
 document.getElementById("shop-close").addEventListener("click", closeShop);
+document.getElementById("cart-buy").addEventListener("click", (e) => checkout(e.currentTarget));
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });
