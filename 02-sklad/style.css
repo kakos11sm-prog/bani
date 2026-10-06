@@ -3166,12 +3166,19 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 }
 
 .guide-on {
+  z-index: 48;
+}
+
+.chip.guide-on,
+.room.guide-on,
+.good.guide-on,
+.wood-stack.guide-on {
   position: relative;
-  z-index: 45;
 }
 
 .chip.coin.wobble,
-.chip.wobble {
+.chip.wobble,
+.shop-btn.wobble {
   animation: hintWobble 0.7s ease-in-out infinite;
 }
 

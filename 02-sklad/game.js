@@ -2082,6 +2082,7 @@ const GUIDE = {
     text: "Нужно приобрести товар для его продажи",
     sel: "#shop-btn",
     side: "below",
+    wobble: "#shop-btn",
   },
   water: {
     text: "Сначала купить можно только воду",
@@ -2121,7 +2122,7 @@ function hideGuide() {
     box.hidden = true;
     box.classList.remove("show");
   }
-  document.querySelectorAll(".guide-on").forEach((el) => el.classList.remove("guide-on", "wobble"));
+  document.querySelectorAll(".guide-on, .wobble").forEach((el) => el.classList.remove("guide-on", "wobble"));
 }
 
 function layoutGuide(sel, side) {
