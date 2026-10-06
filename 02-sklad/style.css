@@ -3049,6 +3049,76 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
   text-align: right;
 }
 
+.way-gift {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: max-content;
+  margin: 10px 0 0 auto;
+  padding: 6px 10px 6px 8px;
+  border-radius: 12px;
+  background: rgba(46, 120, 72, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(46, 120, 72, 0.28);
+}
+
+.waybill.rush .way-gift:not([hidden]) {
+  display: inline-flex;
+}
+
+.way-gift b {
+  font-size: 20px;
+  font-weight: 900;
+  color: #2f7a48;
+  letter-spacing: -0.02em;
+}
+
+.waybill.big .way-gift {
+  margin: 22px auto 0;
+  padding: 10px 16px;
+  transform: scale(1.35);
+  transform-origin: 50% 50%;
+}
+
+.waybill.big .way-gift b {
+  font-size: 28px;
+}
+
+.rush-gift {
+  position: fixed;
+  z-index: 50;
+  width: min(56vw, 240px);
+  margin-left: calc(min(56vw, 240px) / -2);
+  pointer-events: none;
+  transform-origin: 50% 80%;
+  transition:
+    left 0.62s cubic-bezier(0.2, 1.05, 0.3, 1),
+    top 0.62s cubic-bezier(0.2, 1.05, 0.3, 1),
+    transform 0.62s cubic-bezier(0.2, 1.05, 0.3, 1);
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.5));
+}
+
+.rush-gift em {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 42px;
+  font-style: normal;
+  font-weight: 900;
+  text-align: center;
+  color: #5ee0a4;
+  text-shadow: 0 0 18px rgba(62, 207, 142, 0.7);
+}
+
+.rush-gift .pal-live {
+  transform: perspective(280px) rotateX(12deg) scale(1.85);
+  transform-origin: 50% 100%;
+}
+
+.rush-gift.to-stack em {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
 .load-bay {
   position: absolute;
   left: 50%;

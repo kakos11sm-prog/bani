@@ -1021,7 +1021,9 @@ function paintWaybill(fresh) {
   const order = currentOrder() || bulk;
   const go = document.getElementById("ship-go");
   if (!order) {
-    sheet.classList.remove("show", "ready", "big", "fly");
+    sheet.classList.remove("show", "ready", "big", "fly", "rush");
+    const giftOff = document.getElementById("way-gift");
+    if (giftOff) giftOff.hidden = true;
     if (go) go.hidden = true;
     return;
   }
@@ -1030,8 +1032,15 @@ function paintWaybill(fresh) {
     void sheet.offsetWidth;
   }
   sheet.classList.add("show");
+  sheet.classList.toggle("rush", jobKind(order) === "rush");
   document.getElementById("way-id").textContent = "#" + order.id;
   document.getElementById("way-pay").textContent = "+" + order.pay;
+  const gift = document.getElementById("way-gift");
+  if (gift) {
+    const rush = jobKind(order) === "rush";
+    gift.hidden = !rush;
+    if (rush) gift.innerHTML = "<b>+1</b>" + jobPalPic();
+  }
   const host = document.getElementById("way-lines");
   host.innerHTML = "";
   if (jobKind(order) === "bulk") {
@@ -1053,6 +1062,8 @@ function paintWaybill(fresh) {
     host.appendChild(row);
     sheet.classList.toggle("ready", false);
     if (go) go.hidden = true;
+    const giftOff = document.getElementById("way-gift");
+    if (giftOff) giftOff.hidden = true;
     return;
   }
   const rushLeft =
@@ -1850,6 +1861,41 @@ function giftRushPal() {
   paintHud();
   paintSlots();
   markGiftStack();
+  const chip = document.querySelector(".chip.wood");
+  if (chip) {
+    chip.classList.remove("catch");
+    void chip.offsetWidth;
+    chip.classList.add("catch");
+  }
+}
+
+async function flyRushPalGift() {
+  const from = document.getElementById("way-gift") || document.getElementById("waybill");
+  const stack = document.getElementById("wood-stack");
+  const fly = document.createElement("div");
+  fly.className = "rush-gift";
+  fly.innerHTML = "<em>+1</em>" + palMarkup(null, 0);
+  document.body.appendChild(fly);
+  const start = from ? from.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight * 0.35, width: 80, height: 40 };
+  fly.style.left = start.left + start.width / 2 + "px";
+  fly.style.top = start.top + start.height / 2 + "px";
+  fly.style.transform = "scale(0.28)";
+  if (from) from.style.opacity = "0";
+  await wait(40);
+  fly.classList.add("drop");
+  fly.style.left = window.innerWidth / 2 + "px";
+  fly.style.top = window.innerHeight * 0.42 + "px";
+  fly.style.transform = "scale(1)";
+  await wait(820);
+  const to = stack ? stack.getBoundingClientRect() : { left: 40, top: window.innerHeight - 80, width: 80 };
+  fly.classList.remove("drop");
+  fly.classList.add("to-stack");
+  fly.style.left = to.left + to.width / 2 + "px";
+  fly.style.top = to.top + 22 + "px";
+  fly.style.transform = "scale(0.38)";
+  await wait(660);
+  fly.remove();
+  giftRushPal();
 }
 
 function pickBulkSku() {
@@ -2019,7 +2065,14 @@ function endBulk() {
   state.drag = null;
   document.body.classList.remove("bulk-ship", "shipping", "loading", "gone");
   const sheet = document.getElementById("waybill");
-  if (sheet) sheet.classList.remove("show", "ready", "big", "fly");
+  if (sheet) {
+    sheet.classList.remove("show", "ready", "big", "fly", "rush");
+    const gift = document.getElementById("way-gift");
+    if (gift) {
+      gift.hidden = true;
+      gift.style.opacity = "";
+    }
+  }
   const go = document.getElementById("ship-go");
   if (go) go.hidden = true;
   syncJobsTab();
@@ -2103,7 +2156,14 @@ function endShip() {
   const bay = document.getElementById("load-bay");
   if (bay) bay.classList.remove("show", "into-truck", "away");
   const sheet = document.getElementById("waybill");
-  if (sheet) sheet.classList.remove("show", "ready", "big", "fly");
+  if (sheet) {
+    sheet.classList.remove("show", "ready", "big", "fly", "rush");
+    const gift = document.getElementById("way-gift");
+    if (gift) {
+      gift.hidden = true;
+      gift.style.opacity = "";
+    }
+  }
   const go = document.getElementById("ship-go");
   if (go) go.hidden = true;
   syncJobsTab();
@@ -2494,6 +2554,7 @@ async function finishShip(order) {
     void chip.offsetWidth;
     chip.classList.add("catch");
   }
+  if (rush) await flyRushPalGift();
   if (sheet) {
     sheet.classList.remove("big");
     sheet.classList.add("fly");
@@ -2502,7 +2563,6 @@ async function finishShip(order) {
   await wait(580);
   endShip();
   paintSlots();
-  if (rush) giftRushPal();
   maybeOrders();
   paintJobs();
   toast(rush ? "Товар уехал. Пустой поддон в подарок" : "Товар уехал");
