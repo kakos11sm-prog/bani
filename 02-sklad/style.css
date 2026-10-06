@@ -1065,18 +1065,14 @@ body.in-garage .lantern {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 48% 42% at 50% 16%, transparent 0 36%, rgba(16, 8, 0, 0.16) 68%, rgba(8, 3, 0, 0.46) 100%),
-    linear-gradient(90deg, rgba(10, 4, 0, 0.5) 0%, rgba(10, 4, 0, 0.16) 16%, transparent 28%, transparent 72%, rgba(10, 4, 0, 0.16) 84%, rgba(10, 4, 0, 0.5) 100%),
-    linear-gradient(180deg, transparent 58%, rgba(12, 6, 0, 0.2) 100%);
+    radial-gradient(ellipse 62% 54% at 50% 18%, transparent 0 48%, rgba(16, 8, 0, 0.1) 78%, rgba(8, 3, 0, 0.28) 100%),
+    linear-gradient(90deg, rgba(10, 4, 0, 0.32) 0%, transparent 22%, transparent 78%, rgba(10, 4, 0, 0.32) 100%);
   mix-blend-mode: multiply;
 }
 
-body.in-garage .lantern-glow {
-  opacity: 0.4;
-}
-
+body.in-garage .lantern-glow,
 body.in-garage .floor-lit {
-  opacity: 0.5;
+  opacity: 0.22;
 }
 
 .floor-row {
@@ -1741,89 +1737,38 @@ body.in-garage .pal-stand {
   margin: 0 auto;
   transform: perspective(340px) rotateX(10deg) scale(1.5);
   transform-origin: 50% 100%;
+  filter:
+    drop-shadow(calc(var(--cast-x) * 0.35) 10px 12px rgba(24, 12, 4, 0.28))
+    drop-shadow(0 5px 5px rgba(16, 8, 2, 0.3));
 }
 
 body.shipping .pal-stand.can-take {
   touch-action: none;
 }
 
-.floor-pals .pal-stand::before {
-  content: "";
-  position: absolute;
-  left: -22%;
-  right: -22%;
-  bottom: -12px;
-  height: 38px;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse 72% 58% at 50% 42%,
-    rgba(22, 10, 2, 0.48) 0%,
-    rgba(22, 10, 2, 0.2) 46%,
-    transparent 74%
-  );
-  filter: blur(8px);
-  transform: translate3d(var(--cast-x), 3px, 0) scaleX(1.22);
-  z-index: 0;
-  pointer-events: none;
+.floor-pals .pal-stand::before,
+.floor-pals .pal-stand .pal-shade {
+  display: none;
 }
 
 .floor-pals .pal-stand::after {
   content: "";
   position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: 1px;
-  height: 15px;
+  left: -8%;
+  right: -8%;
+  bottom: -6px;
+  height: 28px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(8, 3, 0, 0.8) 0%,
-    rgba(8, 3, 0, 0.32) 42%,
-    transparent 72%
+    rgba(22, 11, 3, 0.34) 0%,
+    rgba(22, 11, 3, 0.12) 42%,
+    transparent 78%
   );
-  filter: blur(3px);
-  transform: translateX(calc(var(--cast-x) * 0.22));
+  filter: blur(14px);
+  transform: translateX(calc(var(--cast-x) * 0.28));
   z-index: 0;
   pointer-events: none;
-}
-
-.floor-pals .pal-stand .pal-shade {
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 86px;
-  height: 24px;
-  margin-left: -43px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 45%, rgba(16, 7, 1, 0.42), transparent 72%);
-  filter: blur(9px);
-  transform: translate3d(calc(var(--cast-x) * 1.45), var(--cast-y), 0) scale(1.18, 0.82);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.floor-pals .pal-stand .pal-live::after {
-  content: "";
-  position: absolute;
-  inset: -4% -10% 6%;
-  pointer-events: none;
-  z-index: 6;
-  border-radius: 8px;
-  background:
-    linear-gradient(
-      to right,
-      rgba(10, 4, 0, var(--shade-l)),
-      rgba(10, 4, 0, 0.04) 42%,
-      rgba(10, 4, 0, 0.04) 58%,
-      rgba(10, 4, 0, var(--shade-r))
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(255, 220, 140, 0.12) 0%,
-      transparent 30%,
-      rgba(8, 3, 0, 0.2) 100%
-    );
-  mix-blend-mode: multiply;
 }
 
 .pal-stand .pal-live,
