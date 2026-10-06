@@ -1918,7 +1918,7 @@ body:not(.in-garage) .pal-spot {
 .in-pipe {
   position: absolute;
   left: 7%;
-  bottom: calc(20% - 15px);
+  bottom: calc(20% - 45px);
   width: 12px;
   height: 9px;
   border-radius: 2px 0 0 2px;
@@ -1929,7 +1929,7 @@ body:not(.in-garage) .pal-spot {
 .in-smoke {
   position: absolute;
   left: 2%;
-  bottom: calc(26% - 15px);
+  bottom: calc(26% - 45px);
   width: 28px;
   height: 52px;
   pointer-events: none;
@@ -1973,7 +1973,8 @@ body:not(.in-garage) .pal-spot {
 
 .in-whl {
   position: absolute;
-  bottom: -22px;
+  z-index: 1;
+  bottom: 6px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
