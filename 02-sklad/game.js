@@ -56,6 +56,7 @@ function emptyProgress() {
     nextPallet: 1,
     nextShip: 1,
     gifted: false,
+    giftedPal: false,
     unlocked: ["water"],
   };
 }
@@ -100,6 +101,7 @@ function loadProgress() {
     base.nextPallet = Math.max(1, Number(raw.nextPallet) || 1);
     base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
+    base.giftedPal = raw.giftedPal === true;
     base.boughtWoods = Math.max(0, Number(raw.boughtWoods) || 0);
     base.incoming = Array.isArray(raw.incoming)
       ? raw.incoming.map(readIncoming).filter((item) => item.id && item.readyAt && item.left)
@@ -118,6 +120,10 @@ function loadProgress() {
       base.stack.push({ id: base.nextPallet, sku: "", units: 0, spot: -1 });
       base.nextPallet += 1;
       base.boughtWoods = Math.max(base.boughtWoods, base.pallets.length + 1);
+    }
+    const woods = base.pallets.length + base.stack.length;
+    if (!base.giftedPal && (woods >= 2 || (base.room && base.room !== "garage"))) {
+      base.giftedPal = true;
     }
     base.orders = Array.isArray(raw.orders)
       ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length)
@@ -208,6 +214,28 @@ function makeWood() {
   const pal = { id: progress.nextPallet, sku: "", units: 0, spot: -1 };
   progress.nextPallet += 1;
   return pal;
+}
+
+function markGiftStack() {
+  const top = document.querySelector("#wood-stack .stack-layer.top");
+  if (top) top.classList.add("gift-in");
+}
+
+function maybeGiftFirstPal() {
+  if (progress.giftedPal) return false;
+  if (!progress.pallets.length) return false;
+  progress.giftedPal = true;
+  progress.stack.push(makeWood());
+  saveProgress();
+  paintHud();
+  const chip = document.querySelector(".chip.wood");
+  if (chip) {
+    chip.classList.remove("catch");
+    void chip.offsetWidth;
+    chip.classList.add("catch");
+  }
+  toast("Первый уровень. Держи ещё поддон");
+  return true;
 }
 
 function dockList() {
@@ -1545,7 +1573,9 @@ function openFloor() {
   paintJobs();
   paintShop();
   showScreen(floor);
+  const gift = maybeGiftFirstPal();
   paintSlots();
+  if (gift) markGiftStack();
   if (state.shipId) {
     paintWaybill();
     paintLoad();
@@ -1810,7 +1840,9 @@ async function onDragEnd(e) {
     hideGhost();
     saveProgress();
     paintHud();
+    const gift = pal && spotEl ? maybeGiftFirstPal() : false;
     paintSlots();
+    if (gift) markGiftStack();
     if (pal && spotEl) {
       const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
       if (stand) stand.classList.add("drop-in");
