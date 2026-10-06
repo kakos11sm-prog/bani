@@ -12,12 +12,17 @@ const WOOD_PRICE = [40, 90, 160, 260, 400, 600, 850, 1200, 1700, 2300];
 const PACK_MARGIN = 20;
 const DELIVERY_FEE = 40;
 const DELIVERY_MS = 60000;
-const JOB_GRADES = ["easy", "mid", "hard", "wild"];
+const RUSH_MS = 75000;
+const RUSH_COOLDOWN = 120000;
+const BULK_MS = 180000;
+const JOB_RATE = { norm: 1.1, rush: 1.15, bulk: 1.2 };
+const NORM_GRADES = ["easy", "mid"];
+const JOB_GRADES = ["rush", "bulk", "easy", "mid"];
 const GRADE_NAME = {
-  easy: "Лёгкая",
-  mid: "Средняя",
-  hard: "Тяжёлая",
-  wild: "Нереальная",
+  easy: "Обычная · 10%",
+  mid: "Обычная · 10%",
+  rush: "Срочная · 15%",
+  bulk: "Опт · 20%",
 };
 const UNLOCK_PRICE = [0, 1000, 2500, 5000, 10000, 20000];
 const SKUS = [
@@ -63,6 +68,7 @@ function emptyProgress() {
     giftedPal: false,
     guide: "start",
     unlocked: ["water"],
+    rushAt: 0,
   };
 }
 
@@ -107,6 +113,7 @@ function loadProgress() {
     base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
     base.giftedPal = raw.giftedPal === true;
+    base.rushAt = Math.max(0, Number(raw.rushAt) || 0);
     base.guide = typeof raw.guide === "string" ? raw.guide : "";
     if (!base.guide) base.guide = base.room ? "done" : "start";
     base.boughtWoods = Math.max(0, Number(raw.boughtWoods) || 0);
@@ -160,7 +167,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 } };
+const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0 };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -265,20 +272,39 @@ function roadList() {
   return (progress.incoming || []).filter((item) => item.readyAt > now);
 }
 
-function packPayOf(skuId) {
+function packCostOf(skuId) {
   const sku = skuOf(skuId);
-  return Math.round((sku.cost + DELIVERY_FEE) / PALLET_PACKS) + PACK_MARGIN;
+  return (sku.cost + DELIVERY_FEE) / PALLET_PACKS;
+}
+
+function packPayOf(skuId) {
+  return Math.round(packCostOf(skuId) * JOB_RATE.norm);
+}
+
+function linesCost(lines) {
+  return (lines || []).reduce((sum, line) => sum + line.need * packCostOf(line.sku), 0);
+}
+
+function jobKind(order) {
+  if (!order) return "norm";
+  if (order.kind === "rush" || order.kind === "bulk") return order.kind;
+  if (order.grade === "rush" || order.grade === "bulk") return order.grade;
+  return "norm";
+}
+
+function jobPay(lines, kind) {
+  const rate = JOB_RATE[kind] || JOB_RATE.norm;
+  return Math.max(1, Math.round(linesCost(lines) * rate));
 }
 
 function linesPay(lines) {
-  return (lines || []).reduce((sum, line) => sum + line.need * packPayOf(line.sku), 0);
+  return jobPay(lines, "norm");
 }
 
 function gradePay(lines, grade) {
-  const base = linesPay(lines);
-  if (grade === "hard") return Math.round(base * 1.2);
-  if (grade === "wild") return Math.round(base * 1.45);
-  return base;
+  if (grade === "rush") return jobPay(lines, "rush");
+  if (grade === "bulk") return jobPay(lines, "bulk");
+  return jobPay(lines, "norm");
 }
 
 function readLine(line) {
@@ -298,11 +324,22 @@ function normalizeOrder(raw) {
     lines = [readLine({ sku: raw.sku, need: raw.need, fill: raw.fill })];
   }
   const need = lines.reduce((sum, line) => sum + line.need, 0);
+  const kind =
+    raw && (raw.kind === "rush" || raw.kind === "bulk")
+      ? raw.kind
+      : raw && (raw.grade === "rush" || raw.grade === "bulk")
+        ? raw.grade
+        : "norm";
+  const grade = kind === "norm" ? (JOB_GRADES.indexOf(raw && raw.grade) >= 0 ? raw.grade : "easy") : kind;
   return {
     id: id,
     lines: lines,
-    grade: JOB_GRADES.indexOf(raw && raw.grade) >= 0 ? raw.grade : "",
-    pay: Math.max(1, gradePay(lines, raw && raw.grade)),
+    kind: kind,
+    grade: grade,
+    pay: Math.max(1, jobPay(lines, kind)),
+    until: Math.max(0, Number(raw && raw.until) || 0),
+    bulkN: Math.max(0, Number(raw && raw.bulkN) || 0),
+    taken: Math.max(0, Number(raw && raw.taken) || 0),
   };
 }
 
@@ -344,7 +381,7 @@ function orderPossible(order) {
 function pruneOrders() {
   const keep = (progress.orders || []).filter((order) => {
     if (!order.lines || !order.lines.length) return false;
-    if (order.grade === "wild") return true;
+    if (jobKind(order) === "bulk") return true;
     return order.lines.every((line) => isUnlocked(line.sku));
   });
   if (keep.length !== progress.orders.length) {
@@ -779,6 +816,10 @@ function syncYardPan() {
 
 function bindStand(stand, pal) {
   stand.addEventListener("pointerdown", (e) => {
+    if (state.bulkId) {
+      if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
+      return;
+    }
     if (e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
       startPackDrag(e, pal.id, "floor");
       return;
@@ -807,9 +848,11 @@ function paintSlots() {
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {
       const take = state.shipId && canTakePal(pal);
+      const bulkOk = bulkPalOk(pal);
       const stand = document.createElement("div");
       stand.className =
         "pal-stand" +
+        (bulkOk ? " bulk-ok" : "") +
         (state.shipId ? (take ? " can-take" : " no-take") : "");
       stand.dataset.id = String(pal.id);
       stand.innerHTML = palStandHtml(pal);
@@ -963,7 +1006,8 @@ function paintDock() {
 function paintWaybill(fresh) {
   const sheet = document.getElementById("waybill");
   if (!sheet) return;
-  const order = currentOrder();
+  const bulk = currentBulk();
+  const order = currentOrder() || bulk;
   const go = document.getElementById("ship-go");
   if (!order) {
     sheet.classList.remove("show", "ready", "big", "fly");
@@ -979,11 +1023,35 @@ function paintWaybill(fresh) {
   document.getElementById("way-pay").textContent = "+" + order.pay;
   const host = document.getElementById("way-lines");
   host.innerHTML = "";
-  (order.lines || []).forEach((line) => {
+  if (jobKind(order) === "bulk") {
+    const sku = skuOf(bulkSkuOf(order));
+    const row = document.createElement("li");
+    const done = (order.taken || 0) >= order.bulkN;
+    row.className = done ? "ok" : "";
+    const left = order.until ? order.until - Date.now() : 0;
+    row.innerHTML =
+      "<b>" +
+      sku.name +
+      "</b><span>" +
+      (order.taken || 0) +
+      "/" +
+      order.bulkN +
+      " подд.</span><i class=\"tick\">" +
+      (done ? "✓" : left > 0 ? fmtEta(left) : "") +
+      "</i>";
+    host.appendChild(row);
+    sheet.classList.toggle("ready", false);
+    if (go) go.hidden = true;
+    return;
+  }
+  const rushLeft =
+    jobKind(order) === "rush" && order.until ? order.until - Date.now() : 0;
+  (order.lines || []).forEach((line, i) => {
     const sku = skuOf(line.sku);
     const row = document.createElement("li");
     const done = line.fill >= line.need;
     row.className = done ? "ok" : "";
+    const mark = done ? "✓" : i === 0 && rushLeft > 0 ? fmtEta(rushLeft) : i === 0 && rushLeft < 0 && order.until ? "0:00" : "";
     row.innerHTML =
       "<b>" +
       sku.name +
@@ -992,7 +1060,7 @@ function paintWaybill(fresh) {
       "/" +
       line.need +
       "</span><i class=\"tick\">" +
-      (done ? "✓" : "") +
+      mark +
       "</i>";
     host.appendChild(row);
   });
@@ -1024,12 +1092,13 @@ function paintJobs() {
   list.forEach((order, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "job" + (order.grade ? " " + order.grade : "");
+    btn.dataset.id = String(order.id);
+    btn.className = "job " + (order.grade || jobKind(order));
     btn.style.animationDelay = i * 60 + "ms";
-    const mix = (order.lines || [])
-      .map((line) => line.need + "× " + skuOf(line.sku).name)
-      .join(" · ");
-    const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
+    const kind = jobKind(order);
+    let mix = (order.lines || []).map((line) => line.need + "× " + skuOf(line.sku).name).join(" · ");
+    if (kind === "bulk") mix = order.bulkN + " полных · " + skuOf(bulkSkuOf(order)).name;
+    const extra = jobNote(order);
     btn.innerHTML =
       "<em>" +
       (GRADE_NAME[order.grade] || "Заявка") +
@@ -1039,14 +1108,43 @@ function paintJobs() {
       mix +
       "</b><small>+" +
       order.pay +
-      (shop ? " · докупить" : "") +
+      extra +
       "</small>";
     btn.addEventListener("click", () => {
       closeJobs();
-      startShip(order.id);
+      if (kind === "bulk") startBulk(order.id);
+      else startShip(order.id);
     });
     host.appendChild(btn);
   });
+}
+
+function jobNote(order) {
+  const kind = jobKind(order);
+  if (kind === "rush") {
+    const left = (order.until || 0) - Date.now();
+    return " · поддон · " + (left > 0 ? fmtEta(left) : "сгорела");
+  }
+  if (kind === "bulk") {
+    const bit = " · заберёт " + order.bulkN + " подд.";
+    if (order.until && state.bulkId === order.id) {
+      const left = order.until - Date.now();
+      return bit + " · " + (left > 0 ? fmtEta(left) : "время");
+    }
+    return bit;
+  }
+  const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
+  return shop ? " · докупить" : "";
+}
+
+function syncJobClocks() {
+  document.querySelectorAll("#jobs .job[data-id]").forEach((btn) => {
+    const order = progress.orders.find((o) => o.id === Number(btn.dataset.id));
+    if (!order) return;
+    const small = btn.querySelector("small");
+    if (small) small.textContent = "+" + order.pay + jobNote(order);
+  });
+  if (state.bulkId || state.shipId) paintWaybill();
 }
 
 function applyInside() {
@@ -1489,6 +1587,17 @@ function tickShip() {
       showGuide(hasGoodsPal() ? "unload" : "place");
     }
   }
+  expireOrders();
+  let added = false;
+  if (!inGuide() && floorPals()) {
+    added = !!spawnRushJob() || added;
+    added = !!spawnBulkJob() || added;
+  }
+  if (added) {
+    saveProgress();
+    paintJobs();
+  }
+  syncJobClocks();
 }
 
 function floorPals() {
@@ -1605,43 +1714,162 @@ function linesForGrade(grade, shift) {
 
 function maybeOrders() {
   pruneOrders();
-  if (!floorPals()) return;
+  if (inGuide()) {
+    ensureGuideJob();
+    saveProgress();
+    return;
+  }
+  if (!floorPals()) {
+    saveProgress();
+    return;
+  }
   const used = new Set();
   const shipId = state.shipId;
-  progress.orders.forEach((order) => {
-    if (JOB_GRADES.indexOf(order.grade) < 0) return;
+  progress.orders = (progress.orders || []).filter((order) => {
+    const kind = jobKind(order);
+    if (kind === "rush" || kind === "bulk") return true;
+    if (NORM_GRADES.indexOf(order.grade) < 0) return false;
     used.add(order.grade);
+    return true;
+  });
+  progress.orders.forEach((order) => {
+    if (jobKind(order) !== "norm") return;
     if (order.id === shipId || !orderIdle(order)) return;
     const lines = linesForGrade(order.grade, order.id);
     if (!lines || !lines.length) return;
     order.lines = lines;
-    order.pay = gradePay(lines, order.grade);
+    order.kind = "norm";
+    order.pay = jobPay(lines, "norm");
   });
-  progress.orders.forEach((order) => {
-    if (JOB_GRADES.indexOf(order.grade) >= 0) return;
-    const n = orderNeed(order);
-    let grade = n <= 1 ? "easy" : n <= 3 ? "mid" : n <= 6 ? "hard" : "wild";
-    if (used.has(grade)) grade = JOB_GRADES.find((g) => !used.has(g)) || "";
-    if (grade) {
-      order.grade = grade;
-      order.pay = gradePay(order.lines, grade);
-      used.add(grade);
-    }
-  });
-  JOB_GRADES.forEach((grade) => {
+  NORM_GRADES.forEach((grade) => {
     if (used.has(grade)) return;
     const lines = linesForGrade(grade);
     if (!lines || !lines.length) return;
     progress.orders.push({
       id: progress.nextOrder,
+      kind: "norm",
       grade: grade,
       lines: lines,
-      pay: gradePay(lines, grade),
+      pay: jobPay(lines, "norm"),
+      until: 0,
+      bulkN: 0,
+      taken: 0,
     });
     progress.nextOrder += 1;
     used.add(grade);
   });
+  spawnRushJob();
+  spawnBulkJob();
   saveProgress();
+}
+
+function ensureGuideJob() {
+  if (progress.orders.some((o) => jobKind(o) === "norm")) return;
+  const lines = linesForGrade("easy");
+  if (!lines || !lines.length) return;
+  progress.orders.push({
+    id: progress.nextOrder,
+    kind: "norm",
+    grade: "easy",
+    lines: lines,
+    pay: jobPay(lines, "norm"),
+    until: 0,
+    bulkN: 0,
+    taken: 0,
+  });
+  progress.nextOrder += 1;
+}
+
+function spawnRushJob() {
+  if (progress.orders.some((o) => jobKind(o) === "rush")) return false;
+  if (!(progress.rushAt || 0)) {
+    progress.rushAt = Date.now();
+    return true;
+  }
+  if (Date.now() < progress.rushAt + RUSH_COOLDOWN) return false;
+  const lines = linesForGrade("easy");
+  if (!lines || !lines.length) return false;
+  progress.orders.push({
+    id: progress.nextOrder,
+    kind: "rush",
+    grade: "rush",
+    lines: lines,
+    pay: jobPay(lines, "rush"),
+    until: Date.now() + RUSH_MS,
+    bulkN: 0,
+    taken: 0,
+  });
+  progress.nextOrder += 1;
+  return true;
+}
+
+function giftRushPal() {
+  progress.stack.push(makeWood());
+  saveProgress();
+  paintHud();
+  paintSlots();
+  markGiftStack();
+}
+
+function pickBulkSku() {
+  const full = {};
+  goodsPals().forEach((p) => {
+    if (p.units >= PALLET_PACKS && p.sku) full[p.sku] = (full[p.sku] || 0) + 1;
+  });
+  let best = "";
+  let n = 0;
+  Object.keys(full).forEach((id) => {
+    if (full[id] > n) {
+      best = id;
+      n = full[id];
+    }
+  });
+  if (best) return best;
+  const have = onFloor().filter((row) => isUnlocked(row.sku));
+  if (have.length) return have[0].sku;
+  return (progress.unlocked || ["water"])[0] || "water";
+}
+
+function pickBulkN() {
+  const room = roomOf(progress.room);
+  const cap = room ? room.slots : 5;
+  const max = Math.max(2, Math.min(4, cap - 1));
+  const min = 2;
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function spawnBulkJob() {
+  if (progress.orders.some((o) => jobKind(o) === "bulk")) return false;
+  const sku = pickBulkSku();
+  if (!sku) return false;
+  const n = pickBulkN();
+  const lines = [{ sku: sku, need: n * PALLET_PACKS, fill: 0 }];
+  progress.orders.push({
+    id: progress.nextOrder,
+    kind: "bulk",
+    grade: "bulk",
+    lines: lines,
+    pay: jobPay(lines, "bulk"),
+    until: 0,
+    bulkN: n,
+    taken: 0,
+  });
+  progress.nextOrder += 1;
+  return true;
+}
+
+function currentBulk() {
+  return progress.orders.find((o) => o.id === state.bulkId) || null;
+}
+
+function bulkSkuOf(order) {
+  return order && order.lines && order.lines[0] ? order.lines[0].sku : "";
+}
+
+function bulkPalOk(pal) {
+  const order = currentBulk();
+  if (!order || !pal) return false;
+  return pal.spot !== BUILD_SPOT && pal.units >= PALLET_PACKS && pal.sku === bulkSkuOf(order);
 }
 
 function openFloor() {
@@ -1656,7 +1884,7 @@ function openFloor() {
   const gift = maybeGiftFirstPal();
   paintSlots();
   if (gift) markGiftStack();
-  if (state.shipId) {
+  if (state.shipId || state.bulkId) {
     paintWaybill();
     paintLoad();
   }
@@ -1687,9 +1915,18 @@ function resetProgress() {
 }
 
 function startShip(id) {
-  if (state.busy) return;
+  if (state.busy || state.bulkId) return;
   const order = progress.orders.find((o) => o.id === id);
   if (!order) return;
+  if (jobKind(order) === "bulk") {
+    startBulk(id);
+    return;
+  }
+  if (jobKind(order) === "rush" && order.until && Date.now() > order.until) {
+    toast("Срочная уже сгорела");
+    expireOrders();
+    return;
+  }
   closeShop();
   closeJobs();
   closeShip();
@@ -1712,9 +1949,108 @@ function startShip(id) {
   } else if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
     toast("Часть паков нужно докупить в магазине");
   } else {
-    toast("Клади паки вниз, на сборку");
+    toast(jobKind(order) === "rush" ? "Срочная. Собери и отгрузи, пока не сгорела" : "Клади паки вниз, на сборку");
   }
   if (progress.guide === "jobs") window.setTimeout(() => showGuide("build"), 120);
+}
+
+function startBulk(id) {
+  if (state.busy || state.shipId || state.bulkId) return;
+  const order = progress.orders.find((o) => o.id === id);
+  if (!order || jobKind(order) !== "bulk") return;
+  closeShop();
+  closeJobs();
+  closeShip();
+  state.bulkId = id;
+  if (!order.until) order.until = Date.now() + BULK_MS;
+  order.taken = order.taken || 0;
+  saveProgress();
+  document.body.classList.add("bulk-ship", "shipping", "loading");
+  document.body.classList.remove("gone");
+  paintWaybill(true);
+  paintSlots();
+  toast("Перетащи полные поддоны в машину. Заберёт с деревом");
+}
+
+function endBulk() {
+  hideGhost();
+  state.bulkId = 0;
+  state.drag = null;
+  document.body.classList.remove("bulk-ship", "shipping", "loading", "gone");
+  const sheet = document.getElementById("waybill");
+  if (sheet) sheet.classList.remove("show", "ready", "big", "fly");
+  const go = document.getElementById("ship-go");
+  if (go) go.hidden = true;
+  syncJobsTab();
+}
+
+async function takeBulkPal(pal) {
+  const order = currentBulk();
+  if (!order || !pal || !bulkPalOk(pal)) return false;
+  progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
+  order.taken = (order.taken || 0) + 1;
+  saveProgress();
+  paintHud();
+  paintSlots();
+  paintWaybill();
+  if (order.taken >= order.bulkN) {
+    await finishBulk(order);
+  } else {
+    toast("Забрал " + order.taken + " из " + order.bulkN);
+  }
+  return true;
+}
+
+async function finishBulk(order) {
+  if (state.busy || !order) return;
+  state.busy = true;
+  document.body.classList.add("gone");
+  flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
+  await wait(780);
+  progress.coins += order.pay;
+  progress.orders = progress.orders.filter((o) => o.id !== order.id);
+  saveProgress();
+  paintHud();
+  const chip = document.querySelector(".chip.coin");
+  if (chip) {
+    chip.classList.remove("catch");
+    void chip.offsetWidth;
+    chip.classList.add("catch");
+  }
+  await wait(480);
+  endBulk();
+  paintSlots();
+  maybeOrders();
+  paintJobs();
+  toast("Опт забрал " + order.bulkN + " поддонов");
+  state.busy = false;
+}
+
+function expireOrders() {
+  const now = Date.now();
+  let lost = "";
+  progress.orders = (progress.orders || []).filter((order) => {
+    const kind = jobKind(order);
+    if (kind === "rush" && order.until && now > order.until) {
+      if (state.shipId === order.id) endShip();
+      progress.rushAt = now;
+      lost = "rush";
+      return false;
+    }
+    if (kind === "bulk" && order.until && now > order.until) {
+      if (state.bulkId === order.id) endBulk();
+      lost = "bulk";
+      return false;
+    }
+    return true;
+  });
+  if (lost) {
+    saveProgress();
+    paintJobs();
+    paintWaybill();
+    if (lost === "rush") toast("Срочная сгорела");
+    else toast("Время вышло. Опт ушёл");
+  }
 }
 
 function endShip() {
@@ -1797,10 +2133,10 @@ function startWoodDrag(e, palId, from) {
     toast("Сначала отгрузи товар");
     return;
   }
-  if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT) return;
+  if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT && !state.bulkId) return;
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
-  state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, held: true };
+  state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, fromSpot: pal.spot, held: true };
   if (from === "stack") {
     progress.stack = progress.stack.filter((p) => p.id !== pal.id);
     if (progress.guide === "place") hideGuide();
@@ -1902,11 +2238,16 @@ function onDragMove(e) {
   if (!state.drag) return;
   if (e && e.preventDefault) e.preventDefault();
   moveGhost(e.clientX, e.clientY);
-  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot").forEach((el) => el.classList.remove("hot"));
+  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot, .out-truck").forEach((el) => el.classList.remove("hot"));
   const stack = hitEl(e.clientX, e.clientY, ".wood-stack", 16);
   const spot = hitEl(e.clientX, e.clientY, ".pal-spot", 24);
   const build = hitEl(e.clientX, e.clientY, ".build-spot", 24);
   if (state.drag.kind === "wood") {
+    if (state.bulkId) {
+      const truck = hitEl(e.clientX, e.clientY, "#out-truck", 36);
+      if (truck) truck.classList.add("hot");
+      return;
+    }
     if (stack) stack.classList.add("hot");
     else if (build && !build.classList.contains("has-pal")) build.classList.add("hot");
     else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
@@ -1926,6 +2267,35 @@ function placePalOnSpot(pal, spot) {
   progress.pallets.push(pal);
 }
 
+function restoreWoodPal(drag) {
+  const pal = drag && drag.pal;
+  if (!pal) return;
+  if (drag.fromSpot != null && drag.fromSpot >= 0) {
+    pal.spot = drag.fromSpot;
+    progress.pallets.push(pal);
+  } else {
+    pal.spot = -1;
+    progress.stack.push(pal);
+  }
+  drag.held = false;
+}
+
+async function flyGhostIntoTruck() {
+  const ghost = document.getElementById("drag-ghost");
+  const truck = document.getElementById("out-truck");
+  if (!ghost || ghost.hidden || !truck) {
+    hideGhost();
+    return;
+  }
+  const box = truck.getBoundingClientRect();
+  ghost.style.transition = "left 0.32s ease, top 0.32s ease, opacity 0.32s ease";
+  ghost.style.left = box.left + box.width * 0.32 + "px";
+  ghost.style.top = box.top + box.height * 0.48 + "px";
+  ghost.style.opacity = "0";
+  await wait(340);
+  hideGhost();
+}
+
 async function onDragEnd(e) {
   unbindDrag(e);
   const yard = document.getElementById("inside");
@@ -1941,6 +2311,21 @@ async function onDragEnd(e) {
   const y = e.clientY;
   if (drag.kind === "wood") {
     const pal = drag.pal;
+    if (state.bulkId && pal) {
+      const truck = hitEl(x, y, "#out-truck", 36);
+      if (truck && bulkPalOk(pal)) {
+        drag.held = false;
+        await flyGhostIntoTruck();
+        await takeBulkPal(pal);
+        return;
+      }
+      restoreWoodPal(drag);
+      hideGhost();
+      saveProgress();
+      paintSlots();
+      if (truck) toast("Нужен полный поддон этого товара");
+      return;
+    }
     const stackHit = hitEl(x, y, ".wood-stack", 16);
     const buildEl = hitEl(x, y, ".build-spot:not(.has-pal)", 24);
     const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
@@ -2035,6 +2420,7 @@ async function dropPackOn(pal, drag) {
 
 async function finishShip(order) {
   if (state.busy || !order) return;
+  const rush = jobKind(order) === "rush";
   state.busy = true;
   const go = document.getElementById("ship-go");
   if (go) go.hidden = true;
@@ -2058,6 +2444,7 @@ async function finishShip(order) {
   await wait(780);
   progress.coins += order.pay;
   progress.orders = progress.orders.filter((o) => o.id !== order.id);
+  if (rush) progress.rushAt = Date.now();
   saveProgress();
   paintHud();
   const chip = document.querySelector(".chip.coin");
@@ -2074,9 +2461,10 @@ async function finishShip(order) {
   await wait(580);
   endShip();
   paintSlots();
+  if (rush) giftRushPal();
   maybeOrders();
   paintJobs();
-  toast("Товар уехал");
+  toast(rush ? "Товар уехал. Пустой поддон в подарок" : "Товар уехал");
   state.busy = false;
   if (progress.guide === "send" || progress.guide === "build" || progress.guide === "jobs") {
     progress.guide = "done";
@@ -2454,6 +2842,7 @@ document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });
 document.getElementById("jobs-tab").addEventListener("click", () => {
+  if (state.bulkId) return;
   if (dockList().length && !state.unloading && !state.shipId) startUnload();
   else openJobs();
 });
