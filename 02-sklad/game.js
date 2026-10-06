@@ -769,6 +769,10 @@ function bindStand(stand, pal) {
       startPackDrag(e, pal.id, "floor");
       return;
     }
+    if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT) {
+      if (canTakePal(pal)) startPackDrag(e, pal.id, "floor");
+      return;
+    }
     startWoodDrag(e, pal.id, "floor");
   });
 }
@@ -1757,6 +1761,7 @@ function startWoodDrag(e, palId, from) {
     toast("Сначала отгрузи товар");
     return;
   }
+  if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT) return;
   e.preventDefault();
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");

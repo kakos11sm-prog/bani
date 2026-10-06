@@ -1712,7 +1712,7 @@ body.in-garage .floor-pals {
   display: flex;
   justify-content: flex-start;
   align-items: flex-end;
-  gap: 12px;
+  gap: 3px;
   padding: 0 16px 15px;
 }
 
@@ -2301,7 +2301,7 @@ body.shipping .pal-stand.can-take {
   align-items: center;
   gap: 0;
   width: 100%;
-  height: 132px;
+  height: 188px;
   background: none;
   overflow: visible;
 }
@@ -2320,7 +2320,7 @@ body.shipping .pal-stand.can-take {
   margin: 0;
   --lift: 0;
   --back: 0;
-  bottom: calc(var(--lift) * 36px + var(--back) * 9px);
+  bottom: calc(var(--lift) * (48px + (2 - var(--back)) * 10px) + var(--back) * 8px);
   transform: scale(calc(0.72 + (2 - var(--back)) * 0.14));
   transform-origin: 50% 100%;
   z-index: calc(var(--lift) * 3 + (2 - var(--back)));
@@ -2494,7 +2494,7 @@ body.shipping .pal-stand.can-take {
   left: 0;
   right: 0;
   bottom: 100%;
-  height: 6px;
+  height: 3px;
   background:
     repeating-linear-gradient(90deg, transparent 0 8px, rgba(70, 40, 12, 0.22) 8px 9px),
     linear-gradient(180deg, #c9a056, #8a5a28 70%, #6a4218);
