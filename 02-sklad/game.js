@@ -2160,6 +2160,16 @@ function layoutGuide(sel, side) {
   top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
   card.style.left = left + "px";
   card.style.top = top + "px";
+  const spot = document.getElementById("guide-spot");
+  if (spot) {
+    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck") || target;
+    const hr = hole.getBoundingClientRect();
+    const pad = 8;
+    spot.style.left = hr.left - pad + "px";
+    spot.style.top = hr.top - pad + "px";
+    spot.style.width = hr.width + pad * 2 + "px";
+    spot.style.height = hr.height + pad * 2 + "px";
+  }
   if (arrow) {
     arrow.style.left = "";
     arrow.style.right = "";
@@ -2169,15 +2179,15 @@ function layoutGuide(sel, side) {
     if (card.dataset.side === "up" || card.dataset.side === "down") {
       const ax = Math.max(18, Math.min(cx - left, w - 18));
       arrow.style.left = ax + "px";
-      arrow.style.marginLeft = "-10px";
-      if (card.dataset.side === "up") arrow.style.top = "-18px";
-      else arrow.style.bottom = "-18px";
+      arrow.style.marginLeft = "-11px";
+      if (card.dataset.side === "up") arrow.style.top = "-20px";
+      else arrow.style.bottom = "-20px";
     } else {
       const ay = Math.max(18, Math.min(cy - top, h - 18));
       arrow.style.top = ay + "px";
-      arrow.style.marginTop = "-10px";
-      if (card.dataset.side === "left") arrow.style.left = "-18px";
-      else arrow.style.right = "-18px";
+      arrow.style.marginTop = "-11px";
+      if (card.dataset.side === "left") arrow.style.left = "-20px";
+      else arrow.style.right = "-20px";
     }
   }
   return true;
