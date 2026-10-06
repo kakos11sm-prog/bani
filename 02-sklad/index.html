@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=49" />
+    <link rel="stylesheet" href="style.css?v=50" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -68,13 +68,16 @@
 
     <div class="screen" id="floor">
       <div class="inside" id="inside" aria-hidden="true">
-        <div class="inside-pic" id="inside-pic"></div>
-        <div class="shelves left"></div>
-        <div class="shelves right"></div>
-        <div class="lantern"></div>
-        <div class="lantern-glow"></div>
-        <div class="floor-lit"></div>
-        <div class="floor-pals" id="slots"></div>
+        <div class="inside-stage" id="inside-stage">
+          <div class="inside-pic" id="inside-pic"></div>
+          <div class="shelves left"></div>
+          <div class="shelves right"></div>
+          <div class="lantern"></div>
+          <div class="lantern-glow"></div>
+          <div class="floor-lit"></div>
+          <div class="lamp-shade"></div>
+          <div class="floor-pals" id="slots"></div>
+        </div>
       </div>
       <div class="waybill" id="waybill">
         <p class="way-head">Накладная <span id="way-id">#1</span></p>
@@ -162,6 +165,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=49"></script>
+    <script src="game.js?v=50"></script>
   </body>
 </html>

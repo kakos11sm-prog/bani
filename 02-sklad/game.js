@@ -564,6 +564,59 @@ function canTakePal(pal) {
   return !!(order && pal && pal.units > 0 && stillNeed(order, pal.sku));
 }
 
+function palStandHtml(sku, units) {
+  return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(sku, units);
+}
+
+function shadePals() {
+  const stage = document.getElementById("inside-stage");
+  const stands = document.querySelectorAll("#slots .pal-stand");
+  if (!stage || !stands.length) return;
+  const box = stage.getBoundingClientRect();
+  const mid = box.left + box.width / 2;
+  const span = Math.max(140, box.width / 2);
+  stands.forEach((stand) => {
+    const r = stand.getBoundingClientRect();
+    const k = Math.max(-1, Math.min(1, (r.left + r.width / 2 - mid) / span));
+    stand.style.setProperty("--cast-x", (k * 24).toFixed(1) + "px");
+    stand.style.setProperty("--cast-y", (6 + Math.abs(k) * 5).toFixed(1) + "px");
+    stand.style.setProperty("--shade-l", (0.1 + Math.max(0, -k) * 0.4).toFixed(3));
+    stand.style.setProperty("--shade-r", (0.1 + Math.max(0, k) * 0.4).toFixed(3));
+  });
+}
+
+function syncYardPan() {
+  const inside = document.getElementById("inside");
+  const stage = document.getElementById("inside-stage");
+  const host = document.getElementById("slots");
+  if (!inside || !stage || !host) return;
+  const keep = inside.scrollLeft;
+  if (progress.room !== "garage") {
+    inside.classList.remove("can-pan");
+    stage.style.width = "";
+    inside.scrollLeft = 0;
+    shadePals();
+    return;
+  }
+  const n = host.children.length;
+  const need = 32 + n * 108 + Math.max(0, n - 1) * 12;
+  const view = inside.clientWidth;
+  if (!view) {
+    shadePals();
+    return;
+  }
+  if (need > view + 8) {
+    stage.style.width = need + "px";
+    inside.classList.add("can-pan");
+    inside.scrollLeft = keep;
+  } else {
+    stage.style.width = "";
+    inside.classList.remove("can-pan");
+    inside.scrollLeft = 0;
+  }
+  shadePals();
+}
+
 function paintSlots() {
   const host = document.getElementById("slots");
   host.innerHTML = "";
@@ -580,12 +633,13 @@ function paintSlots() {
       stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 15) + "px)";
     }
     stand.style.setProperty("--sc", String(spot.s || 1));
-    stand.innerHTML = palMarkup(sku, pal.units);
+    stand.innerHTML = palStandHtml(sku, pal.units);
     if (state.shipId) {
       stand.addEventListener("pointerdown", (e) => startDrag(e, pal.id));
     }
     host.appendChild(stand);
   });
+  syncYardPan();
 }
 
 function paintWaybill(fresh) {
@@ -1285,10 +1339,10 @@ function openFloor() {
   applyInside();
   maybeOrders();
   paintHud();
-  paintSlots();
   paintJobs();
   paintShop();
   showScreen(floor);
+  paintSlots();
   if (state.shipId) {
     paintWaybill();
     paintLoad();
@@ -1396,10 +1450,12 @@ function startDrag(e, palId) {
   }
   e.preventDefault();
   if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  const yard = document.getElementById("inside");
+  if (yard) yard.classList.add("is-drag");
   const sku = skuOf(pal.sku);
   pal.units -= 1;
   state.drag = { palId: pal.id, sku: pal.sku, held: true };
-  e.currentTarget.innerHTML = palMarkup(sku, pal.units);
+  e.currentTarget.innerHTML = palStandHtml(sku, pal.units);
   const ghost = document.getElementById("drag-ghost");
   ghost.hidden = false;
   ghost.setAttribute("style", palSkin(sku));
@@ -1418,6 +1474,8 @@ function onDragMove(e) {
 async function onDragEnd(e) {
   window.removeEventListener("pointermove", onDragMove);
   window.removeEventListener("pointerup", onDragEnd);
+  const yard = document.getElementById("inside");
+  if (yard) yard.classList.remove("is-drag");
   const drag = state.drag;
   state.drag = null;
   const bay = document.getElementById("load-bay");
@@ -1601,6 +1659,9 @@ document.getElementById("ship-close").addEventListener("click", closeShip);
 document.getElementById("ship-pane").addEventListener("click", (e) => {
   if (e.target.id === "ship-pane") closeShip();
 });
+const yard = document.getElementById("inside");
+if (yard) yard.addEventListener("scroll", shadePals, { passive: true });
+window.addEventListener("resize", syncYardPan);
 window.setInterval(tickShip, 250);
 
 seedDust();

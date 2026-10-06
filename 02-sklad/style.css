@@ -948,6 +948,31 @@ body.on-floor .scene {
   overflow: hidden;
 }
 
+.inside.can-pan {
+  pointer-events: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+
+.inside.can-pan::-webkit-scrollbar {
+  display: none;
+}
+
+.inside.is-drag {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.inside-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .inside-pic {
   position: absolute;
   inset: 0;
@@ -1032,6 +1057,26 @@ body.in-garage .lantern {
   height: 42%;
   background: radial-gradient(ellipse at 50% 78%, rgba(255, 200, 90, 0.28), transparent 70%);
   animation: flicker 2.4s ease-in-out infinite;
+}
+
+.lamp-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 42% at 50% 16%, transparent 0 36%, rgba(16, 8, 0, 0.16) 68%, rgba(8, 3, 0, 0.46) 100%),
+    linear-gradient(90deg, rgba(10, 4, 0, 0.5) 0%, rgba(10, 4, 0, 0.16) 16%, transparent 28%, transparent 72%, rgba(10, 4, 0, 0.16) 84%, rgba(10, 4, 0, 0.5) 100%),
+    linear-gradient(180deg, transparent 58%, rgba(12, 6, 0, 0.2) 100%);
+  mix-blend-mode: multiply;
+}
+
+body.in-garage .lantern-glow {
+  opacity: 0.4;
+}
+
+body.in-garage .floor-lit {
+  opacity: 0.5;
 }
 
 .floor-row {
@@ -1657,16 +1702,8 @@ body.shipping .jobs-tab {
   bottom: calc(28% - 20px);
   z-index: 4;
   width: auto;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-  pointer-events: auto;
-  scrollbar-width: none;
-}
-
-.floor-pals::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
+  pointer-events: none;
 }
 
 body.in-garage .floor-pals {
@@ -1678,6 +1715,10 @@ body.in-garage .floor-pals {
 }
 
 .pal-stand {
+  --cast-x: 0px;
+  --cast-y: 8px;
+  --shade-l: 0.12;
+  --shade-r: 0.12;
   position: absolute;
   width: 108px;
   margin-left: -54px;
@@ -1695,6 +1736,7 @@ body.in-garage .pal-stand {
 }
 
 .floor-pals .pal-stand .pal-live {
+  position: relative;
   width: 72px;
   margin: 0 auto;
   transform: perspective(340px) rotateX(10deg) scale(1.5);
@@ -1705,18 +1747,83 @@ body.shipping .pal-stand.can-take {
   touch-action: none;
 }
 
-.pal-stand::after {
+.floor-pals .pal-stand::before {
   content: "";
   position: absolute;
-  left: 2%;
-  right: 2%;
-  bottom: -6px;
-  height: 20px;
+  left: -22%;
+  right: -22%;
+  bottom: -12px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(4, 2, 0, 0.62);
+  background: radial-gradient(
+    ellipse 72% 58% at 50% 42%,
+    rgba(22, 10, 2, 0.48) 0%,
+    rgba(22, 10, 2, 0.2) 46%,
+    transparent 74%
+  );
   filter: blur(8px);
+  transform: translate3d(var(--cast-x), 3px, 0) scaleX(1.22);
   z-index: 0;
   pointer-events: none;
+}
+
+.floor-pals .pal-stand::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 1px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(8, 3, 0, 0.8) 0%,
+    rgba(8, 3, 0, 0.32) 42%,
+    transparent 72%
+  );
+  filter: blur(3px);
+  transform: translateX(calc(var(--cast-x) * 0.22));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.floor-pals .pal-stand .pal-shade {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 86px;
+  height: 24px;
+  margin-left: -43px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 45%, rgba(16, 7, 1, 0.42), transparent 72%);
+  filter: blur(9px);
+  transform: translate3d(calc(var(--cast-x) * 1.45), var(--cast-y), 0) scale(1.18, 0.82);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.floor-pals .pal-stand .pal-live::after {
+  content: "";
+  position: absolute;
+  inset: -4% -10% 6%;
+  pointer-events: none;
+  z-index: 6;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      to right,
+      rgba(10, 4, 0, var(--shade-l)),
+      rgba(10, 4, 0, 0.04) 42%,
+      rgba(10, 4, 0, 0.04) 58%,
+      rgba(10, 4, 0, var(--shade-r))
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 220, 140, 0.12) 0%,
+      transparent 30%,
+      rgba(8, 3, 0, 0.2) 100%
+    );
+  mix-blend-mode: multiply;
 }
 
 .pal-stand .pal-live,
