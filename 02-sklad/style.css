@@ -1709,14 +1709,11 @@ body.shipping .jobs-tab {
 }
 
 body.in-garage .floor-pals {
-  top: auto;
-  bottom: max(72px, calc(env(safe-area-inset-bottom) + 62px));
-  height: 170px;
   display: flex;
   justify-content: flex-start;
   align-items: flex-end;
   gap: 12px;
-  padding: 0 12px 0 100px;
+  padding: 0 16px 15px;
 }
 
 .pal-spot {
