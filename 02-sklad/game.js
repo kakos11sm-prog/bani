@@ -313,7 +313,7 @@ function palMarkup(sku, packs) {
   let load = "";
   for (let row = 0; row < rows; row += 1) {
     const vacant = row * cols + 1 < PALLET_PACKS - n;
-    load += "<span class=\"pak-layer" + (vacant ? " vacant" : "") + "\">";
+      load += "<span class=\"pak-layer lift-" + row + (vacant ? " vacant" : "") + "\">";
     for (let col = 0; col < cols; col += 1) {
       const slot = row * cols + col;
       if (slot >= PALLET_PACKS - n) {
@@ -578,8 +578,11 @@ function shadePals() {
   stands.forEach((stand) => {
     const r = stand.getBoundingClientRect();
     const k = Math.max(-1, Math.min(1, (r.left + r.width / 2 - mid) / span));
-    stand.style.setProperty("--cast-x", (k * 24).toFixed(1) + "px");
-    stand.style.setProperty("--cast-y", (6 + Math.abs(k) * 5).toFixed(1) + "px");
+    const sc = Number(stand.style.getPropertyValue("--sc")) || 1;
+    const dim = Math.min(1, Math.abs(k) * 0.92 + (sc < 1 ? (1 - sc) * 1.5 : 0));
+    stand.style.setProperty("--cast-x", (k * 28).toFixed(1) + "px");
+    stand.style.setProperty("--cast-y", (8 + Math.abs(k) * 8).toFixed(1) + "px");
+    stand.style.setProperty("--dim", dim.toFixed(3));
     stand.style.setProperty("--shade-l", (0.1 + Math.max(0, -k) * 0.4).toFixed(3));
     stand.style.setProperty("--shade-r", (0.1 + Math.max(0, k) * 0.4).toFixed(3));
   });

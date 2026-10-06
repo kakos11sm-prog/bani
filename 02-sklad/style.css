@@ -1713,6 +1713,7 @@ body.in-garage .floor-pals {
 .pal-stand {
   --cast-x: 0px;
   --cast-y: 8px;
+  --dim: 0;
   --shade-l: 0.12;
   --shade-r: 0.12;
   position: absolute;
@@ -1738,8 +1739,9 @@ body.in-garage .pal-stand {
   transform: perspective(340px) rotateX(10deg) scale(1.5);
   transform-origin: 50% 100%;
   filter:
-    drop-shadow(calc(var(--cast-x) * 0.35) 10px 12px rgba(24, 12, 4, 0.28))
-    drop-shadow(0 5px 5px rgba(16, 8, 2, 0.3));
+    drop-shadow(calc(var(--cast-x) * 0.55) 16px 18px rgba(8, 3, 0, 0.62))
+    drop-shadow(calc(var(--cast-x) * 0.28) 7px 8px rgba(8, 3, 0, 0.5))
+    brightness(calc(1 - var(--dim) * 0.4));
 }
 
 body.shipping .pal-stand.can-take {
@@ -1754,21 +1756,34 @@ body.shipping .pal-stand.can-take {
 .floor-pals .pal-stand::after {
   content: "";
   position: absolute;
-  left: -8%;
-  right: -8%;
-  bottom: -6px;
-  height: 28px;
+  left: -32%;
+  right: -32%;
+  bottom: -16px;
+  height: 46px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(22, 11, 3, 0.34) 0%,
-    rgba(22, 11, 3, 0.12) 42%,
-    transparent 78%
+    rgba(6, 2, 0, 0.78) 0%,
+    rgba(8, 3, 0, 0.4) 36%,
+    rgba(8, 3, 0, 0.12) 62%,
+    transparent 80%
   );
-  filter: blur(14px);
-  transform: translateX(calc(var(--cast-x) * 0.28));
+  filter: blur(15px);
+  transform: translateX(calc(var(--cast-x) * 0.5)) scale(calc(1.08 + var(--dim) * 0.28));
   z-index: 0;
   pointer-events: none;
+}
+
+.floor-pals .pak-layer.lift-0 {
+  filter: brightness(0.68);
+}
+
+.floor-pals .pak-layer.lift-1 {
+  filter: brightness(0.84);
+}
+
+.floor-pals .pak-layer.lift-2 {
+  filter: brightness(1);
 }
 
 .pal-stand .pal-live,
