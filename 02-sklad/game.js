@@ -1150,13 +1150,11 @@ function jobPalPic() {
 function jobPalHtml(order) {
   const kind = jobKind(order);
   if (kind === "rush") {
-    return "<small class=\"job-pal plus\"><b>+</b>" + jobPalPic() + "</small>";
+    return "<small class=\"job-pal plus\"><b>+1</b>" + jobPalPic() + "</small>";
   }
   if (kind === "bulk") {
     const n = Math.max(2, Math.min(4, order.bulkN || 2));
-    let pics = "";
-    for (let i = 0; i < n; i += 1) pics += jobPalPic();
-    return "<small class=\"job-pal minus\"><b>−</b>" + pics + "</small>";
+    return "<small class=\"job-pal minus\"><b>−" + n + "</b>" + jobPalPic() + "</small>";
   }
   const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
   if (shop) return "<small class=\"job-note\">Часть нужно докупить</small>";

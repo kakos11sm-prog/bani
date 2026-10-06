@@ -819,11 +819,12 @@ h1 {
 
 .job-pal b {
   display: block;
-  min-width: 1.1em;
+  min-width: 1.4em;
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
   text-align: center;
+  letter-spacing: -0.02em;
 }
 
 .job-pal.plus {
@@ -853,10 +854,6 @@ h1 {
   height: 22px;
   flex: 0 0 34px;
   filter: drop-shadow(0 3px 3px rgba(8, 3, 0, 0.45));
-}
-
-.job-pal-pic + .job-pal-pic {
-  margin-left: -14px;
 }
 
 .job-pal-pic i {
