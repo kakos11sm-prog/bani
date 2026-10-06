@@ -58,7 +58,7 @@ body {
 
 .hud {
   position: fixed;
-  z-index: 24;
+  z-index: 49;
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
   width: min(420px, calc(100% - 188px));
@@ -3049,13 +3049,26 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   position: fixed;
   z-index: 47;
   pointer-events: auto;
-  width: min(260px, calc(100vw - 16px));
+  width: min(240px, calc(100vw - 16px));
   padding: 14px 14px 12px;
   border-radius: 14px;
   background: #f7f0de;
   color: #2a1c10;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-  animation: guideIn 0.38s cubic-bezier(0.2, 1.3, 0.3, 1);
+  transform-origin: 50% 0;
+  animation: guideLure 1.8s ease-in-out infinite;
+}
+
+.guide-card[data-side="down"] {
+  transform-origin: 50% 100%;
+}
+
+.guide-card[data-side="left"] {
+  transform-origin: 0 50%;
+}
+
+.guide-card[data-side="right"] {
+  transform-origin: 100% 50%;
 }
 
 .guide-card p {
@@ -3093,30 +3106,20 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 }
 
 .guide-card[data-side="up"] .guide-arrow {
-  left: 50%;
   top: -18px;
-  margin-left: -10px;
   border-bottom-color: #f7f0de;
 }
 
 .guide-card[data-side="down"] .guide-arrow {
-  left: 50%;
   bottom: -18px;
-  margin-left: -10px;
   border-top-color: #f7f0de;
 }
 
 .guide-card[data-side="left"] .guide-arrow {
-  left: -18px;
-  top: 50%;
-  margin-top: -10px;
   border-right-color: #f7f0de;
 }
 
 .guide-card[data-side="right"] .guide-arrow {
-  right: -18px;
-  top: 50%;
-  margin-top: -10px;
   border-left-color: #f7f0de;
 }
 
@@ -3135,9 +3138,10 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   50% { transform: rotate(5deg) translateY(-3px); }
 }
 
-@keyframes guideIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.94); }
-  to { opacity: 1; transform: none; }
+@keyframes guideLure {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg) scale(1); }
+  35% { transform: translateY(-7px) rotate(1.8deg) scale(1.03); }
+  62% { transform: translateY(-3px) rotate(-1deg) scale(1.01); }
 }
 
 .guide-gift {

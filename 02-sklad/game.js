@@ -2069,7 +2069,7 @@ function inGuide() {
 const GUIDE = {
   coins: {
     text: "Твой начальный капитал в этой сфере",
-    sel: ".chip.coin",
+    sel: ".chip.coin i",
     side: "below",
     wobble: ".chip.coin",
   },
@@ -2127,29 +2127,32 @@ function hideGuide() {
 function layoutGuide(sel, side) {
   const target = document.querySelector(sel);
   const card = document.getElementById("guide-card");
+  const arrow = card && card.querySelector(".guide-arrow");
   if (!target || !card) return false;
-  target.classList.add("guide-on");
   const r = target.getBoundingClientRect();
-  const w = Math.min(260, window.innerWidth - 16);
+  if (r.width < 4 || r.height < 4) return false;
+  target.classList.add("guide-on");
+  const w = Math.min(240, window.innerWidth - 16);
   card.style.width = w + "px";
   const h = card.offsetHeight || 130;
   const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
   let top;
   let left;
   if (side === "above") {
-    top = r.top - h - 16;
+    top = r.top - h - 18;
     left = cx - w / 2;
     card.dataset.side = "down";
   } else if (side === "right") {
-    top = r.top + r.height / 2 - h / 2;
-    left = r.right + 14;
+    top = cy - h / 2;
+    left = r.right + 16;
     card.dataset.side = "left";
   } else if (side === "left") {
-    top = r.top + r.height / 2 - h / 2;
-    left = r.left - w - 14;
+    top = cy - h / 2;
+    left = r.left - w - 16;
     card.dataset.side = "right";
   } else {
-    top = r.bottom + 14;
+    top = r.bottom + 16;
     left = cx - w / 2;
     card.dataset.side = "up";
   }
@@ -2157,6 +2160,26 @@ function layoutGuide(sel, side) {
   top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
   card.style.left = left + "px";
   card.style.top = top + "px";
+  if (arrow) {
+    arrow.style.left = "";
+    arrow.style.right = "";
+    arrow.style.top = "";
+    arrow.style.bottom = "";
+    arrow.style.margin = "0";
+    if (card.dataset.side === "up" || card.dataset.side === "down") {
+      const ax = Math.max(18, Math.min(cx - left, w - 18));
+      arrow.style.left = ax + "px";
+      arrow.style.marginLeft = "-10px";
+      if (card.dataset.side === "up") arrow.style.top = "-18px";
+      else arrow.style.bottom = "-18px";
+    } else {
+      const ay = Math.max(18, Math.min(cy - top, h - 18));
+      arrow.style.top = ay + "px";
+      arrow.style.marginTop = "-10px";
+      if (card.dataset.side === "left") arrow.style.left = "-18px";
+      else arrow.style.right = "-18px";
+    }
+  }
   return true;
 }
 
@@ -2180,7 +2203,7 @@ function showGuide(step) {
       window.setTimeout(place, 60);
     }
   };
-  window.requestAnimationFrame(place);
+  window.requestAnimationFrame(() => window.requestAnimationFrame(place));
 }
 
 function onGuideOk() {
