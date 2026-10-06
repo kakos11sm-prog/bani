@@ -2098,6 +2098,7 @@ const GUIDE = {
     text: "Без поддона товар некуда класть. Купи поддон",
     sel: ".good.woods",
     side: "above",
+    wobble: ".good.woods",
   },
   wait: {
     text: "Машина едет минуту. Смотри таймер справа",
@@ -2203,13 +2204,35 @@ function showGuide(step) {
   saveProgress();
   hideGuide();
   text.textContent = spec.text;
-  box.hidden = false;
-  box.classList.add("show");
-  if (spec.wobble) {
-    const wob = document.querySelector(spec.wobble);
-    if (wob) wob.classList.add("wobble");
-  }
-  followGuide(spec.sel, spec.side, 420);
+  const wait = scrollGuideTarget(spec.sel);
+  const reveal = () => {
+    if (progress.guide !== step) return;
+    box.hidden = false;
+    box.classList.add("show");
+    if (spec.wobble) {
+      const wob = document.querySelector(spec.wobble);
+      if (wob) wob.classList.add("wobble");
+    }
+    followGuide(spec.sel, spec.side, wait ? 520 : 420);
+  };
+  if (wait) window.setTimeout(reveal, wait);
+  else reveal();
+}
+
+function scrollGuideTarget(sel) {
+  const target = document.querySelector(sel);
+  const box = target && target.closest("#goods");
+  if (!target || !box) return 0;
+  const tr = target.getBoundingClientRect();
+  const br = box.getBoundingClientRect();
+  const pad = 14;
+  let next = box.scrollTop;
+  if (tr.bottom > br.bottom - pad) next += tr.bottom - (br.bottom - pad);
+  if (tr.top < br.top + pad) next -= br.top + pad - tr.top;
+  next = Math.max(0, Math.min(next, box.scrollHeight - box.clientHeight));
+  if (Math.abs(next - box.scrollTop) < 4) return 0;
+  box.scrollTo({ top: next, behavior: "smooth" });
+  return 480;
 }
 
 function followGuide(sel, side, ms) {

@@ -3177,7 +3177,8 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 .chip.coin.wobble,
 .chip.wobble,
-.shop-btn.wobble {
+.shop-btn.wobble,
+.good.woods.wobble {
   animation: hintWobble 0.7s ease-in-out infinite;
 }
 
