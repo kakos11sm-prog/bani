@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=52" />
+    <link rel="stylesheet" href="style.css?v=53" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -20,7 +20,7 @@
     <div class="hud">
       <button class="back" id="btn-back" type="button" aria-label="Назад">↩</button>
       <div class="chip coin"><i></i><b id="hud-coins">0</b></div>
-      <div class="chip box">📦 <b id="hud-boxes">0</b></div>
+      <div class="chip wood"><i></i><b id="hud-woods">0</b></div>
     </div>
 
     <div class="toast" id="toast" aria-live="polite"></div>
@@ -51,7 +51,7 @@
           <span class="home-pal p2"><i></i><i></i></span>
         </div>
         <h1>Склад</h1>
-        <p class="tag">Сними помещение. Собери заявку. Отправь.</p>
+        <p class="tag">Купи поддоны. Прими товар руками. Отправь заявку.</p>
         <button class="play" id="boot-play" type="button">Играть</button>
         <button class="ghost reset" id="boot-reset" type="button">Сбросить прогресс</button>
         <a class="more" href="../index.html">Ещё игры</a>
@@ -78,6 +78,12 @@
           <div class="lamp-shade"></div>
           <div class="floor-pals" id="slots"></div>
         </div>
+      </div>
+      <div class="wood-stack" id="wood-stack"></div>
+      <div class="dock" id="dock" hidden>
+        <div class="dock-art" aria-hidden="true"></div>
+        <div class="dock-hold" id="dock-hold"></div>
+        <p class="dock-hint">Тяни паки на поддон</p>
       </div>
       <div class="waybill" id="waybill">
         <p class="way-head">Накладная <span id="way-id">#1</span></p>
@@ -109,7 +115,7 @@
     <div class="shop-pane" id="shop">
       <div class="shop-card">
         <h2>Магазин</h2>
-        <p class="lead">Новые вкусы открываются за монеты. Потом в корзину, доставка минута.</p>
+        <p class="lead">Сначала поддоны, без них не принять и не отгрузить. Товар едет минуту — снимай с машины сам.</p>
         <div class="goods" id="goods"></div>
         <div class="cart" id="cart">
           <button class="cart-toggle" id="cart-toggle" type="button">
@@ -138,7 +144,7 @@
     <div class="jobs-pane" id="jobs-pane">
       <div class="jobs-card">
         <h2>Заявки</h2>
-        <p class="lead">Выбери заявку. Собери на поддон по накладной.</p>
+        <p class="lead">Поставь поддон со стопки. Клади паки. Потом отгрузи и убери дерево на стопку.</p>
         <div class="jobs" id="jobs"></div>
         <button class="ghost" id="jobs-close" type="button">Закрыть</button>
       </div>
@@ -165,6 +171,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=52"></script>
+    <script src="game.js?v=53"></script>
   </body>
 </html>

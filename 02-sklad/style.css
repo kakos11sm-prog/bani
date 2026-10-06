@@ -1710,6 +1710,206 @@ body.in-garage .floor-pals {
   padding: 0 16px 15px;
 }
 
+.pal-spot {
+  pointer-events: auto;
+  min-height: 128px;
+}
+
+body.in-garage .pal-spot {
+  position: relative;
+  flex: 0 0 108px;
+}
+
+body:not(.in-garage) .pal-spot {
+  position: absolute;
+  width: 108px;
+  margin-left: -54px;
+}
+
+.pal-spot:not(.has-pal)::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 8px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(40, 22, 6, 0.28);
+  box-shadow: 0 0 0 1px rgba(180, 130, 60, 0.18);
+  filter: blur(1px);
+}
+
+.pal-spot.hot:not(.has-pal)::after {
+  background: rgba(240, 180, 41, 0.35);
+  box-shadow: 0 0 16px rgba(240, 180, 41, 0.45);
+}
+
+.chip.wood i {
+  width: 18px;
+  height: 12px;
+  border-radius: 1px;
+  background:
+    repeating-linear-gradient(90deg, #e0b46a 0 4px, #8a5a28 4px 5px),
+    linear-gradient(180deg, #d4a05a, #8a4a18);
+  box-shadow: 0 2px 0 #4a2c10;
+}
+
+.wood-stack {
+  position: absolute;
+  left: max(8px, env(safe-area-inset-left));
+  bottom: 18%;
+  z-index: 6;
+  width: 92px;
+  min-height: 88px;
+  padding: 18px 8px 10px;
+  pointer-events: auto;
+}
+
+.wood-stack .stack-layer {
+  position: relative;
+  height: 18px;
+  margin-top: -10px;
+  transform: translateY(calc((var(--i, 0) * -7px)));
+  filter: drop-shadow(0 4px 6px rgba(8, 3, 0, 0.45));
+}
+
+.wood-stack .stack-layer .pal-live {
+  transform: perspective(240px) rotateX(18deg) scale(0.72);
+  transform-origin: 50% 100%;
+}
+
+.wood-stack .stack-layer.top {
+  z-index: 2;
+}
+
+.wood-stack b {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 1px 6px #000;
+}
+
+.wood-stack em {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-shadow: 0 1px 6px #000;
+}
+
+.wood-stack.hot {
+  filter: drop-shadow(0 0 10px rgba(240, 180, 41, 0.55));
+}
+
+.wood-stack.empty em {
+  color: var(--muted);
+}
+
+.dock {
+  position: absolute;
+  right: max(4px, env(safe-area-inset-right));
+  bottom: 16%;
+  z-index: 6;
+  width: 118px;
+  pointer-events: auto;
+  animation: dockIn 0.45s cubic-bezier(0.2, 1.1, 0.3, 1);
+}
+
+.dock-art {
+  position: relative;
+  height: 54px;
+  border-radius: 6px 2px 2px 6px;
+  background:
+    linear-gradient(90deg, #3a342c 0 10px, #8d7754 10px 78%, #c4b089 78%);
+  box-shadow: -8px 10px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dock-art::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 10px;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  background: #3d5a62;
+}
+
+.dock-hold {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 52px;
+  margin-top: -28px;
+  padding-right: 8px;
+}
+
+.dock-pak {
+  width: 28px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: scale(0.72);
+  transform-origin: bottom right;
+}
+
+.dock-hint {
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: right;
+  text-shadow: 0 1px 6px #000;
+}
+
+@keyframes dockIn {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.pal-stand.hot {
+  filter: drop-shadow(0 0 12px rgba(240, 180, 41, 0.55));
+}
+
+.pal-stand.ship-now {
+  outline: 2px solid rgba(240, 180, 41, 0.55);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.pal-stand.into-truck {
+  animation: palOut 0.6s ease forwards;
+}
+
+@keyframes palOut {
+  60% { transform: translateX(40px) scale(0.92); opacity: 0.4; }
+  100% { transform: translateX(80px) scale(0.8); opacity: 0; }
+}
+
+.good.woods {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.wood-draw {
+  flex: 0 0 72px;
+  width: 72px;
+}
+
+.wood-draw .pal-wood {
+  transform: perspective(200px) rotateX(16deg);
+}
+
+.load-bay {
+  display: none !important;
+}
+
 .pal-stand {
   --cast-x: 0px;
   --cast-y: 8px;
@@ -1724,7 +1924,8 @@ body.in-garage .floor-pals {
   user-select: none;
 }
 
-body.in-garage .pal-stand {
+body.in-garage .pal-stand,
+.pal-spot .pal-stand {
   position: relative;
   left: auto;
   bottom: auto;
@@ -2440,6 +2641,16 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 .drag-ghost .pak {
   background: transparent;
+}
+
+.drag-ghost.is-pal {
+  width: 108px;
+  margin: -70px 0 0 -54px;
+}
+
+.drag-ghost.is-pal .pal-live {
+  transform: perspective(340px) rotateX(10deg) scale(1.15);
+  transform-origin: 50% 100%;
 }
 
 @keyframes paperLay {

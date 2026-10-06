@@ -1,11 +1,10 @@
-const SAVE_KEY = "sklad-progress-v3";
+const SAVE_KEY = "sklad-progress-v4";
 const START_COINS = 1200;
 const PALLET_PACKS = 6;
 const SHIP_COLS = 3;
 const SHIP_ROWS = 3;
 const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
-const BOX_COST = 80;
-const BOX_PACK = 8;
+const WOOD_PRICE = [40, 90, 160, 260, 400, 600, 850, 1200, 1700, 2300];
 const PACK_MARGIN = 20;
 const DELIVERY_FEE = 40;
 const DELIVERY_MS = 60000;
@@ -49,7 +48,8 @@ function emptyProgress() {
     coins: START_COINS,
     room: "",
     pallets: [],
-    boxes: 0,
+    stack: [],
+    boughtWoods: 0,
     orders: [],
     incoming: [],
     nextOrder: 1,
@@ -60,36 +60,65 @@ function emptyProgress() {
   };
 }
 
+function readPal(raw, i) {
+  const units = Math.max(0, Number(raw && raw.units) || 0);
+  const sku = units && SKUS.some((s) => s.id === (raw && raw.sku)) ? raw.sku : "";
+  return {
+    id: Number(raw && raw.id) || 0,
+    sku: sku,
+    units: units,
+    spot: raw && raw.spot != null && raw.spot !== "" ? Number(raw.spot) : i,
+  };
+}
+
+function readIncoming(raw) {
+  const packs = Math.max(1, Number(raw && (raw.packs || raw.left)) || PALLET_PACKS);
+  const left = Math.max(0, Number(raw && raw.left != null ? raw.left : packs) || 0);
+  return {
+    id: Number(raw && raw.id) || 0,
+    sku: SKUS.some((s) => s.id === (raw && raw.sku)) ? raw.sku : "water",
+    packs: packs,
+    left: left,
+    readyAt: Math.max(0, Number(raw && raw.readyAt) || 0),
+    seen: raw && raw.seen === true,
+  };
+}
+
 function loadProgress() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
+    let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
+    let fromOld = false;
+    if (!raw || typeof raw !== "object") {
+      raw = JSON.parse(localStorage.getItem("sklad-progress-v3") || "");
+      fromOld = !!(raw && typeof raw === "object");
+    }
     if (!raw || typeof raw !== "object") return emptyProgress();
     const base = emptyProgress();
     base.coins = Math.max(0, Number(raw.coins) || 0);
     base.room = ROOMS.some((r) => r.id === raw.room) ? raw.room : "";
-    base.boxes = Math.max(0, Number(raw.boxes) || 0);
     base.nextOrder = Math.max(1, Number(raw.nextOrder) || 1);
     base.nextPallet = Math.max(1, Number(raw.nextPallet) || 1);
     base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
+    base.boughtWoods = Math.max(0, Number(raw.boughtWoods) || 0);
     base.incoming = Array.isArray(raw.incoming)
-      ? raw.incoming
-          .map((item) => ({
-            id: Number(item.id) || 0,
-            sku: SKUS.some((s) => s.id === item.sku) ? item.sku : "water",
-            readyAt: Math.max(0, Number(item.readyAt) || 0),
-          }))
-          .filter((item) => item.id && item.readyAt)
+      ? raw.incoming.map(readIncoming).filter((item) => item.id && item.readyAt && item.left)
       : [];
     base.pallets = Array.isArray(raw.pallets)
-      ? raw.pallets
-          .map((p) => ({
-            id: Number(p.id) || 0,
-            sku: SKUS.some((s) => s.id === p.sku) ? p.sku : "water",
-            units: Math.max(0, Number(p.units) || 0),
-          }))
-          .filter((p) => p.id)
+      ? raw.pallets.map(readPal).filter((p) => p.id)
       : [];
+    base.stack = Array.isArray(raw.stack)
+      ? raw.stack.map((p, i) => readPal(p, i)).filter((p) => p.id)
+      : [];
+    base.pallets.forEach((p, i) => {
+      const clash = base.pallets.some((o, j) => j < i && o.spot === p.spot);
+      if (p.spot == null || p.spot < 0 || clash) p.spot = i;
+    });
+    if (fromOld && !base.stack.length) {
+      base.stack.push({ id: base.nextPallet, sku: "", units: 0, spot: -1 });
+      base.nextPallet += 1;
+      base.boughtWoods = Math.max(base.boughtWoods, base.pallets.length + 1);
+    }
     base.orders = Array.isArray(raw.orders)
       ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length)
       : [];
@@ -99,7 +128,7 @@ function loadProgress() {
         if (SKUS.some((s) => s.id === id)) open[id] = true;
       });
     }
-    base.pallets.forEach((p) => {
+    base.pallets.concat(base.stack).forEach((p) => {
       if (p.sku) open[p.sku] = true;
     });
     base.incoming.forEach((p) => {
@@ -117,7 +146,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, shipId: 0, busy: false, drag: null, cart: { pals: [], boxes: 0 } };
+const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, busy: false, drag: null, cart: { pals: [], woods: 0 } };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -134,6 +163,61 @@ function nextLocked() {
 function unlockPrice(id) {
   const i = SKUS.findIndex((s) => s.id === id);
   return UNLOCK_PRICE[i] || UNLOCK_PRICE[UNLOCK_PRICE.length - 1];
+}
+
+function woodPrice(offset) {
+  const i = Math.max(0, (progress.boughtWoods || 0) + (offset || 0));
+  return WOOD_PRICE[Math.min(WOOD_PRICE.length - 1, i)];
+}
+
+function woodCartCost() {
+  let sum = 0;
+  for (let i = 0; i < state.cart.woods; i += 1) sum += woodPrice(i);
+  return sum;
+}
+
+function allPals() {
+  return (progress.pallets || []).concat(progress.stack || []);
+}
+
+function emptyWoods() {
+  return allPals().filter((p) => p.units < 1).length;
+}
+
+function freeSpots() {
+  const room = roomOf(progress.room);
+  const cap = room ? room.slots : 0;
+  return Math.max(0, cap - progress.pallets.length);
+}
+
+function usedSpots() {
+  return new Set((progress.pallets || []).map((p) => p.spot));
+}
+
+function firstFreeSpot() {
+  const room = roomOf(progress.room);
+  const cap = room ? room.slots : 0;
+  const used = usedSpots();
+  for (let i = 0; i < cap; i += 1) {
+    if (!used.has(i)) return i;
+  }
+  return -1;
+}
+
+function makeWood() {
+  const pal = { id: progress.nextPallet, sku: "", units: 0, spot: -1 };
+  progress.nextPallet += 1;
+  return pal;
+}
+
+function dockList() {
+  const now = Date.now();
+  return (progress.incoming || []).filter((item) => item.readyAt <= now && item.left > 0);
+}
+
+function roadList() {
+  const now = Date.now();
+  return (progress.incoming || []).filter((item) => item.readyAt > now);
 }
 
 function packPayOf(skuId) {
@@ -202,7 +286,7 @@ function orderTitle(order) {
 }
 
 function skuOnFloor(sku) {
-  return progress.pallets.some((p) => p.sku === sku && p.units > 0);
+  return allPals().some((p) => p.sku === sku && p.units > 0);
 }
 
 function orderPossible(order) {
@@ -225,13 +309,13 @@ function pruneOrders() {
 }
 
 function stockHave(sku) {
-  return progress.pallets
+  return allPals()
     .filter((p) => p.sku === sku)
     .reduce((sum, p) => sum + p.units, 0);
 }
 
 function stockFree(sku) {
-  const have = progress.pallets
+  const have = allPals()
     .filter((p) => p.sku === sku)
     .reduce((sum, p) => sum + p.units, 0);
   const reserved = progress.orders.reduce((sum, order) => {
@@ -308,12 +392,15 @@ function palWood(name) {
 
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
+  if (!sku || !n) {
+    return "<div class=\"pal-live empty-wood\">" + palWood("") + "</div>";
+  }
   const cols = 2;
   const rows = PALLET_PACKS / cols;
   let load = "";
   for (let row = 0; row < rows; row += 1) {
     const vacant = row * cols + 1 < PALLET_PACKS - n;
-      load += "<span class=\"pak-layer lift-" + row + (vacant ? " vacant" : "") + "\">";
+    load += "<span class=\"pak-layer lift-" + row + (vacant ? " vacant" : "") + "\">";
     for (let col = 0; col < cols; col += 1) {
       const slot = row * cols + col;
       if (slot >= PALLET_PACKS - n) {
@@ -435,19 +522,16 @@ function shake(el) {
 
 function paintHud() {
   document.getElementById("hud-coins").textContent = String(progress.coins);
-  document.getElementById("hud-boxes").textContent = String(progress.boxes);
+  const woods = document.getElementById("hud-woods");
+  if (woods) woods.textContent = String(emptyWoods());
 }
 
 function stockOf(sku) {
-  return progress.pallets
-    .filter((p) => p.sku === sku)
-    .reduce((sum, p) => sum + p.units, 0);
+  return stockHave(sku);
 }
 
 function freeSlots() {
-  const room = roomOf(progress.room);
-  const booked = progress.pallets.length + (progress.incoming || []).length;
-  return room ? Math.max(0, room.slots - booked) : 0;
+  return freeSpots();
 }
 
 function fmtEta(ms) {
@@ -473,7 +557,6 @@ function giftStart() {
   if (progress.gifted) return;
   progress.gifted = true;
   progress.coins = START_COINS;
-  if (!progress.boxes) progress.boxes = BOX_PACK;
   saveProgress();
   paintHud();
   const chip = document.querySelector(".chip.coin");
@@ -526,7 +609,7 @@ async function rentRoom(id, btn) {
   await playBuyRoom(room);
   state.busy = false;
   openFloor();
-  toast(room.name + " твой. Товар — в магазине сбоку.");
+  toast(room.name + " твой. Купи поддон — без него товар не принять.");
 }
 
 async function playBuyRoom(room) {
@@ -561,11 +644,28 @@ function shipPacks(order) {
 
 function canTakePal(pal) {
   const order = currentOrder();
-  return !!(order && pal && pal.units > 0 && stillNeed(order, pal.sku));
+  return !!(order && pal && pal.id !== state.shipPalId && pal.units > 0 && stillNeed(order, pal.sku));
 }
 
-function palStandHtml(sku, units) {
-  return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(sku, units);
+function canDropPackOn(pal, sku) {
+  if (!pal) return false;
+  if (state.shipId) {
+    const order = currentOrder();
+    if (!order || !stillNeed(order, sku)) return false;
+    if (pal.id === state.shipPalId) return true;
+    return pal.units < 1 && !state.shipPalId;
+  }
+  if (pal.id === state.shipPalId) return false;
+  return pal.units < PALLET_PACKS && (!pal.units || pal.sku === sku);
+}
+
+function palStandHtml(pal) {
+  if (state.shipId && pal && pal.id === state.shipPalId) {
+    const order = currentOrder();
+    return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(shipPacks(order));
+  }
+  const sku = pal && pal.units && pal.sku ? skuOf(pal.sku) : null;
+  return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(sku, pal ? pal.units : 0);
 }
 
 function shadePals() {
@@ -620,29 +720,104 @@ function syncYardPan() {
   shadePals();
 }
 
+function bindStand(stand, pal) {
+  stand.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
+      startPackDrag(e, pal.id, "floor");
+      return;
+    }
+    startWoodDrag(e, pal.id, "floor");
+  });
+}
+
 function paintSlots() {
   const host = document.getElementById("slots");
   host.innerHTML = "";
   const spots = palSpots();
-  progress.pallets.forEach((pal, i) => {
-    const sku = skuOf(pal.sku);
-    const spot = spots[i] || spots[spots.length - 1] || { x: 40, b: 6, s: 1 };
-    const stand = document.createElement("div");
-    const take = state.shipId && canTakePal(pal);
-    stand.className = "pal-stand" + (state.shipId ? (take ? " can-take" : " no-take") : "");
-    stand.dataset.id = String(pal.id);
+  spots.forEach((spot, i) => {
+    const cell = document.createElement("div");
+    cell.className = "pal-spot";
+    cell.dataset.spot = String(i);
     if (progress.room !== "garage") {
-      stand.style.left = spot.x + "%";
-      stand.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 15) + "px)";
+      cell.style.left = spot.x + "%";
+      cell.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 15) + "px)";
     }
-    stand.style.setProperty("--sc", String(spot.s || 1));
-    stand.innerHTML = palStandHtml(sku, pal.units);
-    if (state.shipId) {
-      stand.addEventListener("pointerdown", (e) => startDrag(e, pal.id));
+    cell.style.setProperty("--sc", String(spot.s || 1));
+    const pal = progress.pallets.find((p) => p.spot === i);
+    if (pal) {
+      const take = state.shipId && canTakePal(pal);
+      const ship = pal.id === state.shipPalId;
+      const stand = document.createElement("div");
+      stand.className =
+        "pal-stand" +
+        (ship ? " ship-now" : "") +
+        (state.shipId ? (take ? " can-take" : pal.units < 1 || ship ? " can-drop" : " no-take") : "");
+      stand.dataset.id = String(pal.id);
+      stand.innerHTML = palStandHtml(pal);
+      bindStand(stand, pal);
+      cell.classList.add("has-pal");
+      cell.appendChild(stand);
     }
-    host.appendChild(stand);
+    host.appendChild(cell);
   });
+  paintStack();
+  paintDock();
   syncYardPan();
+}
+
+function paintStack() {
+  const host = document.getElementById("wood-stack");
+  if (!host) return;
+  const list = progress.stack || [];
+  host.innerHTML = "";
+  host.classList.toggle("empty", !list.length);
+  host.classList.toggle("can-drop", true);
+  const show = list.slice(-4);
+  show.forEach((pal, i) => {
+    const layer = document.createElement("div");
+    layer.className = "stack-layer" + (i === show.length - 1 ? " top" : "");
+    layer.style.setProperty("--i", String(i));
+    layer.innerHTML = palStandHtml(pal);
+    host.appendChild(layer);
+  });
+  const title = document.createElement("b");
+  title.textContent = "Стопка";
+  host.appendChild(title);
+  const mark = document.createElement("em");
+  mark.textContent = list.length ? "×" + list.length : "пусто";
+  host.appendChild(mark);
+  if (list.length) {
+    host.onpointerdown = (e) => {
+      const top = list[list.length - 1];
+      startWoodDrag(e, top.id, "stack");
+    };
+  } else {
+    host.onpointerdown = null;
+  }
+}
+
+function paintDock() {
+  const dock = document.getElementById("dock");
+  const hold = document.getElementById("dock-hold");
+  if (!dock || !hold) return;
+  const list = dockList();
+  dock.hidden = !list.length || !floor.classList.contains("show");
+  document.body.classList.toggle("unloading", !dock.hidden);
+  hold.innerHTML = "";
+  if (!list.length) return;
+  list.forEach((item) => {
+    const sku = skuOf(item.sku);
+    const n = Math.min(4, item.left);
+    for (let i = 0; i < n; i += 1) {
+      const pak = document.createElement("button");
+      pak.type = "button";
+      pak.className = "dock-pak";
+      pak.setAttribute("style", palSkin(sku));
+      pak.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
+      pak.addEventListener("pointerdown", (e) => startPackDrag(e, item.id, "dock"));
+      hold.appendChild(pak);
+    }
+  });
 }
 
 function paintWaybill(fresh) {
@@ -686,19 +861,7 @@ function paintWaybill(fresh) {
   if (go) go.hidden = !ready;
 }
 
-function paintLoad() {
-  const bay = document.getElementById("load-bay");
-  const host = document.getElementById("load-pal");
-  if (!bay || !host) return;
-  const order = currentOrder();
-  if (!order) {
-    bay.classList.remove("show");
-    host.innerHTML = "";
-    return;
-  }
-  bay.classList.add("show");
-  host.innerHTML = mixPalMarkup(shipPacks(order));
-}
+function paintLoad() {}
 
 function paintJobs() {
   const host = document.getElementById("jobs");
@@ -706,7 +869,7 @@ function paintJobs() {
   if (!progress.orders.length) {
     const empty = document.createElement("div");
     empty.className = "job";
-    empty.innerHTML = "<b>Заявок нет</b><small>Сначала дождись доставку</small>";
+    empty.innerHTML = "<b>Заявок нет</b><small>Сними товар с машины на поддон</small>";
     host.appendChild(empty);
     return;
   }
@@ -757,16 +920,19 @@ function cartCountSku(id) {
 
 function cartTotal() {
   const pals = state.cart.pals.reduce((sum, id) => sum + skuOf(id).cost + DELIVERY_FEE, 0);
-  return pals + state.cart.boxes * BOX_COST;
+  return pals + woodCartCost();
 }
 
 function canAddPal(sku) {
   return (
     !!progress.room &&
     isUnlocked(sku.id) &&
-    state.cart.pals.length < freeSlots() &&
     progress.coins >= cartTotal() + sku.cost + DELIVERY_FEE
   );
+}
+
+function canAddWood() {
+  return !!progress.room && progress.coins >= cartTotal() + woodPrice(state.cart.woods);
 }
 
 function tryUnlock(id, btn) {
@@ -838,20 +1004,20 @@ function paintShop() {
     });
     host.appendChild(btn);
   });
-  const box = document.createElement("button");
-  box.type = "button";
-  box.dataset.sku = "boxes";
-  box.className =
-    "good boxes" + (state.cart.boxes ? " ready" : progress.coins >= cartTotal() + BOX_COST ? "" : " poor");
-  box.innerHTML =
-    "<div class=\"box-draw\"><i></i><i></i><i></i></div><span><b>Коробки</b><small>" +
-    BOX_PACK +
-    " шт в пачке</small></span><em>" +
-    BOX_COST +
+  const wood = document.createElement("button");
+  wood.type = "button";
+  wood.dataset.sku = "woods";
+  wood.className =
+    "good woods" + (state.cart.woods ? " ready" : canAddWood() ? "" : " poor");
+  wood.innerHTML =
+    "<div class=\"wood-draw\">" +
+    palWood("") +
+    "</div><span><b>Поддон</b><small>без него не принять и не отгрузить</small></span><em>" +
+    woodPrice(state.cart.woods) +
     "</em>";
-  if (state.cart.boxes) setQty(box, state.cart.boxes);
-  box.addEventListener("click", () => addBoxToCart(box));
-  host.appendChild(box);
+  if (state.cart.woods) setQty(wood, state.cart.woods);
+  wood.addEventListener("click", () => addWoodToCart(wood));
+  host.appendChild(wood);
   paintCart();
 }
 
@@ -874,11 +1040,12 @@ function syncShop() {
     if (em) em.textContent = locked ? "Открыть · " + unlockPrice(sku.id) : String(sku.cost);
     setQty(btn, n);
   });
-  const box = host.querySelector('.good[data-sku="boxes"]');
-  if (box) {
-    box.className =
-      "good boxes" + (state.cart.boxes ? " ready" : progress.coins >= cartTotal() + BOX_COST ? "" : " poor");
-    setQty(box, state.cart.boxes);
+  const wood = host.querySelector('.good[data-sku="woods"]');
+  if (wood) {
+    wood.className = "good woods" + (state.cart.woods ? " ready" : canAddWood() ? "" : " poor");
+    const em = wood.querySelector("em");
+    if (em) em.textContent = String(woodPrice(state.cart.woods));
+    setQty(wood, state.cart.woods);
   }
   paintCart();
 }
@@ -889,7 +1056,7 @@ function fillCartLine(row, title, sum) {
 }
 
 function cartCount() {
-  return state.cart.pals.length + state.cart.boxes;
+  return state.cart.pals.length + state.cart.woods;
 }
 
 function paintCartBar() {
@@ -910,7 +1077,7 @@ function paintCart() {
     counts[id] = (counts[id] || 0) + 1;
   });
   const ids = Object.keys(counts);
-  if (!ids.length && !state.cart.boxes) {
+  if (!ids.length && !state.cart.woods) {
     host.innerHTML = "<p class=\"cart-empty\">Корзина пустая. Нажми товар.</p>";
     const fee = document.getElementById("cart-fee");
     if (fee) {
@@ -923,7 +1090,7 @@ function paintCart() {
   }
   const empty = host.querySelector(".cart-empty");
   if (empty) empty.remove();
-  const keep = new Set(ids.concat(state.cart.boxes ? ["boxes"] : []));
+  const keep = new Set(ids.concat(state.cart.woods ? ["woods"] : []));
   host.querySelectorAll(".cart-line").forEach((row) => {
     if (!keep.has(row.dataset.sku)) row.remove();
   });
@@ -941,17 +1108,17 @@ function paintCart() {
     }
     fillCartLine(row, sku.name + " ×" + n, sku.cost * n);
   });
-  if (state.cart.boxes) {
-    let row = host.querySelector('.cart-line[data-sku="boxes"]');
+  if (state.cart.woods) {
+    let row = host.querySelector('.cart-line[data-sku="woods"]');
     if (!row) {
       row = document.createElement("button");
       row.type = "button";
       row.className = "cart-line";
-      row.dataset.sku = "boxes";
-      row.addEventListener("click", dropBoxFromCart);
+      row.dataset.sku = "woods";
+      row.addEventListener("click", dropWoodFromCart);
       host.appendChild(row);
     }
-    fillCartLine(row, "Коробки ×" + state.cart.boxes, BOX_COST * state.cart.boxes);
+    fillCartLine(row, "Поддоны ×" + state.cart.woods, woodCartCost());
   }
   const fee = document.getElementById("cart-fee");
   if (fee) {
@@ -976,17 +1143,22 @@ function addPalToCart(skuId, btn) {
     showScreen(rent);
     return;
   }
-  if (state.cart.pals.length >= freeSlots()) {
-    shake(btn);
-    toast("В гараже нет места");
-    return;
-  }
   state.cart.pals.push(skuId);
   syncShop();
 }
 
-function addBoxToCart() {
-  state.cart.boxes += 1;
+function addWoodToCart(btn) {
+  if (!progress.room) {
+    closeShop();
+    showScreen(rent);
+    return;
+  }
+  if (!canAddWood()) {
+    shake(btn);
+    toast("Не хватает на поддон");
+    return;
+  }
+  state.cart.woods += 1;
   syncShop();
 }
 
@@ -996,15 +1168,15 @@ function dropPalFromCart(skuId) {
   syncShop();
 }
 
-function dropBoxFromCart() {
-  if (state.cart.boxes > 0) state.cart.boxes -= 1;
+function dropWoodFromCart() {
+  if (state.cart.woods > 0) state.cart.woods -= 1;
   syncShop();
 }
 
 function checkout(btn) {
   const pals = state.cart.pals.slice();
-  const boxes = state.cart.boxes;
-  if (!pals.length && !boxes) {
+  const woods = state.cart.woods;
+  if (!pals.length && !woods) {
     shake(btn);
     toast("Корзина пустая");
     return;
@@ -1014,40 +1186,48 @@ function checkout(btn) {
     showScreen(rent);
     return;
   }
-  if (pals.length > freeSlots()) {
-    shake(btn);
-    toast("В гараже нет места");
-    return;
-  }
   const total = cartTotal();
   if (progress.coins < total) {
     shake(btn);
     toast("Не хватает денег");
     return;
   }
+  if (pals.length && !emptyWoods() && !woods) {
+    shake(btn);
+    toast("Сначала купи поддон. Без него товар не снять");
+    return;
+  }
   progress.coins -= total;
+  for (let i = 0; i < woods; i += 1) {
+    progress.stack.push(makeWood());
+    progress.boughtWoods += 1;
+  }
   pals.forEach((skuId) => {
     progress.incoming.push({
       id: progress.nextShip,
       sku: skuId,
+      packs: PALLET_PACKS,
+      left: PALLET_PACKS,
       readyAt: Date.now() + DELIVERY_MS,
     });
     progress.nextShip += 1;
   });
-  if (boxes) progress.boxes += boxes * BOX_PACK;
   state.cart.pals = [];
-  state.cart.boxes = 0;
+  state.cart.woods = 0;
   document.getElementById("cart").classList.remove("open");
   saveProgress();
   paintHud();
   maybeOrders();
   paintJobs();
   syncShop();
+  paintSlots();
   paintTruck();
   document.querySelector(".chip.coin").classList.add("catch");
-  if (boxes) document.querySelector(".chip.box").classList.add("catch");
-  if (pals.length) toast("Заказал. Едет минуту.");
-  else toast("+" + boxes * BOX_PACK + " коробок");
+  const woodChip = document.querySelector(".chip.wood");
+  if (woods && woodChip) woodChip.classList.add("catch");
+  if (woods && pals.length) toast("Поддоны на стопке. Товар едет минуту.");
+  else if (pals.length) toast("Заказал. Машина справа через минуту.");
+  else toast("Поддон на стопке слева. Ставь его на место.");
 }
 
 function openShop() {
@@ -1065,7 +1245,7 @@ function openJobs() {
 }
 
 function nearestReady() {
-  const list = progress.incoming || [];
+  const list = roadList();
   if (!list.length) return 0;
   return Math.min.apply(null, list.map((item) => item.readyAt));
 }
@@ -1073,15 +1253,12 @@ function nearestReady() {
 function paintTruck() {
   const btn = document.getElementById("truck");
   if (!btn) return;
-  const list = progress.incoming || [];
-  const on = list.length > 0 && floor.classList.contains("show");
+  const road = roadList();
+  const on = road.length > 0 && floor.classList.contains("show");
   btn.classList.toggle("show", on);
-  if (!on) {
-    closeShip();
-    return;
-  }
-  document.getElementById("truck-eta").textContent = fmtEta(nearestReady() - Date.now());
+  if (on) document.getElementById("truck-eta").textContent = fmtEta(nearestReady() - Date.now());
   refreshShipTimes();
+  if (floor.classList.contains("show")) paintDock();
 }
 
 function paintShipList() {
@@ -1101,8 +1278,8 @@ function paintShipList() {
     row.innerHTML =
       "<b>" +
       sku.name +
-      "</b><small>поддон · " +
-      packsWord(PALLET_PACKS) +
+      "</b><small>" +
+      packsWord(item.left || PALLET_PACKS) +
       "</small><em>" +
       fmtEta(item.readyAt - Date.now()) +
       "</em>";
@@ -1132,63 +1309,38 @@ function openShip() {
 
 function settleIncoming() {
   const now = Date.now();
-  const due = (progress.incoming || []).filter((item) => item.readyAt <= now);
-  if (!due.length) return [];
-  const arrived = [];
-  progress.incoming = (progress.incoming || []).filter((item) => item.readyAt > now);
-  due.forEach((item) => {
-    const room = roomOf(progress.room);
-    const cap = room ? room.slots : 0;
-    if (progress.pallets.length >= cap) {
-      progress.incoming.push({
-        id: item.id,
-        sku: item.sku,
-        readyAt: now + 5000,
-      });
-      return;
-    }
-    progress.pallets.push({
-      id: progress.nextPallet,
-      sku: item.sku,
-      units: PALLET_PACKS,
-    });
-    progress.nextPallet += 1;
-    arrived.push(item);
+  const fresh = (progress.incoming || []).filter((item) => {
+    return item.readyAt <= now && item.left > 0 && !item.seen;
   });
-  if (arrived.length || due.length) saveProgress();
-  return arrived;
+  fresh.forEach((item) => {
+    item.seen = true;
+  });
+  if (fresh.length) saveProgress();
+  return fresh;
 }
 
 function tickShip() {
   const arrived = settleIncoming();
   paintTruck();
-  if (!arrived.length) return;
-  arrived.forEach((item) => {
-    toast("Приехал поддон «" + skuOf(item.sku).name + "»");
-  });
-  if (document.getElementById("ship-pane").classList.contains("show")) {
-    paintShipList();
-  }
-  if (floor.classList.contains("show")) {
-    paintHud();
-    paintSlots();
-    maybeOrders();
-    paintJobs();
-    syncShop();
-    const stands = document.querySelectorAll(".floor-pals .pal-stand");
-    arrived.forEach((_, i) => {
-      const stand = stands[stands.length - arrived.length + i];
-      if (stand) stand.classList.add("drop-in");
+  if (arrived.length) {
+    arrived.forEach((item) => {
+      toast("Машина справа. Поставь поддон и снимай «" + skuOf(item.sku).name + "»");
     });
+    if (document.getElementById("ship-pane").classList.contains("show")) paintShipList();
+    if (floor.classList.contains("show")) {
+      paintDock();
+      paintStack();
+    }
   }
+  if (floor.classList.contains("show") && dockList().length) paintDock();
 }
 
 function floorPals() {
-  return progress.pallets.filter((p) => p.units > 0).length;
+  return allPals().filter((p) => p.units > 0).length;
 }
 
 function boughtPals() {
-  return floorPals() + (progress.incoming || []).length;
+  return floorPals() + (progress.incoming || []).reduce((sum, item) => sum + (item.left > 0 ? 1 : 0), 0);
 }
 
 function gradeNeed(grade, pals) {
@@ -1355,7 +1507,7 @@ function openFloor() {
 
 function clearCart() {
   state.cart.pals = [];
-  state.cart.boxes = 0;
+  state.cart.woods = 0;
 }
 
 function resetProgress() {
@@ -1363,6 +1515,7 @@ function resetProgress() {
   localStorage.removeItem(SAVE_KEY);
   localStorage.removeItem("sklad-progress-v1");
   localStorage.removeItem("sklad-progress-v2");
+  localStorage.removeItem("sklad-progress-v3");
   const fresh = emptyProgress();
   Object.keys(progress).forEach((key) => {
     delete progress[key];
@@ -1383,23 +1536,30 @@ function startShip(id) {
   closeJobs();
   closeShip();
   state.shipId = id;
+  state.shipPalId = 0;
+  const empty = progress.pallets.find((p) => p.units < 1);
+  if (empty) state.shipPalId = empty.id;
   document.body.classList.add("shipping");
   document.body.classList.remove("loading", "gone");
-  const bay = document.getElementById("load-bay");
-  if (bay) bay.classList.remove("into-truck", "away");
   paintWaybill(true);
-  paintLoad();
   paintSlots();
-  if ((order.lines || []).some((line) => !isUnlocked(line.sku))) {
+  if (!state.shipPalId && (progress.stack || []).some((p) => p.units < 1)) {
+    toast("Возьми поддон со стопки и поставь");
+  } else if (!state.shipPalId && !emptyWoods()) {
+    toast("Купи поддон. Без него не отгрузить");
+  } else if ((order.lines || []).some((line) => !isUnlocked(line.sku))) {
     toast("Этот вид ещё закрыт. Открой его в магазине");
   } else if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
     toast("Часть паков нужно докупить в магазине");
+  } else {
+    toast("Клади паки на пустой поддон");
   }
 }
 
 function endShip() {
   hideGhost();
   state.shipId = 0;
+  state.shipPalId = 0;
   state.drag = null;
   document.body.classList.remove("shipping", "loading", "gone");
   const bay = document.getElementById("load-bay");
@@ -1414,8 +1574,10 @@ function hideGhost() {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
   ghost.hidden = true;
+  ghost.classList.remove("is-pal");
   ghost.innerHTML = "";
   ghost.style.transition = "";
+  ghost.removeAttribute("style");
 }
 
 function moveGhost(x, y) {
@@ -1425,53 +1587,135 @@ function moveGhost(x, y) {
   ghost.style.top = y + "px";
 }
 
-function overLoad(x, y) {
-  const load = document.getElementById("load-pal");
-  if (!load) return false;
-  const box = load.getBoundingClientRect();
-  return x >= box.left - 12 && x <= box.right + 12 && y >= box.top - 12 && y <= box.bottom + 12;
+function findPal(id) {
+  return progress.pallets.find((p) => p.id === id) || (progress.stack || []).find((p) => p.id === id) || null;
+}
+
+function hitEl(x, y, sel) {
+  const list = document.querySelectorAll(sel);
+  for (let i = 0; i < list.length; i += 1) {
+    const box = list[i].getBoundingClientRect();
+    if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) return list[i];
+  }
+  return null;
+}
+
+function beginGhost(html, x, y, skin) {
+  const ghost = document.getElementById("drag-ghost");
+  ghost.hidden = false;
+  ghost.classList.toggle("is-pal", html.indexOf("pal-live") >= 0);
+  if (skin) ghost.setAttribute("style", skin);
+  ghost.innerHTML = html;
+  moveGhost(x, y);
+}
+
+function startWoodDrag(e, palId, from) {
+  if (state.busy || state.drag) return;
+  const pal = findPal(palId);
+  if (!pal) return;
+  if (state.shipId && pal.id === state.shipPalId && pal.units > 0) {
+    shake(e.currentTarget);
+    toast("Сначала отгрузи товар");
+    return;
+  }
+  e.preventDefault();
+  const yard = document.getElementById("inside");
+  if (yard) yard.classList.add("is-drag");
+  state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, held: true };
+  if (from === "stack") {
+    progress.stack = progress.stack.filter((p) => p.id !== pal.id);
+  } else {
+    progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
+    if (state.shipPalId === pal.id && pal.units > 0) state.shipPalId = 0;
+  }
+  beginGhost(palStandHtml(pal), e.clientX, e.clientY);
+  paintSlots();
+  window.addEventListener("pointermove", onDragMove);
+  window.addEventListener("pointerup", onDragEnd);
+}
+
+function startPackDrag(e, id, from) {
+  if (state.busy || state.drag) return;
+  if (from === "dock") {
+    const item = (progress.incoming || []).find((row) => row.id === id && row.left > 0);
+    if (!item) return;
+    if (!progress.pallets.some((p) => canDropPackOn(p, item.sku))) {
+      shake(e.currentTarget);
+      toast(freeSpots() && emptyWoods() ? "Сначала поставь поддон" : "Нужен свободный поддон");
+      return;
+    }
+    e.preventDefault();
+    item.left -= 1;
+    state.drag = { kind: "pack", from: "dock", dockId: item.id, sku: item.sku, held: true };
+    beginGhost("<span class=\"pak\">" + pakInner(skuOf(item.sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(item.sku)));
+    paintDock();
+  } else {
+    const pal = progress.pallets.find((p) => p.id === id);
+    if (!pal || pal.units < 1) return;
+    if (state.shipId && !canTakePal(pal)) {
+      shake(e.currentTarget);
+      toast("Этот пак в заявку не нужен");
+      return;
+    }
+    if (!state.shipId) {
+      startWoodDrag(e, pal.id, "floor");
+      return;
+    }
+    e.preventDefault();
+    pal.units -= 1;
+    const sku = pal.sku;
+    if (pal.units < 1) pal.sku = "";
+    state.drag = { kind: "pack", from: "floor", palId: pal.id, sku: sku, held: true };
+    beginGhost("<span class=\"pak\">" + pakInner(skuOf(sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(sku)));
+    const stand = e.currentTarget.closest(".pal-stand") || e.currentTarget;
+    stand.innerHTML = palStandHtml(pal);
+  }
+  const yard = document.getElementById("inside");
+  if (yard) yard.classList.add("is-drag");
+  window.addEventListener("pointermove", onDragMove);
+  window.addEventListener("pointerup", onDragEnd);
 }
 
 function restoreHeld(drag) {
   if (!drag || !drag.held) return;
-  let pal = progress.pallets.find((p) => p.id === drag.palId);
-  if (!pal) {
-    pal = { id: drag.palId, sku: drag.sku, units: 0 };
-    progress.pallets.push(pal);
+  if (drag.kind === "wood") {
+    const pal = drag.pal;
+    if (pal) {
+      pal.spot = -1;
+      progress.stack.push(pal);
+    }
+  } else if (drag.from === "dock") {
+    const item = (progress.incoming || []).find((row) => row.id === drag.dockId);
+    if (item) item.left += 1;
+  } else if (drag.from === "floor") {
+    const pal = progress.pallets.find((p) => p.id === drag.palId);
+    if (pal) {
+      pal.units += 1;
+      pal.sku = pal.sku || drag.sku;
+    }
   }
-  pal.units += 1;
   drag.held = false;
-}
-
-function startDrag(e, palId) {
-  if (state.busy || state.drag) return;
-  const pal = progress.pallets.find((p) => p.id === palId);
-  if (!canTakePal(pal)) {
-    shake(e.currentTarget);
-    toast("Этот пак в заявку не нужен");
-    return;
-  }
-  e.preventDefault();
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-  const yard = document.getElementById("inside");
-  if (yard) yard.classList.add("is-drag");
-  const sku = skuOf(pal.sku);
-  pal.units -= 1;
-  state.drag = { palId: pal.id, sku: pal.sku, held: true };
-  e.currentTarget.innerHTML = palStandHtml(sku, pal.units);
-  const ghost = document.getElementById("drag-ghost");
-  ghost.hidden = false;
-  ghost.setAttribute("style", palSkin(sku));
-  ghost.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
-  moveGhost(e.clientX, e.clientY);
-  window.addEventListener("pointermove", onDragMove);
-  window.addEventListener("pointerup", onDragEnd);
 }
 
 function onDragMove(e) {
   if (!state.drag) return;
   moveGhost(e.clientX, e.clientY);
-  document.getElementById("load-bay").classList.toggle("hot", overLoad(e.clientX, e.clientY));
+  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand").forEach((el) => el.classList.remove("hot"));
+  const stack = hitEl(e.clientX, e.clientY, ".wood-stack");
+  const spot = hitEl(e.clientX, e.clientY, ".pal-spot");
+  const stand = hitEl(e.clientX, e.clientY, ".pal-stand");
+  if (state.drag.kind === "wood") {
+    if (stack) stack.classList.add("hot");
+    else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
+  } else if (stand) {
+    const pal = progress.pallets.find((p) => p.id === Number(stand.dataset.id));
+    if (canDropPackOn(pal, state.drag.sku)) stand.classList.add("hot");
+  }
+}
+
+function placePalOnSpot(pal, spot) {
+  pal.spot = spot;
+  progress.pallets.push(pal);
 }
 
 async function onDragEnd(e) {
@@ -1479,53 +1723,86 @@ async function onDragEnd(e) {
   window.removeEventListener("pointerup", onDragEnd);
   const yard = document.getElementById("inside");
   if (yard) yard.classList.remove("is-drag");
+  document.querySelectorAll(".hot").forEach((el) => el.classList.remove("hot"));
   const drag = state.drag;
   state.drag = null;
-  const bay = document.getElementById("load-bay");
-  if (bay) bay.classList.remove("hot");
   if (!drag) {
     hideGhost();
     return;
   }
-  if (!overLoad(e.clientX, e.clientY)) {
+  const x = e.clientX;
+  const y = e.clientY;
+  if (drag.kind === "wood") {
+    const pal = drag.pal;
+    const stackHit = hitEl(x, y, ".wood-stack");
+    const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)");
+    if (pal && spotEl) {
+      pal.spot = Number(spotEl.dataset.spot);
+      progress.pallets.push(pal);
+      if (state.shipId && pal.units < 1 && !state.shipPalId) state.shipPalId = pal.id;
+    } else if (pal) {
+      pal.spot = -1;
+      progress.stack.push(pal);
+    }
+    drag.held = false;
+    hideGhost();
+    saveProgress();
+    paintHud();
+    paintSlots();
+    if (pal && spotEl) {
+      const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
+      if (stand) stand.classList.add("drop-in");
+    }
+    return;
+  }
+  const stand = hitEl(x, y, ".pal-stand.hot, .pal-stand");
+  const pal = stand ? progress.pallets.find((p) => p.id === Number(stand.dataset.id)) : null;
+  if (!pal || !canDropPackOn(pal, drag.sku)) {
     restoreHeld(drag);
     hideGhost();
     paintSlots();
     return;
   }
-  const ghost = document.getElementById("drag-ghost");
-  const dest = document.getElementById("load-pal").getBoundingClientRect();
-  ghost.style.transition = "left 0.18s ease, top 0.18s ease";
-  moveGhost(dest.left + dest.width / 2, dest.top + dest.height / 2);
-  await wait(180);
   hideGhost();
-  await takePack(drag);
+  await dropPackOn(pal, drag);
 }
 
-async function takePack(drag) {
-  if (state.busy || !drag) return;
-  const order = currentOrder();
-  const pal = progress.pallets.find((p) => p.id === drag.palId);
-  const line = nextLineFor(order, drag.sku);
-  if (!order || !line) {
-    restoreHeld(drag);
+async function dropPackOn(pal, drag) {
+  if (state.shipId) {
+    const order = currentOrder();
+    const line = nextLineFor(order, drag.sku);
+    if (!order || !line) {
+      restoreHeld(drag);
+      paintSlots();
+      toast("Этот пак в заявку не нужен");
+      return;
+    }
+    if (!state.shipPalId) state.shipPalId = pal.id;
+    if (pal.id !== state.shipPalId) {
+      restoreHeld(drag);
+      paintSlots();
+      return;
+    }
+    drag.held = false;
+    line.fill += 1;
+    pal.units += 1;
+    pal.sku = pal.sku || drag.sku;
+    saveProgress();
     paintSlots();
-    toast("Этот пак в заявку не нужен");
+    paintWaybill();
+    if (orderDone(order)) toast("Собрано. Можно отгрузить");
     return;
   }
   drag.held = false;
-  line.fill += 1;
-  if (pal && pal.units < 1) {
-    progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
-  }
+  pal.units += 1;
+  pal.sku = pal.sku || drag.sku;
+  progress.incoming = (progress.incoming || []).filter((item) => item.left > 0);
   saveProgress();
   paintHud();
   paintSlots();
-  paintWaybill();
-  paintLoad();
-  if (orderDone(order)) {
-    toast("Собрано. Можно отгрузить");
-  }
+  maybeOrders();
+  paintJobs();
+  if (pal.units >= PALLET_PACKS) toast("Поддон полный. Можешь убрать на стопку");
 }
 
 async function finishShip(order) {
@@ -1537,9 +1814,14 @@ async function finishShip(order) {
   if (sheet) sheet.classList.remove("ready");
   document.body.classList.add("loading");
   await wait(720);
-  const bay = document.getElementById("load-bay");
-  if (bay) bay.classList.add("into-truck");
+  const stand = document.querySelector(".pal-stand.ship-now");
+  if (stand) stand.classList.add("into-truck");
   await wait(620);
+  const ship = progress.pallets.find((p) => p.id === state.shipPalId);
+  if (ship) {
+    ship.units = 0;
+    ship.sku = "";
+  }
   if (sheet) sheet.classList.add("big");
   await wait(420);
   flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
@@ -1559,13 +1841,12 @@ async function finishShip(order) {
     sheet.classList.add("fly");
   }
   document.body.classList.add("gone");
-  if (bay) bay.classList.add("away");
   await wait(580);
   endShip();
   paintSlots();
   maybeOrders();
   paintJobs();
-  toast("Заявка #" + order.id + " ушла. +" + order.pay);
+  toast("Товар уехал. Поддон положи на стопку");
   state.busy = false;
 }
 
