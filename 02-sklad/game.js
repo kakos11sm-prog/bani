@@ -1119,9 +1119,9 @@ function paintJobs() {
       clock +
       "<b class=\"job-mix\">" +
       jobMixHtml(order) +
-      "</b><small class=\"job-note\">" +
-      jobCardNote(order) +
-      "</small><strong class=\"job-pay\">+" +
+      "</b>" +
+      jobPalHtml(order) +
+      "<strong class=\"job-pay\">+" +
       order.pay +
       "</strong>";
     btn.addEventListener("click", () => {
@@ -1143,15 +1143,24 @@ function jobMixHtml(order) {
     .join("");
 }
 
-function jobCardNote(order) {
+function jobPalPic() {
+  return "<span class=\"job-pal-pic\" aria-hidden=\"true\"><i></i><i></i><i></i></span>";
+}
+
+function jobPalHtml(order) {
   const kind = jobKind(order);
-  if (kind === "rush") return "Успеешь — пустой поддон в подарок";
+  if (kind === "rush") {
+    return "<small class=\"job-pal plus\"><b>+</b>" + jobPalPic() + "</small>";
+  }
   if (kind === "bulk") {
-    const n = order.bulkN || 0;
-    return "Заберёт " + n + " подд. с деревом";
+    const n = Math.max(2, Math.min(4, order.bulkN || 2));
+    let pics = "";
+    for (let i = 0; i < n; i += 1) pics += jobPalPic();
+    return "<small class=\"job-pal minus\"><b>−</b>" + pics + "</small>";
   }
   const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
-  return shop ? "Часть нужно докупить" : "Поддон остаётся";
+  if (shop) return "<small class=\"job-note\">Часть нужно докупить</small>";
+  return "";
 }
 
 function jobNote(order) {
@@ -1176,8 +1185,6 @@ function syncJobClocks() {
     if (!order) return;
     const clock = btn.querySelector(".job-clock");
     if (clock) clock.textContent = jobNote(order) || "0:00";
-    const note = btn.querySelector(".job-note");
-    if (note) note.textContent = jobCardNote(order);
   });
   syncJobsTab();
   if (state.bulkId || state.shipId) paintWaybill();
