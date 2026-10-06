@@ -2209,12 +2209,18 @@ function showGuide(step) {
     const wob = document.querySelector(spec.wobble);
     if (wob) wob.classList.add("wobble");
   }
-  const place = () => {
-    if (!layoutGuide(spec.sel, spec.side)) {
-      window.setTimeout(place, 60);
-    }
+  followGuide(spec.sel, spec.side, 420);
+}
+
+function followGuide(sel, side, ms) {
+  const until = performance.now() + (ms || 80);
+  const tick = (now) => {
+    const box = document.getElementById("guide");
+    if (!box || box.hidden) return;
+    layoutGuide(sel, side);
+    if (now < until) window.requestAnimationFrame(tick);
   };
-  window.requestAnimationFrame(() => window.requestAnimationFrame(place));
+  window.requestAnimationFrame(tick);
 }
 
 function onGuideOk() {
