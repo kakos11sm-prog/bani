@@ -61,6 +61,7 @@ function emptyProgress() {
     nextShip: 1,
     gifted: false,
     giftedPal: false,
+    guide: "start",
     unlocked: ["water"],
   };
 }
@@ -106,6 +107,8 @@ function loadProgress() {
     base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
     base.giftedPal = raw.giftedPal === true;
+    base.guide = typeof raw.guide === "string" ? raw.guide : "";
+    if (!base.guide) base.guide = base.room ? "done" : "start";
     base.boughtWoods = Math.max(0, Number(raw.boughtWoods) || 0);
     base.incoming = Array.isArray(raw.incoming)
       ? raw.incoming.map(readIncoming).filter((item) => item.id && item.readyAt && item.left)
@@ -232,6 +235,7 @@ function markGiftStack() {
 
 function maybeGiftFirstPal() {
   if (progress.giftedPal) return false;
+  if (inGuide()) return false;
   if (!progress.pallets.length) return false;
   progress.giftedPal = true;
   progress.stack.push(makeWood());
@@ -547,6 +551,7 @@ function showScreen(el) {
     endShip();
   }
   if (typeof paintTruck === "function") paintTruck();
+  if (el === boot) paintBoot();
 }
 
 function toast(text) {
@@ -605,7 +610,7 @@ function giftStart() {
   paintHud();
   const chip = document.querySelector(".chip.coin");
   if (chip) chip.classList.add("catch");
-  toast("На старт " + START_COINS);
+  if (!inGuide()) toast("На старт " + START_COINS);
 }
 
 function paintRooms() {
@@ -615,6 +620,7 @@ function paintRooms() {
     const btn = document.createElement("button");
     btn.type = "button";
     const can = progress.coins >= room.price;
+    btn.dataset.room = room.id;
     btn.className = "room" + (can ? " ready" : " poor");
     btn.style.animationDelay = i * 70 + "ms";
     btn.innerHTML =
@@ -653,7 +659,11 @@ async function rentRoom(id, btn) {
   await playBuyRoom(room);
   state.busy = false;
   openFloor();
-  toast(room.name + " твой. Купи поддон — без него товар не принять.");
+  if (progress.guide === "garage" || progress.guide === "coins") {
+    window.setTimeout(() => showGuide("shop"), 80);
+  } else {
+    toast(room.name + " твой. Купи поддон — без него товар не принять.");
+  }
 }
 
 async function playBuyRoom(room) {
@@ -1350,6 +1360,10 @@ function checkout(btn) {
   if (woods && pals.length) toast("Поддоны на стопке. Товар едет минуту.");
   else if (pals.length) toast("Заказал. Машина справа через минуту.");
   else toast("Поддон на стопке слева. Ставь его на место.");
+  if (inGuide() && pals.length) {
+    closeShop();
+    window.setTimeout(() => showGuide("wait"), 280);
+  }
 }
 
 function openShop() {
@@ -1358,6 +1372,10 @@ function openShop() {
   if (document.querySelector("#goods .good")) syncShop();
   else paintShop();
   document.getElementById("shop").classList.add("show");
+  if (progress.guide === "shop") window.setTimeout(() => showGuide("water"), 80);
+  else if (progress.guide === "water" || progress.guide === "unlock" || progress.guide === "wood") {
+    window.setTimeout(() => showGuide(progress.guide), 80);
+  }
 }
 
 function openJobs() {
@@ -1452,6 +1470,9 @@ function tickShip() {
     if (floor.classList.contains("show")) {
       paintDock();
       paintStack();
+    }
+    if (inGuide() && (progress.guide === "wait" || progress.guide === "wood")) {
+      showGuide("place");
     }
   }
 }
@@ -1961,6 +1982,7 @@ async function dropPackOn(pal, drag) {
   maybeOrders();
   paintJobs();
   if (pal.units >= PALLET_PACKS) toast("Поддон полный. Можешь убрать на стопку");
+  if (progress.guide === "place" && drag.from === "dock") playGuideGift();
 }
 
 async function finishShip(order) {
@@ -2006,6 +2028,11 @@ async function finishShip(order) {
   paintJobs();
   toast("Товар уехал. Поддон положи на стопку");
   state.busy = false;
+  if (progress.guide === "jobs") {
+    progress.guide = "done";
+    saveProgress();
+    hideGuide();
+  }
 }
 
 function flyCoins(fromEl, toEl, n) {
@@ -2029,9 +2056,198 @@ function flyCoins(fromEl, toEl, n) {
   }
 }
 
+function paintBoot() {
+  const btn = document.getElementById("boot-play");
+  if (!btn) return;
+  btn.textContent = progress.guide === "done" || progress.room ? "Играть" : "Начать";
+}
+
+function inGuide() {
+  return !!(progress.guide && progress.guide !== "done");
+}
+
+const GUIDE = {
+  coins: {
+    text: "Твой начальный капитал в этой сфере",
+    sel: ".chip.coin",
+    side: "below",
+    wobble: ".chip.coin",
+  },
+  garage: {
+    text: "Для начала тебе достаточно купить гараж",
+    sel: '#rooms .room[data-room="garage"]',
+    side: "below",
+  },
+  shop: {
+    text: "Нужно приобрести товар для его продажи",
+    sel: "#shop-btn",
+    side: "below",
+  },
+  water: {
+    text: "Сначала купить можно только воду",
+    sel: '.good[data-sku="water"]',
+    side: "below",
+  },
+  unlock: {
+    text: "Остальное сначала разблокируй — иначе не купить",
+    sel: ".good.locked",
+    side: "below",
+  },
+  wood: {
+    text: "Без поддона товар некуда класть. Купи поддон",
+    sel: ".good.woods",
+    side: "above",
+  },
+  wait: {
+    text: "Машина едет минуту. Смотри таймер справа",
+    sel: "#truck",
+    side: "below",
+  },
+  place: {
+    text: "Поставь поддон со стопки, разгрузи машину и сложи паки на него",
+    sel: "#wood-stack",
+    side: "right",
+  },
+  jobs: {
+    text: "Зайди в заявки. Собери заказ на нижний поддон и отправь машину",
+    sel: "#jobs-tab",
+    side: "above",
+  },
+};
+
+function hideGuide() {
+  const box = document.getElementById("guide");
+  if (box) {
+    box.hidden = true;
+    box.classList.remove("show");
+  }
+  document.querySelectorAll(".guide-on").forEach((el) => el.classList.remove("guide-on", "wobble"));
+}
+
+function layoutGuide(sel, side) {
+  const target = document.querySelector(sel);
+  const card = document.getElementById("guide-card");
+  if (!target || !card) return false;
+  target.classList.add("guide-on");
+  const r = target.getBoundingClientRect();
+  const w = Math.min(260, window.innerWidth - 16);
+  card.style.width = w + "px";
+  const h = card.offsetHeight || 130;
+  const cx = r.left + r.width / 2;
+  let top;
+  let left;
+  if (side === "above") {
+    top = r.top - h - 16;
+    left = cx - w / 2;
+    card.dataset.side = "down";
+  } else if (side === "right") {
+    top = r.top + r.height / 2 - h / 2;
+    left = r.right + 14;
+    card.dataset.side = "left";
+  } else if (side === "left") {
+    top = r.top + r.height / 2 - h / 2;
+    left = r.left - w - 14;
+    card.dataset.side = "right";
+  } else {
+    top = r.bottom + 14;
+    left = cx - w / 2;
+    card.dataset.side = "up";
+  }
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
+  card.style.left = left + "px";
+  card.style.top = top + "px";
+  return true;
+}
+
+function showGuide(step) {
+  const spec = GUIDE[step];
+  const box = document.getElementById("guide");
+  const text = document.getElementById("guide-text");
+  if (!spec || !box || !text) return;
+  progress.guide = step;
+  saveProgress();
+  hideGuide();
+  text.textContent = spec.text;
+  box.hidden = false;
+  box.classList.add("show");
+  if (spec.wobble) {
+    const wob = document.querySelector(spec.wobble);
+    if (wob) wob.classList.add("wobble");
+  }
+  const place = () => {
+    if (!layoutGuide(spec.sel, spec.side)) {
+      window.setTimeout(place, 60);
+    }
+  };
+  window.requestAnimationFrame(place);
+}
+
+function onGuideOk() {
+  const step = progress.guide;
+  if (step === "coins") {
+    hideGuide();
+    paintRooms();
+    showScreen(rent);
+    window.setTimeout(() => showGuide("garage"), 80);
+    return;
+  }
+  if (step === "water") {
+    showGuide("unlock");
+    return;
+  }
+  if (step === "unlock") {
+    showGuide("wood");
+    return;
+  }
+  if (step === "jobs") {
+    progress.guide = "done";
+    saveProgress();
+  }
+  hideGuide();
+}
+
+function playGuideGift() {
+  if (progress.giftedPal) return;
+  progress.giftedPal = true;
+  progress.stack.push(makeWood());
+  saveProgress();
+  paintHud();
+  paintSlots();
+  const stack = document.getElementById("wood-stack");
+  const fly = document.createElement("div");
+  fly.className = "guide-gift";
+  fly.innerHTML = palMarkup(null, 0);
+  document.body.appendChild(fly);
+  const mid = document.body.getBoundingClientRect();
+  fly.style.left = mid.width / 2 + "px";
+  fly.style.top = mid.height * 0.38 + "px";
+  const to = stack ? stack.getBoundingClientRect() : { left: 40, top: mid.height - 80, width: 80 };
+  window.requestAnimationFrame(() => {
+    fly.classList.add("fly");
+    fly.style.left = to.left + to.width / 2 + "px";
+    fly.style.top = to.top + 24 + "px";
+  });
+  window.setTimeout(() => {
+    fly.remove();
+    markGiftStack();
+    const chip = document.querySelector(".chip.wood");
+    if (chip) {
+      chip.classList.remove("catch");
+      void chip.offsetWidth;
+      chip.classList.add("catch");
+    }
+    showGuide("jobs");
+  }, 720);
+}
+
 function goPlay() {
   paintHud();
   if (!progress.gifted) giftStart();
+  if (progress.guide !== "done" && !progress.room) {
+    showGuide("coins");
+    return;
+  }
   if (!progress.room) {
     paintRooms();
     showScreen(rent);
@@ -2070,6 +2286,12 @@ function goBack() {
 }
 
 document.getElementById("boot-play").addEventListener("click", goPlay);
+document.getElementById("guide-ok").addEventListener("click", onGuideOk);
+window.addEventListener("resize", () => {
+  if (!document.getElementById("guide") || document.getElementById("guide").hidden) return;
+  const spec = GUIDE[progress.guide];
+  if (spec) layoutGuide(spec.sel, spec.side);
+});
 document.getElementById("boot-reset").addEventListener("click", resetProgress);
 document.getElementById("rent-back").addEventListener("click", () => showScreen(boot));
 document.getElementById("btn-back").addEventListener("click", goBack);
