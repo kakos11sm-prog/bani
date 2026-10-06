@@ -796,6 +796,14 @@ function paintStack() {
   }
 }
 
+function syncJobsTab() {
+  const tab = document.getElementById("jobs-tab");
+  if (!tab) return;
+  const wait = !!(dockList().length && !state.unloading && floor.classList.contains("show") && !state.shipId);
+  tab.textContent = wait ? "Разгрузить" : "Заявки";
+  tab.classList.toggle("can-unload", wait);
+}
+
 function startUnload() {
   if (!dockList().length) return;
   if (!progress.pallets.some((p) => p.units < PALLET_PACKS)) {
@@ -808,7 +816,6 @@ function startUnload() {
 function paintDock() {
   const dock = document.getElementById("dock");
   const hold = document.getElementById("dock-hold");
-  const go = document.getElementById("dock-go");
   if (!dock || !hold) return;
   const list = dockList();
   const onFloor = floor.classList.contains("show");
@@ -822,12 +829,13 @@ function paintDock() {
         if (dockList().length) return;
         dock.hidden = true;
         dock.classList.remove("show", "away");
+        syncJobsTab();
       }, 560);
     } else {
       dock.hidden = true;
       dock.classList.remove("show", "open", "away");
     }
-    if (go) go.hidden = true;
+    syncJobsTab();
     return;
   }
   dock.hidden = false;
@@ -838,7 +846,7 @@ function paintDock() {
   }
   dock.classList.toggle("open", state.unloading);
   document.body.classList.toggle("unloading", state.unloading);
-  if (go) go.hidden = state.unloading;
+  syncJobsTab();
   if (!state.unloading) {
     hold.innerHTML = "";
     return;
@@ -1608,6 +1616,7 @@ function endShip() {
   if (sheet) sheet.classList.remove("show", "ready", "big", "fly");
   const go = document.getElementById("ship-go");
   if (go) go.hidden = true;
+  syncJobsTab();
 }
 
 function hideGhost() {
@@ -1981,11 +1990,13 @@ document.getElementById("ship-go").addEventListener("click", () => {
   const order = currentOrder();
   if (order && orderDone(order)) finishShip(order);
 });
-document.getElementById("dock-go").addEventListener("click", startUnload);
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });
-document.getElementById("jobs-tab").addEventListener("click", openJobs);
+document.getElementById("jobs-tab").addEventListener("click", () => {
+  if (dockList().length && !state.unloading && !state.shipId) startUnload();
+  else openJobs();
+});
 document.getElementById("jobs-close").addEventListener("click", closeJobs);
 document.getElementById("jobs-pane").addEventListener("click", (e) => {
   if (e.target.id === "jobs-pane") closeJobs();

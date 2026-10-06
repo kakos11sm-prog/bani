@@ -1134,6 +1134,12 @@ body.shipping .jobs-tab {
   display: none;
 }
 
+.jobs-tab.can-unload {
+  background: linear-gradient(180deg, #f3d27a, #d4a017);
+  color: #2a1c10;
+  animation: pop 0.4s cubic-bezier(0.2, 1.5, 0.3, 1);
+}
+
 .jobs-tab:active {
   transform: translateX(-50%) scale(0.97);
 }
@@ -1814,7 +1820,7 @@ body:not(.in-garage) .pal-spot {
   bottom: 10%;
   z-index: 6;
   width: min(220px, 50vw);
-  height: 188px;
+  height: 282px;
   pointer-events: none;
   transition: right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -1827,6 +1833,10 @@ body:not(.in-garage) .pal-spot {
 .in-dock.away {
   right: -78%;
   pointer-events: none;
+}
+
+.in-dock.show:not(.open) .in-box {
+  animation: truckHop 0.55s ease-in-out infinite;
 }
 
 .in-box {
@@ -1890,6 +1900,52 @@ body:not(.in-garage) .pal-spot {
   pointer-events: none;
 }
 
+.in-pipe {
+  position: absolute;
+  left: 7%;
+  bottom: 20%;
+  width: 12px;
+  height: 9px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(180deg, #4a4036, #1a1410);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.in-smoke {
+  position: absolute;
+  left: 2%;
+  bottom: 26%;
+  width: 28px;
+  height: 52px;
+  pointer-events: none;
+}
+
+.in-smoke i {
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(200, 190, 170, 0.45);
+  filter: blur(2px);
+  opacity: 0;
+}
+
+.in-dock.show:not(.open) .in-smoke i {
+  animation: exhaust 1.4s ease-out infinite;
+}
+
+.in-dock.show:not(.open) .in-smoke i:nth-child(2) {
+  left: 10px;
+  animation-delay: 0.45s;
+}
+
+.in-dock.show:not(.open) .in-smoke i:nth-child(3) {
+  left: 1px;
+  animation-delay: 0.9s;
+}
+
 .in-bumper {
   position: absolute;
   left: 3%;
@@ -1913,28 +1969,15 @@ body:not(.in-garage) .pal-spot {
 .in-whl.a { left: 16%; }
 .in-whl.b { right: 22%; }
 
-.in-go {
-  position: absolute;
-  left: 4%;
-  bottom: -2px;
-  z-index: 2;
-  min-width: 108px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #f3d27a, #d4a017);
-  color: #2a1c10;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+@keyframes truckHop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
-.in-go:active {
-  transform: scale(0.97);
+@keyframes exhaust {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 0.55; }
+  100% { transform: translate(-10px, -40px) scale(1.6); opacity: 0; }
 }
 
 .dock-pak {
