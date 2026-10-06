@@ -146,7 +146,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, busy: false, drag: null, cart: { pals: [], woods: 0 } };
+const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 } };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -796,28 +796,65 @@ function paintStack() {
   }
 }
 
+function startUnload() {
+  if (!dockList().length) return;
+  if (!progress.pallets.some((p) => p.units < PALLET_PACKS)) {
+    toast(emptyWoods() ? "Сначала поставь поддон со стопки" : "Нужен свободный поддон");
+  }
+  state.unloading = true;
+  paintDock();
+}
+
 function paintDock() {
   const dock = document.getElementById("dock");
   const hold = document.getElementById("dock-hold");
+  const go = document.getElementById("dock-go");
   if (!dock || !hold) return;
   const list = dockList();
-  dock.hidden = !list.length || !floor.classList.contains("show");
-  document.body.classList.toggle("unloading", !dock.hidden);
+  const onFloor = floor.classList.contains("show");
   hold.innerHTML = "";
-  if (!list.length) return;
-  list.forEach((item) => {
-    const sku = skuOf(item.sku);
-    const n = Math.min(4, item.left);
-    for (let i = 0; i < n; i += 1) {
-      const pak = document.createElement("button");
-      pak.type = "button";
-      pak.className = "dock-pak";
-      pak.setAttribute("style", palSkin(sku));
-      pak.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
-      pak.addEventListener("pointerdown", (e) => startPackDrag(e, item.id, "dock"));
-      hold.appendChild(pak);
+  if (!list.length || !onFloor) {
+    state.unloading = false;
+    document.body.classList.remove("unloading");
+    if (dock.classList.contains("show")) {
+      dock.classList.remove("open");
+      dock.classList.add("away");
+      window.setTimeout(() => {
+        if (dockList().length) return;
+        dock.hidden = true;
+        dock.classList.remove("show", "away");
+      }, 560);
+    } else {
+      dock.hidden = true;
+      dock.classList.remove("show", "open", "away");
     }
-  });
+    if (go) go.hidden = true;
+    return;
+  }
+  dock.hidden = false;
+  dock.classList.remove("away");
+  if (!dock.classList.contains("show")) {
+    void dock.offsetWidth;
+    dock.classList.add("show");
+  }
+  dock.classList.toggle("open", state.unloading);
+  document.body.classList.toggle("unloading", state.unloading);
+  if (go) go.hidden = state.unloading;
+  if (!state.unloading) return;
+  const item = list[0];
+  const keep = hold.querySelector(".dock-pak");
+  if (keep && keep.dataset.id === String(item.id) && keep.dataset.left === String(item.left)) return;
+  hold.innerHTML = "";
+  const sku = skuOf(item.sku);
+  const pak = document.createElement("button");
+  pak.type = "button";
+  pak.className = "dock-pak peek";
+  pak.dataset.id = String(item.id);
+  pak.dataset.left = String(item.left);
+  pak.setAttribute("style", palSkin(sku));
+  pak.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
+  pak.addEventListener("pointerdown", (e) => startPackDrag(e, item.id, "dock"));
+  hold.appendChild(pak);
 }
 
 function paintWaybill(fresh) {
@@ -1324,7 +1361,7 @@ function tickShip() {
   paintTruck();
   if (arrived.length) {
     arrived.forEach((item) => {
-      toast("Машина справа. Поставь поддон и снимай «" + skuOf(item.sku).name + "»");
+      toast("Машина приехала. Жми «Разгрузить»");
     });
     if (document.getElementById("ship-pane").classList.contains("show")) paintShipList();
     if (floor.classList.contains("show")) {
@@ -1929,6 +1966,7 @@ document.getElementById("ship-go").addEventListener("click", () => {
   const order = currentOrder();
   if (order && orderDone(order)) finishShip(order);
 });
+document.getElementById("dock-go").addEventListener("click", startUnload);
 document.getElementById("shop").addEventListener("click", (e) => {
   if (e.target.id === "shop") closeShop();
 });

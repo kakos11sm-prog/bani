@@ -1808,67 +1808,155 @@ body:not(.in-garage) .pal-spot {
   color: var(--muted);
 }
 
-.dock {
+.in-dock {
   position: absolute;
-  right: max(4px, env(safe-area-inset-right));
-  bottom: 16%;
+  right: -62%;
+  bottom: 8%;
   z-index: 6;
-  width: 118px;
+  width: min(248px, 58vw);
+  height: 220px;
+  pointer-events: none;
+  transition: right 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.in-dock.show {
+  right: -18%;
   pointer-events: auto;
-  animation: dockIn 0.45s cubic-bezier(0.2, 1.1, 0.3, 1);
 }
 
-.dock-art {
-  position: relative;
-  height: 54px;
-  border-radius: 6px 2px 2px 6px;
-  background:
-    linear-gradient(90deg, #3a342c 0 10px, #8d7754 10px 78%, #c4b089 78%);
-  box-shadow: -8px 10px 16px rgba(0, 0, 0, 0.4);
+.in-dock.away {
+  right: -70%;
+  pointer-events: none;
 }
 
-.dock-art::after {
-  content: "";
+.in-box {
   position: absolute;
-  right: 8px;
-  top: 10px;
-  width: 22px;
-  height: 16px;
-  border-radius: 2px;
-  background: #3d5a62;
+  inset: 18px 0 28px;
+  border-radius: 8px 0 0 6px;
+  background:
+    linear-gradient(90deg, #4a3a2c 0 14%, #6a5340 14% 72%, #3a2c22 72%),
+    linear-gradient(180deg, #7a6250, #3a2c22);
+  box-shadow: -12px 14px 22px rgba(0, 0, 0, 0.45);
 }
 
-.dock-hold {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 2px;
-  min-height: 52px;
-  margin-top: -28px;
-  padding-right: 8px;
+.in-cab {
+  position: absolute;
+  right: 0;
+  top: 18%;
+  width: 28%;
+  height: 46%;
+  border-radius: 0 6px 2px 0;
+  background: linear-gradient(180deg, #c4b089, #8a7352 60%, #5a4a38);
+}
+
+.in-glass {
+  position: absolute;
+  right: 6%;
+  top: 24%;
+  width: 16%;
+  height: 18%;
+  border-radius: 2px;
+  background: linear-gradient(160deg, rgba(210, 230, 235, 0.45), #3d5a62);
+}
+
+.in-door {
+  position: absolute;
+  top: 10%;
+  bottom: 22%;
+  width: 28%;
+  background:
+    linear-gradient(90deg, #5a4636, #2e241c);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+  transform-origin: left center;
+  transition: transform 0.45s ease;
+}
+
+.in-door.l { left: 4%; }
+.in-door.r {
+  left: 32%;
+  transform-origin: right center;
+}
+
+.in-dock.open .in-door.l { transform: rotateY(68deg); }
+.in-dock.open .in-door.r { transform: rotateY(-68deg); }
+
+.in-hold {
+  position: absolute;
+  left: 8%;
+  width: 46%;
+  top: 18%;
+  bottom: 26%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.in-bumper {
+  position: absolute;
+  left: 3%;
+  right: 18%;
+  bottom: 8%;
+  height: 10px;
+  border-radius: 2px;
+  background: #1a1410;
+}
+
+.in-whl {
+  position: absolute;
+  bottom: -16px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #777, #111 58%);
+  box-shadow: 0 3px 0 #000;
+}
+
+.in-whl.a { left: 16%; }
+.in-whl.b { right: 22%; }
+
+.in-go {
+  position: absolute;
+  left: 6%;
+  bottom: -2px;
+  z-index: 2;
+  min-width: 112px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f3d27a, #d4a017);
+  color: #2a1c10;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.in-go:active {
+  transform: scale(0.97);
 }
 
 .dock-pak {
-  width: 28px;
-  height: 48px;
+  position: absolute;
+  left: 8%;
+  bottom: 4%;
+  width: 36px;
+  height: 64px;
   padding: 0;
   border: 0;
   background: none;
-  transform: scale(0.72);
-  transform-origin: bottom right;
+  pointer-events: auto;
+  transform-origin: bottom center;
 }
 
-.dock-hint {
-  margin: 4px 0 0;
-  font-size: 10px;
-  font-weight: 800;
-  text-align: right;
-  text-shadow: 0 1px 6px #000;
+.dock-pak.peek {
+  animation: peekOut 0.42s cubic-bezier(0.2, 1.1, 0.3, 1) both;
 }
 
-@keyframes dockIn {
-  from { transform: translateX(40px); opacity: 0; }
-  to { transform: none; opacity: 1; }
+@keyframes peekOut {
+  from { transform: translateX(36px) scale(0.86); opacity: 0; }
+  to { transform: translateX(-10px) scale(1); opacity: 1; }
 }
 
 .pal-stand.hot {
