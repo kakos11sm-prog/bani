@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=85" />
+    <link rel="stylesheet" href="style.css?v=86" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -25,7 +25,10 @@
 
     <div class="toast" id="toast" aria-live="polite"></div>
     <button class="shop-btn" id="shop-btn" type="button">Магазин</button>
-    <button class="jobs-tab" id="jobs-tab" type="button">Заявки</button>
+    <button class="jobs-tab" id="jobs-tab" type="button">
+      <span id="jobs-tab-label">Заявки</span>
+      <em class="jobs-rush" id="jobs-rush" aria-hidden="true">0:00</em>
+    </button>
     <button class="truck" id="truck" type="button" aria-label="Доставка">
       <span class="truck-art" aria-hidden="true">
         <span class="truck-draw">
@@ -191,6 +194,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=85"></script>
+    <script src="game.js?v=86"></script>
   </body>
 </html>

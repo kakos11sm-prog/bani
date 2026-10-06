@@ -927,12 +927,23 @@ function paintStack() {
   }
 }
 
+function currentRush() {
+  return (progress.orders || []).find((o) => jobKind(o) === "rush") || null;
+}
+
 function syncJobsTab() {
   const tab = document.getElementById("jobs-tab");
+  const label = document.getElementById("jobs-tab-label");
+  const rushEl = document.getElementById("jobs-rush");
   if (!tab) return;
-  const wait = !!(dockList().length && !state.unloading && floor.classList.contains("show") && !state.shipId);
-  tab.textContent = wait ? "Разгрузить" : "Заявки";
+  const wait = !!(dockList().length && !state.unloading && floor.classList.contains("show") && !state.shipId && !state.bulkId);
+  if (label) label.textContent = wait ? "Разгрузить" : "Заявки";
   tab.classList.toggle("can-unload", wait);
+  const rush = currentRush();
+  const left = rush && rush.until ? rush.until - Date.now() : 0;
+  const show = !!(rush && left > 0 && !inGuide() && !state.shipId && !state.bulkId);
+  tab.classList.toggle("has-rush", show);
+  if (rushEl) rushEl.textContent = show ? "срочно " + fmtEta(left) : "";
 }
 
 function startUnload() {
@@ -1081,9 +1092,10 @@ function paintJobs() {
   host.innerHTML = "";
   if (!progress.orders.length) {
     const empty = document.createElement("div");
-    empty.className = "job";
-    empty.innerHTML = "<b>Заявок нет</b><small>Сними товар с машины на поддон</small>";
+    empty.className = "job empty";
+    empty.innerHTML = "<b class=\"job-mix\">Заявок нет</b><small class=\"job-note\">Сними товар с машины на поддон</small>";
     host.appendChild(empty);
+    syncJobsTab();
     return;
   }
   const list = progress.orders.slice().sort((a, b) => {
@@ -1096,20 +1108,22 @@ function paintJobs() {
     btn.className = "job " + (order.grade || jobKind(order));
     btn.style.animationDelay = i * 60 + "ms";
     const kind = jobKind(order);
-    let mix = (order.lines || []).map((line) => line.need + "× " + skuOf(line.sku).name).join(" · ");
-    if (kind === "bulk") mix = order.bulkN + " полных · " + skuOf(bulkSkuOf(order)).name;
-    const extra = jobNote(order);
+    const clock =
+      kind === "rush" && order.until
+        ? "<span class=\"job-clock\">" + fmtEta(Math.max(0, order.until - Date.now())) + "</span>"
+        : "";
     btn.innerHTML =
-      "<em>" +
+      "<em class=\"job-kind\">" +
       (GRADE_NAME[order.grade] || "Заявка") +
-      "</em><b>#" +
-      order.id +
-      " · " +
-      mix +
-      "</b><small>+" +
+      "</em>" +
+      clock +
+      "<b class=\"job-mix\">" +
+      jobMixHtml(order) +
+      "</b><small class=\"job-note\">" +
+      jobCardNote(order) +
+      "</small><strong class=\"job-pay\">+" +
       order.pay +
-      extra +
-      "</small>";
+      "</strong>";
     btn.addEventListener("click", () => {
       closeJobs();
       if (kind === "bulk") startBulk(order.id);
@@ -1117,33 +1131,55 @@ function paintJobs() {
     });
     host.appendChild(btn);
   });
+  syncJobsTab();
+}
+
+function jobMixHtml(order) {
+  if (jobKind(order) === "bulk") {
+    return "<span class=\"job-sku\">" + order.bulkN + " полных · " + skuOf(bulkSkuOf(order)).name + "</span>";
+  }
+  return (order.lines || [])
+    .map((line) => "<span class=\"job-sku\">" + line.need + "× " + skuOf(line.sku).name + "</span>")
+    .join("");
+}
+
+function jobCardNote(order) {
+  const kind = jobKind(order);
+  if (kind === "rush") return "Успеешь — пустой поддон в подарок";
+  if (kind === "bulk") {
+    const n = order.bulkN || 0;
+    return "Заберёт " + n + " подд. с деревом";
+  }
+  const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
+  return shop ? "Часть нужно докупить" : "Поддон остаётся";
 }
 
 function jobNote(order) {
   const kind = jobKind(order);
   if (kind === "rush") {
     const left = (order.until || 0) - Date.now();
-    return " · поддон · " + (left > 0 ? fmtEta(left) : "сгорела");
+    return left > 0 ? fmtEta(left) : "сгорела";
   }
   if (kind === "bulk") {
-    const bit = " · заберёт " + order.bulkN + " подд.";
     if (order.until && state.bulkId === order.id) {
       const left = order.until - Date.now();
-      return bit + " · " + (left > 0 ? fmtEta(left) : "время");
+      return left > 0 ? fmtEta(left) : "время";
     }
-    return bit;
+    return "";
   }
-  const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
-  return shop ? " · докупить" : "";
+  return "";
 }
 
 function syncJobClocks() {
   document.querySelectorAll("#jobs .job[data-id]").forEach((btn) => {
     const order = progress.orders.find((o) => o.id === Number(btn.dataset.id));
     if (!order) return;
-    const small = btn.querySelector("small");
-    if (small) small.textContent = "+" + order.pay + jobNote(order);
+    const clock = btn.querySelector(".job-clock");
+    if (clock) clock.textContent = jobNote(order) || "0:00";
+    const note = btn.querySelector(".job-note");
+    if (note) note.textContent = jobCardNote(order);
   });
+  syncJobsTab();
   if (state.bulkId || state.shipId) paintWaybill();
 }
 
@@ -2553,7 +2589,7 @@ const GUIDE = {
   unload: {
     text: "Разгрузи машину",
     sel: "#jobs-tab",
-    side: "above",
+    side: "left",
     wobble: "#jobs-tab",
   },
   pack: {
@@ -2565,7 +2601,7 @@ const GUIDE = {
   jobs: {
     text: "Зайди в заявки",
     sel: "#jobs-tab",
-    side: "above",
+    side: "left",
     wobble: "#jobs-tab",
   },
   build: {
