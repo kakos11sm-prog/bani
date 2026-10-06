@@ -198,6 +198,10 @@ function goodsPals() {
   return (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT);
 }
 
+function hasGoodsPal() {
+  return goodsPals().some((p) => p.units < PALLET_PACKS);
+}
+
 function emptyWoods() {
   return allPals().filter((p) => p.units < 1).length;
 }
@@ -894,6 +898,9 @@ function startUnload() {
   }
   state.unloading = true;
   paintDock();
+  if (inGuide() && (progress.guide === "unload" || progress.guide === "place")) {
+    window.setTimeout(() => showGuide("pack"), 220);
+  }
 }
 
 function paintDock() {
@@ -1471,8 +1478,8 @@ function tickShip() {
       paintDock();
       paintStack();
     }
-    if (inGuide() && (progress.guide === "wait" || progress.guide === "wood")) {
-      showGuide("place");
+    if (inGuide() && (progress.guide === "wait" || progress.guide === "wood" || progress.guide === "place")) {
+      showGuide(hasGoodsPal() ? "unload" : "place");
     }
   }
 }
@@ -1789,6 +1796,7 @@ function startWoodDrag(e, palId, from) {
   state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, held: true };
   if (from === "stack") {
     progress.stack = progress.stack.filter((p) => p.id !== pal.id);
+    if (progress.guide === "place") hideGuide();
   } else {
     progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
     if (state.shipPalId === pal.id && pal.units > 0) state.shipPalId = 0;
@@ -1933,6 +1941,10 @@ async function onDragEnd(e) {
       const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
       if (stand) stand.classList.add("drop-in");
     }
+    if (inGuide() && progress.guide === "place") {
+      if (placed && spotEl) window.setTimeout(() => showGuide(dockList().length ? "unload" : "wait"), 80);
+      else showGuide("place");
+    }
     return;
   }
   const pal = palFromPoint(x, y);
@@ -1982,7 +1994,7 @@ async function dropPackOn(pal, drag) {
   maybeOrders();
   paintJobs();
   if (pal.units >= PALLET_PACKS) toast("Поддон полный. Можешь убрать на стопку");
-  if (progress.guide === "place" && drag.from === "dock") playGuideGift();
+  if ((progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") && drag.from === "dock") playGuideGift();
 }
 
 async function finishShip(order) {
@@ -2101,14 +2113,28 @@ const GUIDE = {
     wobble: ".good.woods",
   },
   wait: {
-    text: "Машина едет минуту. Смотри таймер справа",
+    text: "Доставка занимает время",
     sel: "#truck",
     side: "below",
+    wobble: "#truck",
   },
   place: {
-    text: "Поставь поддон со стопки, разгрузи машину и сложи паки на него",
+    text: "Поставь поддон со стопки",
     sel: "#wood-stack",
     side: "right",
+    wobble: "#wood-stack",
+  },
+  unload: {
+    text: "Разгрузи машину",
+    sel: "#jobs-tab",
+    side: "above",
+    wobble: "#jobs-tab",
+  },
+  pack: {
+    text: "Сложи паки на поддон",
+    sel: ".dock-pak",
+    side: "left",
+    wobble: ".dock-pak",
   },
   jobs: {
     text: "Зайди в заявки. Собери заказ на нижний поддон и отправь машину",
@@ -2127,7 +2153,7 @@ function hideGuide() {
 }
 
 function layoutGuide(sel, side) {
-  const target = document.querySelector(sel);
+  const target = document.querySelector(sel) || (sel === ".dock-pak" ? document.getElementById("dock") : null);
   const card = document.getElementById("guide-card");
   const arrow = card && card.querySelector(".guide-arrow");
   if (!target || !card) return false;
@@ -2164,7 +2190,7 @@ function layoutGuide(sel, side) {
   card.style.top = top + "px";
   const spot = document.getElementById("guide-spot");
   if (spot) {
-    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck") || target;
+    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak") || target;
     const hr = hole.getBoundingClientRect();
     const pad = 8;
     spot.style.left = hr.left - pad + "px";

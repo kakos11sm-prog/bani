@@ -3170,21 +3170,32 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 .chip.guide-on,
 .room.guide-on,
-.good.guide-on,
-.wood-stack.guide-on {
+.good.guide-on {
   position: relative;
 }
 
 .chip.coin.wobble,
 .chip.wobble,
 .shop-btn.wobble,
-.good.woods.wobble {
+.good.woods.wobble,
+.wood-stack.wobble,
+.truck.wobble,
+.dock-pak.wobble {
   animation: hintWobble 0.7s ease-in-out infinite;
+}
+
+.jobs-tab.wobble {
+  animation: hintWobbleJobs 0.7s ease-in-out infinite;
 }
 
 @keyframes hintWobble {
   0%, 100% { transform: rotate(-4deg) translateY(0); }
   50% { transform: rotate(5deg) translateY(-3px); }
+}
+
+@keyframes hintWobbleJobs {
+  0%, 100% { transform: translateX(-50%) rotate(-4deg) translateY(0); }
+  50% { transform: translateX(-50%) rotate(5deg) translateY(-3px); }
 }
 
 @keyframes guideLure {
