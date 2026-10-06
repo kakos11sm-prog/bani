@@ -2351,10 +2351,10 @@ body.shipping .pal-stand.can-take {
   left: 0;
   right: 0;
   margin: 0;
-  gap: 5px;
+  gap: 0;
   --lift: 0;
   --back: 0;
-  bottom: calc(3px + var(--lift) * 43px + min(1, var(--lift)) * 10px);
+  bottom: calc(1px + min(1, var(--lift)) * 55px + max(0, var(--lift) - 1) * 53px);
   transform: scale(calc(1.055 - var(--back) * 0.065));
   transform-origin: 50% 100%;
   z-index: calc(var(--lift) * 3 + (2 - var(--back)));
