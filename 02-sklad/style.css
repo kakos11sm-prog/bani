@@ -1834,6 +1834,38 @@ body:not(.in-garage) .pal-spot {
   box-shadow: 0 0 16px rgba(240, 180, 41, 0.45);
 }
 
+body.guide-place .pal-spot:not(.has-pal) {
+  z-index: 48;
+}
+
+body.guide-place .pal-spot:not(.has-pal)::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 10px;
+  bottom: 4px;
+  border: 2px dashed rgba(243, 210, 122, 0.9);
+  border-radius: 14px;
+  pointer-events: none;
+  animation: dropPulse 1.1s ease-in-out infinite;
+}
+
+body.guide-place .pal-spot:not(.has-pal)::after {
+  background: rgba(240, 180, 41, 0.48);
+  box-shadow:
+    0 0 18px rgba(240, 180, 41, 0.55),
+    0 0 0 2px rgba(243, 210, 122, 0.45);
+  filter: none;
+  height: 18px;
+  animation: dropPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes dropPulse {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
 .chip.wood i {
   width: 18px;
   height: 12px;
@@ -1853,6 +1885,7 @@ body:not(.in-garage) .pal-spot {
   min-height: 88px;
   padding: 18px 8px 10px;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .wood-stack .stack-layer {
@@ -2191,7 +2224,7 @@ body:not(.in-garage) .pal-spot {
   width: 108px;
   margin-left: -54px;
   pointer-events: auto;
-  touch-action: pan-x;
+  touch-action: none;
   user-select: none;
 }
 

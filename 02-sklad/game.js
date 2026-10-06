@@ -823,6 +823,7 @@ function paintSlots() {
   paintStack();
   paintDock();
   syncYardPan();
+  paintGuideDrops();
 }
 
 function paintBuild() {
@@ -1790,7 +1791,6 @@ function startWoodDrag(e, palId, from) {
     return;
   }
   if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT) return;
-  e.preventDefault();
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
   state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, held: true };
@@ -1801,10 +1801,9 @@ function startWoodDrag(e, palId, from) {
     progress.pallets = progress.pallets.filter((p) => p.id !== pal.id);
     if (state.shipPalId === pal.id && pal.units > 0) state.shipPalId = 0;
   }
+  bindDrag(e);
   beginGhost(palStandHtml(pal), e.clientX, e.clientY);
   paintSlots();
-  window.addEventListener("pointermove", onDragMove);
-  window.addEventListener("pointerup", onDragEnd);
 }
 
 function startPackDrag(e, id, from) {
@@ -1817,12 +1816,10 @@ function startPackDrag(e, id, from) {
       toast(freeSpots() && emptyWoods() ? "Сначала поставь поддон" : "Нужен свободный поддон");
       return;
     }
-    e.preventDefault();
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+    if (e.currentTarget.parentNode) e.currentTarget.remove();
     item.left -= 1;
     state.drag = { kind: "pack", from: "dock", dockId: item.id, sku: item.sku, held: true };
     beginGhost("<span class=\"pak\">" + pakInner(skuOf(item.sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(item.sku)));
-    if (e.currentTarget.parentNode) e.currentTarget.remove();
   } else {
     const pal = progress.pallets.find((p) => p.id === id);
     if (!pal || pal.units < 1) return;
@@ -1835,8 +1832,6 @@ function startPackDrag(e, id, from) {
       startWoodDrag(e, pal.id, "floor");
       return;
     }
-    e.preventDefault();
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
     pal.units -= 1;
     const sku = pal.sku;
     if (pal.units < 1) pal.sku = "";
@@ -1847,8 +1842,32 @@ function startPackDrag(e, id, from) {
   }
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
-  window.addEventListener("pointermove", onDragMove);
-  window.addEventListener("pointerup", onDragEnd);
+  bindDrag(e);
+}
+
+const DRAG_LISTEN = { capture: true, passive: false };
+
+function bindDrag(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.pointerId != null) {
+    try {
+      document.body.setPointerCapture(e.pointerId);
+    } catch (_) {}
+  }
+  window.addEventListener("pointermove", onDragMove, DRAG_LISTEN);
+  window.addEventListener("pointerup", onDragEnd, DRAG_LISTEN);
+  window.addEventListener("pointercancel", onDragEnd, DRAG_LISTEN);
+}
+
+function unbindDrag(e) {
+  window.removeEventListener("pointermove", onDragMove, DRAG_LISTEN);
+  window.removeEventListener("pointerup", onDragEnd, DRAG_LISTEN);
+  window.removeEventListener("pointercancel", onDragEnd, DRAG_LISTEN);
+  if (e && e.pointerId != null) {
+    try {
+      document.body.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+  }
 }
 
 function restoreHeld(drag) {
@@ -1874,6 +1893,7 @@ function restoreHeld(drag) {
 
 function onDragMove(e) {
   if (!state.drag) return;
+  if (e && e.preventDefault) e.preventDefault();
   moveGhost(e.clientX, e.clientY);
   document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot").forEach((el) => el.classList.remove("hot"));
   const stack = hitEl(e.clientX, e.clientY, ".wood-stack", 16);
@@ -1900,8 +1920,7 @@ function placePalOnSpot(pal, spot) {
 }
 
 async function onDragEnd(e) {
-  window.removeEventListener("pointermove", onDragMove);
-  window.removeEventListener("pointerup", onDragEnd);
+  unbindDrag(e);
   const yard = document.getElementById("inside");
   if (yard) yard.classList.remove("is-drag");
   document.querySelectorAll(".hot").forEach((el) => el.classList.remove("hot"));
@@ -2121,7 +2140,7 @@ const GUIDE = {
   place: {
     text: "Поставь поддон со стопки",
     sel: "#wood-stack",
-    side: "right",
+    side: "above",
     wobble: "#wood-stack",
   },
   unload: {
@@ -2150,6 +2169,11 @@ function hideGuide() {
     box.classList.remove("show");
   }
   document.querySelectorAll(".guide-on, .wobble").forEach((el) => el.classList.remove("guide-on", "wobble"));
+  paintGuideDrops();
+}
+
+function paintGuideDrops() {
+  document.body.classList.toggle("guide-place", progress.guide === "place");
 }
 
 function layoutGuide(sel, side) {
