@@ -999,6 +999,11 @@ function paintWaybill(fresh) {
   const ready = orderDone(order) && !state.busy;
   sheet.classList.toggle("ready", ready);
   if (go) go.hidden = !ready;
+  if (ready && (progress.guide === "build" || progress.guide === "jobs")) {
+    window.setTimeout(() => {
+      if (progress.guide === "build" || progress.guide === "jobs") showGuide("send");
+    }, 80);
+  }
 }
 
 function paintLoad() {}
@@ -1390,6 +1395,7 @@ function openJobs() {
   closeShop();
   paintJobs();
   document.getElementById("jobs-pane").classList.add("show");
+  if (progress.guide === "jobs") hideGuide();
 }
 
 function nearestReady() {
@@ -1708,6 +1714,7 @@ function startShip(id) {
   } else {
     toast("Клади паки вниз, на сборку");
   }
+  if (progress.guide === "jobs") window.setTimeout(() => showGuide("build"), 120);
 }
 
 function endShip() {
@@ -2013,7 +2020,18 @@ async function dropPackOn(pal, drag) {
   maybeOrders();
   paintJobs();
   if (pal.units >= PALLET_PACKS) toast("Поддон полный. Можешь убрать на стопку");
-  if ((progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") && drag.from === "dock") playGuideGift();
+  if ((progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") && drag.from === "dock") {
+    if (!progress.giftedPal) playGuideGift();
+    if (!dockList().length) {
+      const wait = document.querySelector(".guide-gift") ? 780 : 160;
+      window.setTimeout(() => {
+        if (dockList().length) return;
+        if (progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") {
+          showGuide("jobs");
+        }
+      }, wait);
+    }
+  }
 }
 
 async function finishShip(order) {
@@ -2059,7 +2077,7 @@ async function finishShip(order) {
   paintJobs();
   toast("Товар уехал. Поддон положи на стопку");
   state.busy = false;
-  if (progress.guide === "jobs") {
+  if (progress.guide === "send" || progress.guide === "build" || progress.guide === "jobs") {
     progress.guide = "done";
     saveProgress();
     hideGuide();
@@ -2138,7 +2156,7 @@ const GUIDE = {
     wobble: "#truck",
   },
   place: {
-    text: "Поставь поддон со стопки",
+    text: "Перетяни поддон со стопки",
     sel: "#wood-stack",
     side: "above",
     wobble: "#wood-stack",
@@ -2156,9 +2174,22 @@ const GUIDE = {
     wobble: ".dock-pak",
   },
   jobs: {
-    text: "Зайди в заявки. Собери заказ на нижний поддон и отправь машину",
+    text: "Зайди в заявки",
     sel: "#jobs-tab",
     side: "above",
+    wobble: "#jobs-tab",
+  },
+  build: {
+    text: "Собери заказ на нижний поддон",
+    sel: "#build-spot",
+    side: "above",
+    wobble: "#build-spot",
+  },
+  send: {
+    text: "Отправь машину",
+    sel: "#ship-go",
+    side: "below",
+    wobble: "#ship-go",
   },
 };
 
@@ -2174,6 +2205,7 @@ function hideGuide() {
 
 function paintGuideDrops() {
   document.body.classList.toggle("guide-place", progress.guide === "place");
+  document.body.classList.toggle("guide-build", progress.guide === "build");
 }
 
 function layoutGuide(sel, side) {
@@ -2214,7 +2246,7 @@ function layoutGuide(sel, side) {
   card.style.top = top + "px";
   const spot = document.getElementById("guide-spot");
   if (spot) {
-    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak") || target;
+    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .waybill, .ship-go") || target;
     const hr = hole.getBoundingClientRect();
     const pad = 8;
     spot.style.left = hr.left - pad + "px";
@@ -2313,10 +2345,6 @@ function onGuideOk() {
     showGuide("wood");
     return;
   }
-  if (step === "jobs") {
-    progress.guide = "done";
-    saveProgress();
-  }
   hideGuide();
 }
 
@@ -2350,7 +2378,6 @@ function playGuideGift() {
       void chip.offsetWidth;
       chip.classList.add("catch");
     }
-    showGuide("jobs");
   }, 720);
 }
 
@@ -2429,9 +2456,14 @@ document.getElementById("jobs-tab").addEventListener("click", () => {
   if (dockList().length && !state.unloading && !state.shipId) startUnload();
   else openJobs();
 });
-document.getElementById("jobs-close").addEventListener("click", closeJobs);
+document.getElementById("jobs-close").addEventListener("click", () => {
+  closeJobs();
+  if (progress.guide === "jobs" && !state.shipId) window.setTimeout(() => showGuide("jobs"), 80);
+});
 document.getElementById("jobs-pane").addEventListener("click", (e) => {
-  if (e.target.id === "jobs-pane") closeJobs();
+  if (e.target.id !== "jobs-pane") return;
+  closeJobs();
+  if (progress.guide === "jobs" && !state.shipId) window.setTimeout(() => showGuide("jobs"), 80);
 });
 document.getElementById("pack-close").addEventListener("click", openFloor);
 document.getElementById("truck").addEventListener("click", openShip);

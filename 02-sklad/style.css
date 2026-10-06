@@ -3221,6 +3221,37 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   animation: hintWobbleJobs 0.7s ease-in-out infinite;
 }
 
+.build-spot.wobble,
+.ship-go.wobble {
+  animation: hintWobble 0.7s ease-in-out infinite;
+}
+
+body.guide-build .build-spot {
+  z-index: 48;
+}
+
+body.guide-build .build-spot:not(.has-pal)::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 8px;
+  bottom: 22px;
+  border: 2px dashed rgba(243, 210, 122, 0.9);
+  border-radius: 14px;
+  pointer-events: none;
+  animation: dropPulse 1.1s ease-in-out infinite;
+}
+
+body.guide-build .build-spot:not(.has-pal)::after {
+  background: rgba(240, 180, 41, 0.48);
+  box-shadow:
+    0 0 18px rgba(240, 180, 41, 0.55),
+    0 0 0 2px rgba(243, 210, 122, 0.45);
+  filter: none;
+  animation: dropPulse 1.1s ease-in-out infinite;
+}
+
 @keyframes hintWobble {
   0%, 100% { transform: rotate(-4deg) translateY(0); }
   50% { transform: rotate(5deg) translateY(-3px); }
