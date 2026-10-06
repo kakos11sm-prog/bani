@@ -1,6 +1,10 @@
 const SAVE_KEY = "sklad-progress-v4";
 const START_COINS = 1200;
-const PALLET_PACKS = 6;
+const PALLET_COLS = 2;
+const PALLET_DEPTH = 3;
+const PALLET_LAYERS = 3;
+const PALLET_PACKS = PALLET_COLS * PALLET_DEPTH * PALLET_LAYERS;
+const BUILD_SPOT = 99;
 const SHIP_COLS = 3;
 const SHIP_ROWS = 3;
 const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
@@ -113,7 +117,8 @@ function loadProgress() {
       ? raw.stack.map((p, i) => readPal(p, i)).filter((p) => p.id)
       : [];
     base.pallets.forEach((p, i) => {
-      const clash = base.pallets.some((o, j) => j < i && o.spot === p.spot);
+      if (p.spot === BUILD_SPOT) return;
+      const clash = base.pallets.some((o, j) => j < i && o.spot === p.spot && o.spot !== BUILD_SPOT);
       if (p.spot == null || p.spot < 0 || clash) p.spot = i;
     });
     if (fromOld && !base.stack.length) {
@@ -186,6 +191,10 @@ function allPals() {
   return (progress.pallets || []).concat(progress.stack || []);
 }
 
+function goodsPals() {
+  return (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT);
+}
+
 function emptyWoods() {
   return allPals().filter((p) => p.units < 1).length;
 }
@@ -193,11 +202,11 @@ function emptyWoods() {
 function freeSpots() {
   const room = roomOf(progress.room);
   const cap = room ? room.slots : 0;
-  return Math.max(0, cap - progress.pallets.length);
+  return Math.max(0, cap - goodsPals().length);
 }
 
 function usedSpots() {
-  return new Set((progress.pallets || []).map((p) => p.spot));
+  return new Set(goodsPals().map((p) => p.spot));
 }
 
 function firstFreeSpot() {
@@ -423,21 +432,28 @@ function palMarkup(sku, packs) {
   if (!sku || !n) {
     return "<div class=\"pal-live empty-wood\">" + palWood("") + "</div>";
   }
-  const cols = 2;
-  const rows = PALLET_PACKS / cols;
   let load = "";
-  for (let row = 0; row < rows; row += 1) {
-    const vacant = row * cols + 1 < PALLET_PACKS - n;
-    load += "<span class=\"pak-layer lift-" + row + (vacant ? " vacant" : "") + "\">";
-    for (let col = 0; col < cols; col += 1) {
-      const slot = row * cols + col;
-      if (slot >= PALLET_PACKS - n) {
-        load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
-      } else {
-        load += "<span class=\"pak empty\"></span>";
+  for (let layer = 0; layer < PALLET_LAYERS; layer += 1) {
+    for (let depth = 0; depth < PALLET_DEPTH; depth += 1) {
+      const base = layer * PALLET_COLS * PALLET_DEPTH + depth * PALLET_COLS;
+      const shown = base < n;
+      load +=
+        "<span class=\"pak-layer lift-" +
+        layer +
+        " depth-" +
+        depth +
+        (shown ? "" : " vacant") +
+        "\">";
+      for (let col = 0; col < PALLET_COLS; col += 1) {
+        const slot = base + col;
+        if (slot < n) {
+          load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
+        } else {
+          load += "<span class=\"pak empty\"></span>";
+        }
       }
+      load += "</span>";
     }
-    load += "</span>";
   }
   return (
     "<div class=\"pal-live sku-" +
@@ -680,10 +696,9 @@ function canDropPackOn(pal, sku) {
   if (state.shipId) {
     const order = currentOrder();
     if (!order || !stillNeed(order, sku)) return false;
-    if (pal.id === state.shipPalId) return true;
-    return pal.units < 1 && !state.shipPalId;
+    return pal.id === state.shipPalId;
   }
-  if (pal.id === state.shipPalId) return false;
+  if (pal.spot === BUILD_SPOT) return false;
   return pal.units < PALLET_PACKS && (!pal.units || pal.sku === sku);
 }
 
@@ -774,12 +789,10 @@ function paintSlots() {
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {
       const take = state.shipId && canTakePal(pal);
-      const ship = pal.id === state.shipPalId;
       const stand = document.createElement("div");
       stand.className =
         "pal-stand" +
-        (ship ? " ship-now" : "") +
-        (state.shipId ? (take ? " can-take" : pal.units < 1 || ship ? " can-drop" : " no-take") : "");
+        (state.shipId ? (take ? " can-take" : " no-take") : "");
       stand.dataset.id = String(pal.id);
       stand.innerHTML = palStandHtml(pal);
       bindStand(stand, pal);
@@ -788,9 +801,37 @@ function paintSlots() {
     }
     host.appendChild(cell);
   });
+  paintBuild();
   paintStack();
   paintDock();
   syncYardPan();
+}
+
+function paintBuild() {
+  const host = document.getElementById("build-spot");
+  if (!host) return;
+  host.innerHTML = "";
+  const pal = progress.pallets.find((p) => p.spot === BUILD_SPOT);
+  host.classList.toggle("has-pal", !!pal);
+  host.classList.toggle("ship-on", !!state.shipId);
+  const mark = document.createElement("em");
+  mark.textContent = "Сборка";
+  if (!pal) {
+    host.appendChild(mark);
+    return;
+  }
+  const take = state.shipId && canTakePal(pal);
+  const ship = !!(state.shipId && pal.id === state.shipPalId);
+  const stand = document.createElement("div");
+  stand.className =
+    "pal-stand" +
+    (ship ? " ship-now" : "") +
+    (state.shipId ? (take ? " can-take" : pal.units < 1 || ship ? " can-drop" : " no-take") : "");
+  stand.dataset.id = String(pal.id);
+  stand.innerHTML = palStandHtml(pal);
+  bindStand(stand, pal);
+  host.appendChild(stand);
+  host.appendChild(mark);
 }
 
 function paintStack() {
@@ -834,7 +875,7 @@ function syncJobsTab() {
 
 function startUnload() {
   if (!dockList().length) return;
-  if (!progress.pallets.some((p) => p.units < PALLET_PACKS)) {
+  if (!progress.pallets.filter((p) => p.spot !== BUILD_SPOT).some((p) => p.units < PALLET_PACKS)) {
     toast(emptyWoods() ? "Сначала поставь поддон со стопки" : "Нужен свободный поддон");
   }
   state.unloading = true;
@@ -1421,10 +1462,10 @@ function boughtPals() {
 
 function gradeNeed(grade, pals) {
   const n = Math.max(1, pals);
-  if (grade === "easy") return Math.min(3, 1 + Math.floor((n - 1) / 3));
-  if (grade === "mid") return Math.min(6, 2 + Math.floor(n / 2));
-  if (grade === "hard") return Math.min(SHIP_SLOTS, Math.max(4, 2 + n));
-  return Math.min(SHIP_SLOTS, Math.max(5, 3 + n));
+  if (grade === "easy") return Math.min(SHIP_SLOTS, 3 * Math.min(3, 1 + Math.floor((n - 1) / 3)));
+  if (grade === "mid") return Math.min(SHIP_SLOTS, 3 * Math.min(6, 2 + Math.floor(n / 2)));
+  if (grade === "hard") return Math.min(SHIP_SLOTS, Math.max(6, 3 + n));
+  return Math.min(SHIP_SLOTS, Math.max(6, 6 + n));
 }
 
 function orderIdle(order) {
@@ -1615,22 +1656,24 @@ function startShip(id) {
   closeShip();
   state.shipId = id;
   state.shipPalId = 0;
-  const empty = progress.pallets.find((p) => p.units < 1);
-  if (empty) state.shipPalId = empty.id;
+  const build = progress.pallets.find((p) => p.spot === BUILD_SPOT && p.units < 1);
+  if (build) state.shipPalId = build.id;
   document.body.classList.add("shipping");
   document.body.classList.remove("loading", "gone");
   paintWaybill(true);
   paintSlots();
   if (!state.shipPalId && (progress.stack || []).some((p) => p.units < 1)) {
-    toast("Возьми поддон со стопки и поставь");
+    toast("Поставь поддон вниз, на сборку");
   } else if (!state.shipPalId && !emptyWoods()) {
     toast("Купи поддон. Без него не отгрузить");
+  } else if (!state.shipPalId) {
+    toast("Поставь поддон вниз, на сборку");
   } else if ((order.lines || []).some((line) => !isUnlocked(line.sku))) {
     toast("Этот вид ещё закрыт. Открой его в магазине");
   } else if ((order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill)) {
     toast("Часть паков нужно докупить в магазине");
   } else {
-    toast("Клади паки на пустой поддон");
+    toast("Клади паки вниз, на сборку");
   }
 }
 
@@ -1681,8 +1724,17 @@ function hitEl(x, y, sel, pad) {
 }
 
 function palFromPoint(x, y) {
+  const build = document.getElementById("build-spot");
+  if (build && build.classList.contains("has-pal")) {
+    const box = build.getBoundingClientRect();
+    const p = 32;
+    if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) {
+      const pal = progress.pallets.find((row) => row.spot === BUILD_SPOT);
+      if (pal) return pal;
+    }
+  }
   const spot = hitEl(x, y, ".pal-spot.has-pal", 32);
-  const stand = (spot && spot.querySelector(".pal-stand")) || hitEl(x, y, ".pal-stand", 32);
+  const stand = (spot && spot.querySelector(".pal-stand")) || hitEl(x, y, "#slots .pal-stand", 32);
   if (!stand) return null;
   return progress.pallets.find((p) => p.id === Number(stand.dataset.id)) || null;
 }
@@ -1789,18 +1841,21 @@ function restoreHeld(drag) {
 function onDragMove(e) {
   if (!state.drag) return;
   moveGhost(e.clientX, e.clientY);
-  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand").forEach((el) => el.classList.remove("hot"));
+  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot").forEach((el) => el.classList.remove("hot"));
   const stack = hitEl(e.clientX, e.clientY, ".wood-stack", 16);
   const spot = hitEl(e.clientX, e.clientY, ".pal-spot", 24);
+  const build = hitEl(e.clientX, e.clientY, ".build-spot", 24);
   if (state.drag.kind === "wood") {
     if (stack) stack.classList.add("hot");
+    else if (build && !build.classList.contains("has-pal")) build.classList.add("hot");
     else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
   } else {
     const pal = palFromPoint(e.clientX, e.clientY);
     const stand = pal && document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
     if (pal && stand && canDropPackOn(pal, state.drag.sku)) {
       stand.classList.add("hot");
-      stand.closest(".pal-spot") && stand.closest(".pal-spot").classList.add("hot");
+      const cell = stand.closest(".pal-spot") || stand.closest(".build-spot");
+      if (cell) cell.classList.add("hot");
     }
   }
 }
@@ -1827,11 +1882,15 @@ async function onDragEnd(e) {
   if (drag.kind === "wood") {
     const pal = drag.pal;
     const stackHit = hitEl(x, y, ".wood-stack", 16);
+    const buildEl = hitEl(x, y, ".build-spot:not(.has-pal)", 24);
     const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
-    if (pal && spotEl) {
+    if (pal && !stackHit && buildEl) {
+      pal.spot = BUILD_SPOT;
+      progress.pallets.push(pal);
+      if (state.shipId && pal.units < 1) state.shipPalId = pal.id;
+    } else if (pal && !stackHit && spotEl) {
       pal.spot = Number(spotEl.dataset.spot);
       progress.pallets.push(pal);
-      if (state.shipId && pal.units < 1 && !state.shipPalId) state.shipPalId = pal.id;
     } else if (pal) {
       pal.spot = -1;
       progress.stack.push(pal);
@@ -1840,10 +1899,11 @@ async function onDragEnd(e) {
     hideGhost();
     saveProgress();
     paintHud();
-    const gift = pal && spotEl ? maybeGiftFirstPal() : false;
+    const placed = pal && !stackHit && (buildEl || spotEl);
+    const gift = placed ? maybeGiftFirstPal() : false;
     paintSlots();
     if (gift) markGiftStack();
-    if (pal && spotEl) {
+    if (placed) {
       const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
       if (stand) stand.classList.add("drop-in");
     }
