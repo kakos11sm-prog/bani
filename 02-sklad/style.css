@@ -2194,8 +2194,9 @@ body.guide-place .pal-spot:not(.has-pal)::after {
   border-radius: 8px;
 }
 
-.pal-stand.into-truck {
+.pal-load.into-truck {
   animation: palOut 0.6s ease forwards;
+  pointer-events: none;
 }
 
 @keyframes palOut {

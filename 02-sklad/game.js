@@ -2019,7 +2019,6 @@ async function dropPackOn(pal, drag) {
   paintSlots();
   maybeOrders();
   paintJobs();
-  if (pal.units >= PALLET_PACKS) toast("Поддон полный. Можешь убрать на стопку");
   if ((progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") && drag.from === "dock") {
     if (!progress.giftedPal) playGuideGift();
     if (!dockList().length) {
@@ -2044,13 +2043,15 @@ async function finishShip(order) {
   document.body.classList.add("loading");
   await wait(720);
   const stand = document.querySelector(".pal-stand.ship-now");
-  if (stand) stand.classList.add("into-truck");
+  const load = stand && stand.querySelector(".pal-load");
+  if (load) load.classList.add("into-truck");
   await wait(620);
   const ship = progress.pallets.find((p) => p.id === state.shipPalId);
   if (ship) {
     ship.units = 0;
     ship.sku = "";
   }
+  paintSlots();
   if (sheet) sheet.classList.add("big");
   await wait(420);
   flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
@@ -2075,7 +2076,7 @@ async function finishShip(order) {
   paintSlots();
   maybeOrders();
   paintJobs();
-  toast("Товар уехал. Поддон положи на стопку");
+  toast("Товар уехал");
   state.busy = false;
   if (progress.guide === "send" || progress.guide === "build" || progress.guide === "jobs") {
     progress.guide = "done";
