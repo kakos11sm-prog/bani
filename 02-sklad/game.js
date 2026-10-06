@@ -812,7 +812,6 @@ function paintDock() {
   if (!dock || !hold) return;
   const list = dockList();
   const onFloor = floor.classList.contains("show");
-  hold.innerHTML = "";
   if (!list.length || !onFloor) {
     state.unloading = false;
     document.body.classList.remove("unloading");
@@ -840,7 +839,11 @@ function paintDock() {
   dock.classList.toggle("open", state.unloading);
   document.body.classList.toggle("unloading", state.unloading);
   if (go) go.hidden = state.unloading;
-  if (!state.unloading) return;
+  if (!state.unloading) {
+    hold.innerHTML = "";
+    return;
+  }
+  if (state.drag && state.drag.from === "dock") return;
   const item = list[0];
   const keep = hold.querySelector(".dock-pak");
   if (keep && keep.dataset.id === String(item.id) && keep.dataset.left === String(item.left)) return;
@@ -854,6 +857,7 @@ function paintDock() {
   pak.setAttribute("style", palSkin(sku));
   pak.innerHTML = "<span class=\"pak\">" + pakInner(sku) + "</span>";
   pak.addEventListener("pointerdown", (e) => startPackDrag(e, item.id, "dock"));
+  pak.addEventListener("animationend", () => pak.classList.remove("peek"));
   hold.appendChild(pak);
 }
 
@@ -1369,7 +1373,6 @@ function tickShip() {
       paintStack();
     }
   }
-  if (floor.classList.contains("show") && dockList().length) paintDock();
 }
 
 function floorPals() {
@@ -1628,13 +1631,21 @@ function findPal(id) {
   return progress.pallets.find((p) => p.id === id) || (progress.stack || []).find((p) => p.id === id) || null;
 }
 
-function hitEl(x, y, sel) {
+function hitEl(x, y, sel, pad) {
+  const p = pad || 0;
   const list = document.querySelectorAll(sel);
   for (let i = 0; i < list.length; i += 1) {
     const box = list[i].getBoundingClientRect();
-    if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) return list[i];
+    if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) return list[i];
   }
   return null;
+}
+
+function palFromPoint(x, y) {
+  const spot = hitEl(x, y, ".pal-spot.has-pal", 32);
+  const stand = (spot && spot.querySelector(".pal-stand")) || hitEl(x, y, ".pal-stand", 32);
+  if (!stand) return null;
+  return progress.pallets.find((p) => p.id === Number(stand.dataset.id)) || null;
 }
 
 function beginGhost(html, x, y, skin) {
@@ -1682,10 +1693,11 @@ function startPackDrag(e, id, from) {
       return;
     }
     e.preventDefault();
+    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
     item.left -= 1;
     state.drag = { kind: "pack", from: "dock", dockId: item.id, sku: item.sku, held: true };
     beginGhost("<span class=\"pak\">" + pakInner(skuOf(item.sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(item.sku)));
-    paintDock();
+    if (e.currentTarget.parentNode) e.currentTarget.remove();
   } else {
     const pal = progress.pallets.find((p) => p.id === id);
     if (!pal || pal.units < 1) return;
@@ -1699,6 +1711,7 @@ function startPackDrag(e, id, from) {
       return;
     }
     e.preventDefault();
+    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
     pal.units -= 1;
     const sku = pal.sku;
     if (pal.units < 1) pal.sku = "";
@@ -1738,15 +1751,18 @@ function onDragMove(e) {
   if (!state.drag) return;
   moveGhost(e.clientX, e.clientY);
   document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand").forEach((el) => el.classList.remove("hot"));
-  const stack = hitEl(e.clientX, e.clientY, ".wood-stack");
-  const spot = hitEl(e.clientX, e.clientY, ".pal-spot");
-  const stand = hitEl(e.clientX, e.clientY, ".pal-stand");
+  const stack = hitEl(e.clientX, e.clientY, ".wood-stack", 16);
+  const spot = hitEl(e.clientX, e.clientY, ".pal-spot", 24);
   if (state.drag.kind === "wood") {
     if (stack) stack.classList.add("hot");
     else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
-  } else if (stand) {
-    const pal = progress.pallets.find((p) => p.id === Number(stand.dataset.id));
-    if (canDropPackOn(pal, state.drag.sku)) stand.classList.add("hot");
+  } else {
+    const pal = palFromPoint(e.clientX, e.clientY);
+    const stand = pal && document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
+    if (pal && stand && canDropPackOn(pal, state.drag.sku)) {
+      stand.classList.add("hot");
+      stand.closest(".pal-spot") && stand.closest(".pal-spot").classList.add("hot");
+    }
   }
 }
 
@@ -1771,8 +1787,8 @@ async function onDragEnd(e) {
   const y = e.clientY;
   if (drag.kind === "wood") {
     const pal = drag.pal;
-    const stackHit = hitEl(x, y, ".wood-stack");
-    const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)");
+    const stackHit = hitEl(x, y, ".wood-stack", 16);
+    const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
     if (pal && spotEl) {
       pal.spot = Number(spotEl.dataset.spot);
       progress.pallets.push(pal);
@@ -1792,8 +1808,7 @@ async function onDragEnd(e) {
     }
     return;
   }
-  const stand = hitEl(x, y, ".pal-stand.hot, .pal-stand");
-  const pal = stand ? progress.pallets.find((p) => p.id === Number(stand.dataset.id)) : null;
+  const pal = palFromPoint(x, y);
   if (!pal || !canDropPackOn(pal, drag.sku)) {
     restoreHeld(drag);
     hideGhost();
