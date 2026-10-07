@@ -18,14 +18,9 @@ const RUSH_MS = 75000;
 const RUSH_COOLDOWN = 120000;
 const BULK_MS = 180000;
 const JOB_RATE = { norm: 1.1, rush: 1.15, bulk: 1.2 };
+const JOB_RATE_STEP = 0.02;
 const NORM_GRADES = ["easy", "mid"];
 const JOB_GRADES = ["rush", "bulk", "easy", "mid"];
-const GRADE_NAME = {
-  easy: "Обычная · 10%",
-  mid: "Обычная · 10%",
-  rush: "Срочная · 15%",
-  bulk: "Опт · 20%",
-};
 const UNLOCK_PRICE = [0, 1000, 2500, 5000, 10000, 20000];
 const SKUS = [
   { id: "water", name: "Вода", tag: "ВОДА", tone: "#6a7c84", liq: "#6e8792", cap: "#3e4a50", paper: "#efe6d4", ink: "#2c3438", cost: 320 },
@@ -575,9 +570,31 @@ function jobKind(order) {
   return "norm";
 }
 
+function unlockTier() {
+  let t = 0;
+  (progress.unlocked || []).forEach((id) => {
+    const i = SKUS.findIndex((s) => s.id === id);
+    if (i > t) t = i;
+  });
+  return Math.max(0, t);
+}
+
+function jobRateOf(kind) {
+  return (JOB_RATE[kind] || JOB_RATE.norm) + unlockTier() * JOB_RATE_STEP;
+}
+
+function jobPct(kind) {
+  return Math.round((jobRateOf(kind) - 1) * 100);
+}
+
+function gradeTitle(grade) {
+  if (grade === "rush") return "Срочная · " + jobPct("rush") + "%";
+  if (grade === "bulk") return "Опт · " + jobPct("bulk") + "%";
+  return "Обычная · " + jobPct("norm") + "%";
+}
+
 function jobPay(lines, kind) {
-  const rate = JOB_RATE[kind] || JOB_RATE.norm;
-  return Math.max(1, Math.round(linesCost(lines) * rate));
+  return Math.max(1, Math.round(linesCost(lines) * jobRateOf(kind)));
 }
 
 function linesPay(lines) {
@@ -1419,7 +1436,21 @@ function paintWaybill(fresh) {
 
 function paintLoad() {}
 
+function paintJobsLead() {
+  const lead = document.querySelector("#jobs-pane .lead");
+  if (!lead) return;
+  lead.textContent =
+    "Обычная — " +
+    jobPct("norm") +
+    "%. Срочная — " +
+    jobPct("rush") +
+    "% и пустой поддон. Опт забирает 2–4 полных поддона с деревом — " +
+    jobPct("bulk") +
+    "%.";
+}
+
 function paintJobs() {
+  paintJobsLead();
   const host = document.getElementById("jobs");
   host.innerHTML = "";
   if (!progress.orders.length) {
@@ -1446,7 +1477,7 @@ function paintJobs() {
         : "";
     btn.innerHTML =
       "<em class=\"job-kind\">" +
-      (GRADE_NAME[order.grade] || "Заявка") +
+      (gradeTitle(order.grade) || "Заявка") +
       "</em>" +
       clock +
       "<b class=\"job-mix\">" +
@@ -2178,6 +2209,17 @@ function maybeOrders() {
   });
   spawnRushJob();
   spawnBulkJob();
+  progress.orders.forEach((order) => {
+    if (jobKind(order) === "bulk" && !order.taken && state.bulkId !== order.id) {
+      const sku = pickBulkSku();
+      const n = Math.max(2, order.bulkN || pickBulkN());
+      if (sku && (!order.lines[0] || order.lines[0].sku !== sku)) {
+        order.lines = [{ sku: sku, need: n * PALLET_PACKS, fill: 0 }];
+        order.bulkN = n;
+      }
+    }
+    order.pay = Math.max(1, jobPay(order.lines, jobKind(order)));
+  });
   saveProgress();
 }
 
@@ -2266,22 +2308,21 @@ async function flyRushPalGift() {
 }
 
 function pickBulkSku() {
+  const unlocked = SKUS.map((s) => s.id).filter((id) => isUnlocked(id)).reverse();
   const full = {};
+  const any = {};
   goodsPals().forEach((p) => {
-    if (p.units >= PALLET_PACKS && p.sku) full[p.sku] = (full[p.sku] || 0) + 1;
+    if (!p.sku) return;
+    if (p.units >= PALLET_PACKS) full[p.sku] = (full[p.sku] || 0) + 1;
+    if (p.units > 0) any[p.sku] = true;
   });
-  let best = "";
-  let n = 0;
-  Object.keys(full).forEach((id) => {
-    if (full[id] > n) {
-      best = id;
-      n = full[id];
-    }
-  });
-  if (best) return best;
-  const have = onFloor().filter((row) => isUnlocked(row.sku));
-  if (have.length) return have[0].sku;
-  return (progress.unlocked || ["water"])[0] || "water";
+  for (let i = 0; i < unlocked.length; i += 1) {
+    if (full[unlocked[i]]) return unlocked[i];
+  }
+  for (let i = 0; i < unlocked.length; i += 1) {
+    if (any[unlocked[i]]) return unlocked[i];
+  }
+  return unlocked[0] || "water";
 }
 
 function pickBulkN() {
