@@ -1284,7 +1284,7 @@ body.shipping .yard-name {
 
 .jobs-tab {
   position: fixed;
-  z-index: 10;
+  z-index: 20;
   top: calc(max(8px, env(safe-area-inset-top)) + 52px);
   right: max(8px, env(safe-area-inset-right));
   display: none;
@@ -2048,7 +2048,7 @@ body.in-garage .pal-spot {
 
 .recv-spot {
   left: auto;
-  right: max(2px, env(safe-area-inset-right));
+  right: 22%;
   margin-left: 0;
 }
 
@@ -2297,7 +2297,7 @@ body.guide-place .pal-spot:not(.has-pal)::after {
   }
 
   .recv-spot {
-    right: 28px;
+    right: 18%;
   }
 }
 
@@ -2473,6 +2473,38 @@ body.guide-place .pal-spot:not(.has-pal)::after {
 
 .in-whl.a { left: 16%; }
 .in-whl.b { right: 22%; }
+
+.in-go {
+  position: absolute;
+  left: -10px;
+  top: 38%;
+  z-index: 8;
+  height: 46px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffe08a 0%, #f0b429 52%, #c48a14 100%);
+  color: #1a1410;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 244, 200, 0.7);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: pop 0.4s cubic-bezier(0.2, 1.5, 0.3, 1);
+}
+
+.in-go:active {
+  transform: scale(0.97);
+}
+
+.in-go[hidden],
+.in-dock:not(.show) .in-go,
+.in-dock.open .in-go,
+.in-dock.away .in-go {
+  display: none;
+}
 
 @keyframes truckHop {
   0%, 100% { transform: translateY(0); }

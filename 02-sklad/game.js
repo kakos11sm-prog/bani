@@ -1007,7 +1007,7 @@ function syncJobsTab() {
   const rushEl = document.getElementById("jobs-rush");
   if (!tab) return;
   const wait = !!(dockList().length && !state.unloading && floor.classList.contains("show") && !state.shipId && !state.bulkId);
-  if (label) label.textContent = wait ? "Разгрузить" : "Заявки";
+  if (label) label.textContent = wait ? "Принять" : "Заявки";
   tab.classList.toggle("can-unload", wait);
   const rush = currentRush();
   const left = rush && rush.until ? rush.until - Date.now() : 0;
@@ -1037,6 +1037,8 @@ function paintDock() {
   if (!list.length || !onFloor) {
     state.unloading = false;
     document.body.classList.remove("unloading");
+    const goOff = document.getElementById("dock-go");
+    if (goOff) goOff.hidden = true;
     if (dock.classList.contains("show")) {
       dock.classList.remove("open");
       dock.classList.add("away");
@@ -1061,6 +1063,8 @@ function paintDock() {
   }
   dock.classList.toggle("open", state.unloading);
   document.body.classList.toggle("unloading", state.unloading);
+  const go = document.getElementById("dock-go");
+  if (go) go.hidden = state.unloading;
   syncJobsTab();
   if (!state.unloading) {
     hold.innerHTML = "";
@@ -1741,7 +1745,7 @@ function tickShip() {
   paintTruck();
   if (arrived.length) {
     arrived.forEach((item) => {
-      toast("Машина приехала. Жми «Разгрузить»");
+      toast("Машина приехала. Жми «Принять»");
     });
     if (document.getElementById("ship-pane").classList.contains("show")) paintShipList();
     if (floor.classList.contains("show")) {
@@ -3127,6 +3131,8 @@ document.getElementById("jobs-tab").addEventListener("click", () => {
   if (dockList().length && !state.unloading && !state.shipId) startUnload();
   else openJobs();
 });
+const dockGo = document.getElementById("dock-go");
+if (dockGo) dockGo.addEventListener("click", startUnload);
 document.getElementById("jobs-close").addEventListener("click", () => {
   closeJobs();
   if (progress.guide === "jobs" && !state.shipId) window.setTimeout(() => showGuide("jobs"), 80);
