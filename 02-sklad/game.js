@@ -1317,14 +1317,22 @@ function paintShop() {
       "good" +
       (locked ? " locked" : "") +
       (n ? " ready" : locked || canAddPal(sku) ? "" : " poor");
-    btn.innerHTML =
-      "<div class=\"shop-stand\">" +
-      palMarkup(sku, PALLET_PACKS) +
-      "</div><span class=\"good-meta\"><b>" +
-      sku.name +
-      "</b><em>" +
-      (locked ? "Открыть · " + unlockPrice(sku.id) : sku.cost) +
-      "</em></span>";
+    btn.innerHTML = locked
+      ? "<div class=\"shop-stand\">" +
+        palMarkup(sku, PALLET_PACKS) +
+        "<span class=\"lock-mark\" aria-hidden=\"true\"></span>" +
+        "</div><span class=\"unlock-pay\">открыть за " +
+        unlockPrice(sku.id) +
+        "</span><span class=\"good-meta\"><b>" +
+        sku.name +
+        "</b></span>"
+      : "<div class=\"shop-stand\">" +
+        palMarkup(sku, PALLET_PACKS) +
+        "</div><span class=\"good-meta\"><b>" +
+        sku.name +
+        "</b><em>" +
+        sku.cost +
+        "</em></span>";
     if (n) setQty(btn, n);
     btn.addEventListener("click", () => {
       if (locked) tryUnlock(sku.id, btn);
@@ -1364,8 +1372,10 @@ function syncShop() {
       "good" +
       (locked ? " locked" : "") +
       (n ? " ready" : locked || canAddPal(sku) ? "" : " poor");
+    const pay = btn.querySelector(".unlock-pay");
+    if (pay) pay.textContent = "открыть за " + unlockPrice(sku.id);
     const em = btn.querySelector(".good-meta em");
-    if (em) em.textContent = locked ? "Открыть · " + unlockPrice(sku.id) : String(sku.cost);
+    if (em && !locked) em.textContent = String(sku.cost);
     setQty(btn, n);
   });
   const wood = host.querySelector('.good[data-sku="woods"]');
