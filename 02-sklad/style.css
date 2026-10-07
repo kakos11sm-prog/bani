@@ -61,7 +61,7 @@ body {
   z-index: 49;
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
-  width: min(420px, calc(100% - 188px));
+  width: min(420px, calc(100% - 128px));
   display: flex;
   gap: 8px;
   align-items: center;
@@ -78,6 +78,7 @@ body {
 .shop-tab,
 .shop-btn,
 .jobs-tab,
+.way-hide,
 .truck,
 .good,
 .cart-buy,
@@ -115,6 +116,39 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff3b0, #f0b429 55%, #a66a10);
   box-shadow: 0 0 8px rgba(240, 180, 41, 0.5);
+}
+
+.chip.coin.debt {
+  color: #e85d4c;
+}
+
+.chip.coin.debt i {
+  background: radial-gradient(circle at 35% 30%, #ffd0c8, #e85d4c 55%, #8a2818);
+  box-shadow: 0 0 8px rgba(232, 93, 76, 0.45);
+}
+
+.chip.rate {
+  padding: 0 10px;
+  gap: 5px;
+}
+
+.chip.rate i {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(180deg, #ffe08a, #f0b429);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.chip.rate.low {
+  color: #e85d4c;
+}
+
+.chip.rate.low i {
+  background: linear-gradient(180deg, #f0a090, #e85d4c);
+}
+
+.chip.rate.ok i {
+  filter: drop-shadow(0 0 4px rgba(240, 180, 41, 0.55));
 }
 
 .chip.catch {
@@ -722,6 +756,7 @@ h1 {
   grid-template-columns: 1fr auto;
   grid-template-areas:
     "kind clock"
+    "who who"
     "mix mix"
     "note pay";
   gap: 6px 10px;
@@ -775,6 +810,18 @@ h1 {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
+}
+
+.job-client {
+  grid-area: who;
+  margin: 0;
+  color: #cbb896;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .job-mix {
@@ -1312,6 +1359,10 @@ body.on-floor .jobs-tab {
 
 body.shipping .jobs-tab {
   display: none;
+}
+
+body.shipping:not(.loading):not(.gone):not(.bulk-ship) .jobs-tab {
+  display: flex;
 }
 
 .jobs-tab.can-unload {
@@ -3212,12 +3263,16 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
 }
 
 .ship-go {
-  display: block;
-  width: 100%;
-  margin: 12px 0 0;
-  padding: 10px 12px;
+  position: fixed;
+  z-index: 34;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: none;
+  width: min(280px, 78vw);
+  margin: 0;
+  padding: 12px 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #f3d27a, #d4a017);
   color: #2a1c10;
   font-size: 15px;
@@ -3225,11 +3280,17 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
   animation: pop 0.32s cubic-bezier(0.2, 1.6, 0.3, 1);
 }
 
+body.shipping:not(.loading):not(.gone):not(.bulk-ship) .ship-go:not([hidden]) {
+  display: block;
+}
+
 .ship-go:active {
-  transform: scale(0.97);
+  transform: translateX(-50%) scale(0.97);
 }
 
 .ship-go[hidden] {
@@ -3243,6 +3304,37 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #7a5a32;
+}
+
+.way-from {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #4a3820;
+}
+
+.way-hide {
+  display: block;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #2a2218;
+  color: #f4ece0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.way-hide[hidden] {
+  display: none;
+}
+
+.waybill.big .way-hide,
+.waybill.fly .way-hide {
+  display: none;
 }
 
 .way-lines {
@@ -3796,9 +3888,12 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   animation: hintWobble 0.7s ease-in-out infinite;
 }
 
-.build-spot.wobble,
-.ship-go.wobble {
+.build-spot.wobble {
   animation: hintWobble 0.7s ease-in-out infinite;
+}
+
+.ship-go.wobble {
+  animation: hintWobbleShip 0.7s ease-in-out infinite;
 }
 
 body.guide-build .build-spot {
@@ -3830,6 +3925,11 @@ body.guide-build .build-spot:not(.has-pal)::after {
 @keyframes hintWobble {
   0%, 100% { transform: rotate(-4deg) translateY(0); }
   50% { transform: rotate(5deg) translateY(-3px); }
+}
+
+@keyframes hintWobbleShip {
+  0%, 100% { transform: translateX(-50%) rotate(-4deg) translateY(0); }
+  50% { transform: translateX(-50%) rotate(5deg) translateY(-3px); }
 }
 
 @keyframes hintWobbleJobs {
