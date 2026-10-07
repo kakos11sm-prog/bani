@@ -2741,12 +2741,12 @@ function expireOrders() {
     return true;
   });
   if (lost) {
-    addRate(lost === "rush" ? -0.3 : -0.2);
+    if (lost === "bulk") addRate(-0.2);
     saveProgress();
     paintHud();
     paintJobs();
     paintWaybill();
-    if (lost === "rush") toast("Срочная сгорела. Рейтинг " + rateOf().toFixed(1));
+    if (lost === "rush") toast("Срочная сгорела");
     else toast("Опт ушёл. Рейтинг " + rateOf().toFixed(1));
   }
 }
