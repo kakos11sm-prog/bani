@@ -2597,13 +2597,14 @@ async function finishShip(order) {
     void chip.offsetWidth;
     chip.classList.add("catch");
   }
-  if (rush) await flyRushPalGift();
   if (sheet) {
-    sheet.classList.remove("big");
+    sheet.classList.remove("big", "ready");
+    void sheet.offsetWidth;
     sheet.classList.add("fly");
   }
   document.body.classList.add("gone");
-  await wait(580);
+  if (rush) await flyRushPalGift();
+  else await wait(580);
   endShip();
   paintSlots();
   maybeOrders();

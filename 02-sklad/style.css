@@ -3168,30 +3168,30 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
 .rush-gift {
   position: fixed;
   z-index: 50;
-  width: min(56vw, 240px);
-  margin-left: calc(min(56vw, 240px) / -2);
+  width: 88px;
+  margin-left: -44px;
   pointer-events: none;
   transform-origin: 50% 80%;
   transition:
     left 0.62s cubic-bezier(0.2, 1.05, 0.3, 1),
     top 0.62s cubic-bezier(0.2, 1.05, 0.3, 1),
     transform 0.62s cubic-bezier(0.2, 1.05, 0.3, 1);
-  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.45));
 }
 
 .rush-gift em {
   display: block;
-  margin: 0 0 6px;
-  font-size: 42px;
+  margin: 0 0 4px;
+  font-size: 22px;
   font-style: normal;
   font-weight: 900;
   text-align: center;
   color: #5ee0a4;
-  text-shadow: 0 0 18px rgba(62, 207, 142, 0.7);
+  text-shadow: 0 0 12px rgba(62, 207, 142, 0.7);
 }
 
 .rush-gift .pal-live {
-  transform: perspective(280px) rotateX(12deg) scale(1.85);
+  transform: perspective(280px) rotateX(12deg) scale(1.05);
   transform-origin: 50% 100%;
 }
 
