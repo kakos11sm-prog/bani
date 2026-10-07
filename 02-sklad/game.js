@@ -824,10 +824,6 @@ function bindStand(stand, pal) {
       startPackDrag(e, pal.id, "floor");
       return;
     }
-    if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT) {
-      if (canTakePal(pal)) startPackDrag(e, pal.id, "floor");
-      return;
-    }
     startWoodDrag(e, pal.id, "floor");
   });
 }
@@ -2315,10 +2311,6 @@ function startPackDrag(e, id, from) {
       toast("Этот пак в заявку не нужен");
       return;
     }
-    if (!state.shipId) {
-      startWoodDrag(e, pal.id, "floor");
-      return;
-    }
     pal.units -= 1;
     const sku = pal.sku;
     if (pal.units < 1) pal.sku = "";
@@ -2360,11 +2352,8 @@ function unbindDrag(e) {
 function restoreHeld(drag) {
   if (!drag || !drag.held) return;
   if (drag.kind === "wood") {
-    const pal = drag.pal;
-    if (pal) {
-      pal.spot = -1;
-      progress.stack.push(pal);
-    }
+    restoreWoodPal(drag);
+    return;
   } else if (drag.from === "dock") {
     const item = (progress.incoming || []).find((row) => row.id === drag.dockId);
     if (item) item.left += 1;
@@ -2392,7 +2381,8 @@ function onDragMove(e) {
       if (truck) truck.classList.add("hot");
       return;
     }
-    if (stack) stack.classList.add("hot");
+    const loaded = !!(state.drag.pal && state.drag.pal.units > 0);
+    if (stack && !loaded) stack.classList.add("hot");
     else if (build && !build.classList.contains("has-pal")) build.classList.add("hot");
     else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
   } else {
@@ -2480,6 +2470,9 @@ async function onDragEnd(e) {
     } else if (pal && !stackHit && spotEl) {
       pal.spot = Number(spotEl.dataset.spot);
       progress.pallets.push(pal);
+    } else if (pal && pal.units > 0) {
+      restoreWoodPal(drag);
+      if (stackHit) toast("На стопку только пустой поддон");
     } else if (pal) {
       pal.spot = -1;
       progress.stack.push(pal);
@@ -2507,6 +2500,7 @@ async function onDragEnd(e) {
     restoreHeld(drag);
     hideGhost();
     paintSlots();
+    if (pal && drag.from === "floor") toast("Сюда только такой же товар");
     return;
   }
   hideGhost();

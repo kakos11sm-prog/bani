@@ -2699,6 +2699,7 @@ body.shipping .pal-stand.can-take {
   width: 35px;
   height: 64px;
   background: transparent;
+  cursor: grab;
 }
 
 .bots {
@@ -2833,6 +2834,7 @@ body.shipping .pal-stand.can-take {
 .pal-wood {
   position: relative;
   padding: 0 1px;
+  cursor: grab;
 }
 
 .pal-wood::before {
