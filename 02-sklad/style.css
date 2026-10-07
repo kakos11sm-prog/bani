@@ -3039,7 +3039,7 @@ body.bulk-ship .pal-stand:not(.bulk-ok) {
 }
 
 .way-lines li.ok .tick {
-  animation: pop 0.28s cubic-bezier(0.2, 1.5, 0.3, 1);
+  animation: none;
 }
 
 .way-pay {

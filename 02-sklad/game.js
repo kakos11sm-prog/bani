@@ -1196,7 +1196,40 @@ function syncJobClocks() {
     if (clock) clock.textContent = jobNote(order) || "0:00";
   });
   syncJobsTab();
-  if (state.bulkId || state.shipId) paintWaybill();
+  if (state.bulkId || state.shipId) syncWaybillClocks();
+}
+
+function syncWaybillClocks() {
+  const order = currentOrder() || currentBulk();
+  const host = document.getElementById("way-lines");
+  if (!order || !host) return;
+  const rows = host.querySelectorAll("li");
+  if (jobKind(order) === "bulk") {
+    const row = rows[0];
+    if (!row) return;
+    const done = (order.taken || 0) >= order.bulkN;
+    const left = order.until ? order.until - Date.now() : 0;
+    const span = row.querySelector("span");
+    const tick = row.querySelector(".tick");
+    if (span) span.textContent = (order.taken || 0) + "/" + order.bulkN + " подд.";
+    if (tick) tick.textContent = done ? "✓" : left > 0 ? fmtEta(left) : "";
+    row.classList.toggle("ok", done);
+    return;
+  }
+  const rushLeft = jobKind(order) === "rush" && order.until ? order.until - Date.now() : 0;
+  (order.lines || []).forEach((line, i) => {
+    const row = rows[i];
+    if (!row) return;
+    const done = line.fill >= line.need;
+    const span = row.querySelector("span");
+    const tick = row.querySelector(".tick");
+    if (span) span.textContent = line.fill + "/" + line.need;
+    if (tick) {
+      tick.textContent =
+        done ? "✓" : i === 0 && rushLeft > 0 ? fmtEta(rushLeft) : i === 0 && order.until && rushLeft <= 0 ? "0:00" : "";
+    }
+    row.classList.toggle("ok", done);
+  });
 }
 
 function applyInside() {
