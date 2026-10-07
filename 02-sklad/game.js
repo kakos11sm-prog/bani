@@ -114,7 +114,7 @@ function loadProgress() {
     base.giftedPal = raw.giftedPal === true;
     base.rushAt = Math.max(0, Number(raw.rushAt) || 0);
     const rate = Number(raw.rate);
-    base.rate = rate >= 1 && rate <= 5 ? Math.round(rate * 10) / 10 : 5;
+    base.rate = rate >= 1 ? Math.round(rate * 10) / 10 : 5;
     base.guide = typeof raw.guide === "string" ? raw.guide : "";
     if (!base.guide) base.guide = base.room ? "done" : "start";
     base.boughtWoods = Math.max(0, Number(raw.boughtWoods) || 0);
@@ -618,18 +618,23 @@ function liveProgress() {
 function rateOf() {
   const n = Number(liveProgress() && liveProgress().rate);
   if (!(n >= 1)) return 5;
-  return Math.max(1, Math.min(5, Math.round(n * 10) / 10));
+  return Math.max(1, Math.round(n * 10) / 10);
 }
 
 function ratingPayK() {
-  return 0.55 + 0.45 * ((rateOf() - 1) / 4);
+  const n = Math.max(1, Math.min(5, rateOf()));
+  return 0.55 + 0.45 * ((n - 1) / 4);
 }
 
 function addRate(delta) {
-  const next = Math.max(1, Math.min(5, Math.round((rateOf() + delta) * 10) / 10));
+  const next = Math.max(1, Math.round((rateOf() + delta) * 10) / 10);
   const p = liveProgress();
   if (p) p.rate = next;
   return next;
+}
+
+function wayOpen() {
+  return !!(state.shipId && state.wayPeek && !state.busy);
 }
 
 function orderClient(order) {
@@ -1045,7 +1050,8 @@ function paintHud() {
   const rateChip = document.getElementById("hud-rate-chip");
   if (rateChip) {
     rateChip.classList.toggle("low", rateOf() < 2.5);
-    rateChip.classList.toggle("ok", rateOf() >= 4);
+    rateChip.classList.toggle("ok", rateOf() >= 4 && rateOf() <= 5);
+    rateChip.classList.toggle("hot", rateOf() > 5);
   }
 }
 
@@ -1172,7 +1178,7 @@ function shipPacks(order) {
 }
 
 function canTakePal(pal) {
-  return !!(state.shipId && pal && pal.id !== state.shipPalId && pal.units > 0);
+  return !!(state.shipId && !wayOpen() && pal && pal.id !== state.shipPalId && pal.units > 0);
 }
 
 function canDropPackOn(pal, sku) {
@@ -2899,6 +2905,11 @@ function startWoodDrag(e, palId, from) {
 
 function startPackDrag(e, id, from) {
   if (state.busy || state.drag) return;
+  if (from !== "dock" && wayOpen()) {
+    shake(e.currentTarget);
+    toast("Сначала закрой накладную");
+    return;
+  }
   if (from === "dock") {
     const item = (progress.incoming || []).find((row) => row.id === id && row.left > 0);
     if (!item) return;

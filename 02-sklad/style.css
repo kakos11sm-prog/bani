@@ -151,6 +151,15 @@ body {
   filter: drop-shadow(0 0 4px rgba(240, 180, 41, 0.55));
 }
 
+.chip.rate.hot {
+  color: #ffe08a;
+}
+
+.chip.rate.hot i {
+  background: linear-gradient(180deg, #fff3b0, #f0b429);
+  filter: drop-shadow(0 0 6px rgba(255, 210, 90, 0.7));
+}
+
 .chip.catch {
   animation: pop 0.35s cubic-bezier(0.2, 1.5, 0.3, 1);
 }
