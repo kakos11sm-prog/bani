@@ -2779,18 +2779,6 @@ body.shipping .pal-stand.can-take {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
   transform: rotate(-38deg);
-  animation: palBannerIn 0.42s cubic-bezier(0.2, 1.25, 0.3, 1);
-}
-
-@keyframes palBannerIn {
-  from {
-    opacity: 0;
-    transform: rotate(-38deg) scaleX(0.35);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(-38deg) scaleX(1);
-  }
 }
 
 .shop-stand .pal-banner {

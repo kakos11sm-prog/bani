@@ -170,7 +170,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0 };
+const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, shipGone: false, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0 };
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -801,6 +801,9 @@ function canDropPackOn(pal, sku) {
 }
 
 function palStandHtml(pal) {
+  if (state.shipGone && pal && pal.id === state.shipPalId) {
+    return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(null, 0);
+  }
   if (state.shipId && pal && pal.id === state.shipPalId) {
     const order = currentOrder();
     return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(shipPacks(order));
@@ -2268,6 +2271,7 @@ function endShip() {
   hideGhost();
   state.shipId = 0;
   state.shipPalId = 0;
+  state.shipGone = false;
   state.drag = null;
   document.body.classList.remove("shipping", "loading", "gone");
   const bay = document.getElementById("load-bay");
@@ -2721,7 +2725,7 @@ async function finishShip(order) {
     ship.units = 0;
     ship.sku = "";
   }
-  paintSlots();
+  state.shipGone = true;
   if (sheet) sheet.classList.add("big");
   await wait(420);
   flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
