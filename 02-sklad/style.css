@@ -2027,14 +2027,13 @@ body.in-garage .pal-spot {
   flex: 0 0 108px;
 }
 
-.build-spot {
+.build-spot,
+.recv-spot {
   position: absolute;
-  left: 50%;
   bottom: 5%;
   z-index: 5;
-  width: 160px;
+  width: 140px;
   min-height: 148px;
-  margin-left: -80px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2042,7 +2041,19 @@ body.in-garage .pal-spot {
   pointer-events: auto;
 }
 
-.build-spot em {
+.build-spot {
+  left: 38%;
+  margin-left: -70px;
+}
+
+.recv-spot {
+  left: auto;
+  right: max(2px, env(safe-area-inset-right));
+  margin-left: 0;
+}
+
+.build-spot em,
+.recv-spot em {
   display: block;
   margin-top: 6px;
   font-size: 11px;
@@ -2053,7 +2064,8 @@ body.in-garage .pal-spot {
   opacity: 0.85;
 }
 
-.build-spot:not(.has-pal)::after {
+.build-spot:not(.has-pal)::after,
+.recv-spot:not(.has-pal)::after {
   content: "";
   position: absolute;
   left: 14%;
@@ -2067,19 +2079,22 @@ body.in-garage .pal-spot {
 }
 
 .build-spot.ship-on:not(.has-pal)::after,
-.build-spot.hot:not(.has-pal)::after {
+.build-spot.hot:not(.has-pal)::after,
+.recv-spot.hot:not(.has-pal)::after {
   background: rgba(240, 180, 41, 0.35);
   box-shadow: 0 0 16px rgba(240, 180, 41, 0.45);
 }
 
-.build-spot .pal-stand {
+.build-spot .pal-stand,
+.recv-spot .pal-stand {
   position: relative;
   left: auto;
   bottom: 0;
   margin-left: 0;
 }
 
-.build-spot .pal-stand .pal-live {
+.build-spot .pal-stand .pal-live,
+.recv-spot .pal-stand .pal-live {
   position: relative;
   width: 72px;
   margin: 0 auto;
@@ -2087,16 +2102,19 @@ body.in-garage .pal-spot {
   transform-origin: 50% 100%;
 }
 
-.build-spot .pal-wood {
+.build-spot .pal-wood,
+.recv-spot .pal-wood {
   margin-left: -20px;
   width: calc(100% + 40px);
 }
 
-.build-spot .pal-wood::before {
+.build-spot .pal-wood::before,
+.recv-spot .pal-wood::before {
   height: 13px;
 }
 
-.build-spot .pal-stand::after {
+.build-spot .pal-stand::after,
+.recv-spot .pal-stand::after {
   content: "";
   position: absolute;
   left: -38%;
@@ -2276,6 +2294,10 @@ body.guide-place .pal-spot:not(.has-pal)::after {
 @media (min-width: 600px) {
   .in-dock.show {
     right: -100px;
+  }
+
+  .recv-spot {
+    right: 28px;
   }
 }
 
@@ -2685,6 +2707,61 @@ body.shipping .pal-stand.can-take {
 }
 
 .pak-layer.vacant {
+  display: none;
+}
+
+.pal-banner {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 4%;
+  bottom: 2%;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pal-banner span {
+  display: block;
+  width: 175%;
+  padding: 5px 0 4px;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 10, 4, 0.12),
+    rgba(12, 6, 2, 0.48) 42%,
+    rgba(18, 10, 4, 0.12)
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 236, 200, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: rgba(255, 240, 214, 0.78);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  transform: rotate(-38deg);
+  animation: palBannerIn 0.42s cubic-bezier(0.2, 1.25, 0.3, 1);
+}
+
+@keyframes palBannerIn {
+  from {
+    opacity: 0;
+    transform: rotate(-38deg) scaleX(0.35);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-38deg) scaleX(1);
+  }
+}
+
+.shop-stand .pal-banner {
   display: none;
 }
 

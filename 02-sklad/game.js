@@ -5,6 +5,7 @@ const PALLET_DEPTH = 3;
 const PALLET_LAYERS = 3;
 const PALLET_PACKS = PALLET_COLS * PALLET_DEPTH * PALLET_LAYERS;
 const BUILD_SPOT = 99;
+const RECV_SPOT = 98;
 const SHIP_COLS = 3;
 const SHIP_ROWS = 3;
 const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
@@ -127,8 +128,10 @@ function loadProgress() {
       ? raw.stack.map((p, i) => readPal(p, i)).filter((p) => p.id)
       : [];
     base.pallets.forEach((p, i) => {
-      if (p.spot === BUILD_SPOT) return;
-      const clash = base.pallets.some((o, j) => j < i && o.spot === p.spot && o.spot !== BUILD_SPOT);
+      if (p.spot === BUILD_SPOT || p.spot === RECV_SPOT) return;
+      const clash = base.pallets.some(
+        (o, j) => j < i && o.spot === p.spot && o.spot !== BUILD_SPOT && o.spot !== RECV_SPOT
+      );
       if (p.spot == null || p.spot < 0 || clash) p.spot = i;
     });
     if (fromOld && !base.stack.length) {
@@ -205,6 +208,14 @@ function goodsPals() {
   return (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT);
 }
 
+function yardPals() {
+  return (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT && p.spot !== RECV_SPOT);
+}
+
+function recvPal() {
+  return (progress.pallets || []).find((p) => p.spot === RECV_SPOT) || null;
+}
+
 function hasGoodsPal() {
   return goodsPals().some((p) => p.units < PALLET_PACKS);
 }
@@ -216,11 +227,42 @@ function emptyWoods() {
 function freeSpots() {
   const room = roomOf(progress.room);
   const cap = room ? room.slots : 0;
-  return Math.max(0, cap - goodsPals().length);
+  return Math.max(0, cap - yardPals().length);
 }
 
 function usedSpots() {
-  return new Set(goodsPals().map((p) => p.spot));
+  return new Set(yardPals().map((p) => p.spot));
+}
+
+function canUnloadHere() {
+  if ((progress.pallets || []).some((p) => p.spot !== BUILD_SPOT && p.units < PALLET_PACKS)) return true;
+  return !recvPal() && (progress.stack || []).some((p) => p.units < 1);
+}
+
+function takeWoodToRecv() {
+  const have = recvPal();
+  if (have) return have;
+  const list = progress.stack || [];
+  let i = -1;
+  for (let k = list.length - 1; k >= 0; k -= 1) {
+    if (list[k].units < 1) {
+      i = k;
+      break;
+    }
+  }
+  if (i < 0) return null;
+  const pal = list.splice(i, 1)[0];
+  pal.spot = RECV_SPOT;
+  pal.sku = "";
+  pal.units = 0;
+  progress.pallets.push(pal);
+  return pal;
+}
+
+function canParkPack(sku) {
+  if ((progress.pallets || []).some((p) => canDropPackOn(p, sku))) return true;
+  if (state.shipId) return false;
+  return !recvPal() && (progress.stack || []).some((p) => p.units < 1);
 }
 
 function firstFreeSpot() {
@@ -500,6 +542,10 @@ function palMarkup(sku, packs) {
       load += "</span>";
     }
   }
+  const banner =
+    n >= PALLET_PACKS
+      ? "<b class=\"pal-banner\" aria-hidden=\"true\"><span>" + sku.name + "</span></b>"
+      : "";
   return (
     "<div class=\"pal-live sku-" +
     sku.id +
@@ -508,6 +554,7 @@ function palMarkup(sku, packs) {
     "\">" +
     "<div class=\"pal-load\">" +
     load +
+    banner +
     "</div>" +
     palWood(sku.name) +
     "</div>"
@@ -859,6 +906,7 @@ function paintSlots() {
     host.appendChild(cell);
   });
   paintBuild();
+  paintRecv();
   paintStack();
   paintDock();
   syncYardPan();
@@ -885,6 +933,32 @@ function paintBuild() {
     "pal-stand" +
     (ship ? " ship-now" : "") +
     (state.shipId ? (take ? " can-take" : pal.units < 1 || ship ? " can-drop" : " no-take") : "");
+  stand.dataset.id = String(pal.id);
+  stand.innerHTML = palStandHtml(pal);
+  bindStand(stand, pal);
+  host.appendChild(stand);
+  host.appendChild(mark);
+}
+
+function paintRecv() {
+  const host = document.getElementById("recv-spot");
+  if (!host) return;
+  host.innerHTML = "";
+  const pal = progress.pallets.find((p) => p.spot === RECV_SPOT);
+  host.classList.toggle("has-pal", !!pal);
+  const mark = document.createElement("em");
+  mark.textContent = "Приёмка";
+  if (!pal) {
+    host.appendChild(mark);
+    return;
+  }
+  const take = state.shipId && canTakePal(pal);
+  const bulkOk = bulkPalOk(pal);
+  const stand = document.createElement("div");
+  stand.className =
+    "pal-stand" +
+    (bulkOk ? " bulk-ok" : "") +
+    (state.shipId ? (take ? " can-take" : " no-take") : "");
   stand.dataset.id = String(pal.id);
   stand.innerHTML = palStandHtml(pal);
   bindStand(stand, pal);
@@ -944,7 +1018,7 @@ function syncJobsTab() {
 
 function startUnload() {
   if (!dockList().length) return;
-  if (!progress.pallets.filter((p) => p.spot !== BUILD_SPOT).some((p) => p.units < PALLET_PACKS)) {
+  if (!canUnloadHere()) {
     toast(emptyWoods() ? "Сначала поставь поддон со стопки" : "Нужен свободный поддон");
   }
   state.unloading = true;
@@ -2267,10 +2341,18 @@ function hitEl(x, y, sel, pad) {
 }
 
 function palFromPoint(x, y) {
+  const p = 32;
+  const recv = document.getElementById("recv-spot");
+  if (recv && recv.classList.contains("has-pal")) {
+    const box = recv.getBoundingClientRect();
+    if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) {
+      const pal = progress.pallets.find((row) => row.spot === RECV_SPOT);
+      if (pal) return pal;
+    }
+  }
   const build = document.getElementById("build-spot");
   if (build && build.classList.contains("has-pal")) {
     const box = build.getBoundingClientRect();
-    const p = 32;
     if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) {
       const pal = progress.pallets.find((row) => row.spot === BUILD_SPOT);
       if (pal) return pal;
@@ -2331,9 +2413,9 @@ function startPackDrag(e, id, from) {
   if (from === "dock") {
     const item = (progress.incoming || []).find((row) => row.id === id && row.left > 0);
     if (!item) return;
-    if (!progress.pallets.some((p) => canDropPackOn(p, item.sku))) {
+    if (!canParkPack(item.sku)) {
       shake(e.currentTarget);
-      toast(freeSpots() && emptyWoods() ? "Сначала поставь поддон" : "Нужен свободный поддон");
+      toast(emptyWoods() ? "Сначала поставь поддон" : "Нужен свободный поддон");
       return;
     }
     if (e.currentTarget.parentNode) e.currentTarget.remove();
@@ -2408,10 +2490,11 @@ function onDragMove(e) {
   if (!state.drag) return;
   if (e && e.preventDefault) e.preventDefault();
   moveGhost(e.clientX, e.clientY);
-  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot, .out-truck").forEach((el) => el.classList.remove("hot"));
+  document.querySelectorAll(".pal-spot, .wood-stack, .pal-stand, .build-spot, .recv-spot, .out-truck").forEach((el) => el.classList.remove("hot"));
   const stack = hitEl(e.clientX, e.clientY, ".wood-stack", 16);
   const spot = hitEl(e.clientX, e.clientY, ".pal-spot", 24);
   const build = hitEl(e.clientX, e.clientY, ".build-spot", 24);
+  const recv = hitEl(e.clientX, e.clientY, ".recv-spot", 24);
   if (state.drag.kind === "wood") {
     if (state.bulkId) {
       const truck = hitEl(e.clientX, e.clientY, "#out-truck", 36);
@@ -2420,15 +2503,26 @@ function onDragMove(e) {
     }
     const loaded = !!(state.drag.pal && state.drag.pal.units > 0);
     if (stack && !loaded) stack.classList.add("hot");
+    else if (recv && !recv.classList.contains("has-pal") && !(state.shipId && build && !build.classList.contains("has-pal"))) recv.classList.add("hot");
     else if (build && !build.classList.contains("has-pal")) build.classList.add("hot");
     else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
   } else {
-    const pal = palFromPoint(e.clientX, e.clientY);
-    const stand = pal && document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
-    if (pal && stand && canDropPackOn(pal, state.drag.sku)) {
-      stand.classList.add("hot");
-      const cell = stand.closest(".pal-spot") || stand.closest(".build-spot");
-      if (cell) cell.classList.add("hot");
+    if (
+      recv &&
+      !recv.classList.contains("has-pal") &&
+      state.drag.from === "dock" &&
+      !state.shipId &&
+      (progress.stack || []).some((p) => p.units < 1)
+    ) {
+      recv.classList.add("hot");
+    } else {
+      const pal = palFromPoint(e.clientX, e.clientY);
+      const stand = pal && document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
+      if (pal && stand && canDropPackOn(pal, state.drag.sku)) {
+        stand.classList.add("hot");
+        const cell = stand.closest(".pal-spot") || stand.closest(".build-spot") || stand.closest(".recv-spot");
+        if (cell) cell.classList.add("hot");
+      }
     }
   }
 }
@@ -2499,8 +2593,12 @@ async function onDragEnd(e) {
     }
     const stackHit = hitEl(x, y, ".wood-stack", 16);
     const buildEl = hitEl(x, y, ".build-spot:not(.has-pal)", 24);
+    const recvEl = hitEl(x, y, ".recv-spot:not(.has-pal)", 24);
     const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
-    if (pal && !stackHit && buildEl) {
+    if (pal && !stackHit && recvEl && !(state.shipId && buildEl)) {
+      pal.spot = RECV_SPOT;
+      progress.pallets.push(pal);
+    } else if (pal && !stackHit && buildEl) {
       pal.spot = BUILD_SPOT;
       progress.pallets.push(pal);
       if (state.shipId && pal.units < 1) state.shipPalId = pal.id;
@@ -2518,7 +2616,7 @@ async function onDragEnd(e) {
     hideGhost();
     saveProgress();
     paintHud();
-    const placed = pal && !stackHit && (buildEl || spotEl);
+    const placed = pal && !stackHit && (buildEl || recvEl || spotEl);
     const gift = placed ? maybeGiftFirstPal() : false;
     paintSlots();
     if (gift) markGiftStack();
@@ -2532,7 +2630,10 @@ async function onDragEnd(e) {
     }
     return;
   }
-  const pal = palFromPoint(x, y);
+  let pal = palFromPoint(x, y);
+  if (!pal && drag.from === "dock" && !state.shipId && hitEl(x, y, ".recv-spot:not(.has-pal)", 28)) {
+    pal = takeWoodToRecv();
+  }
   if (!pal || !canDropPackOn(pal, drag.sku)) {
     restoreHeld(drag);
     hideGhost();
@@ -2577,6 +2678,10 @@ async function dropPackOn(pal, drag) {
   saveProgress();
   paintHud();
   paintSlots();
+  if (pal.spot === RECV_SPOT && pal.units === 1) {
+    const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
+    if (stand) stand.classList.add("drop-in");
+  }
   maybeOrders();
   paintJobs();
   if ((progress.guide === "pack" || progress.guide === "place" || progress.guide === "unload") && drag.from === "dock") {
@@ -2811,7 +2916,7 @@ function layoutGuide(sel, side) {
   card.style.top = top + "px";
   const spot = document.getElementById("guide-spot");
   if (spot) {
-    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .waybill, .ship-go") || target;
+    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .recv-spot, .waybill, .ship-go") || target;
     const hr = hole.getBoundingClientRect();
     const pad = 8;
     spot.style.left = hr.left - pad + "px";
