@@ -1,4 +1,5 @@
 const SAVE_KEY = "sklad-progress-v4";
+const SOUND_KEY = "sklad-sound-on";
 const START_COINS = 1200;
 const PALLET_COLS = 2;
 const PALLET_DEPTH = 3;
@@ -171,6 +172,246 @@ function saveProgress() {
 
 const progress = loadProgress();
 const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, shipGone: false, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0 };
+
+let audioCtx = null;
+let soundOn = localStorage.getItem(SOUND_KEY) !== "0";
+let sfxGain = null;
+let musicGain = null;
+let musicNext = 0;
+let musicTimer = 0;
+let noiseBuf = null;
+
+function ensureAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  try {
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    if (!sfxGain) {
+      sfxGain = audioCtx.createGain();
+      sfxGain.gain.value = 0.22;
+      sfxGain.connect(audioCtx.destination);
+    }
+    if (!musicGain) {
+      musicGain = audioCtx.createGain();
+      musicGain.gain.value = soundOn ? 0.1 : 0;
+      musicGain.connect(audioCtx.destination);
+    }
+    return audioCtx;
+  } catch (e) {
+    return null;
+  }
+}
+
+function noiseSrc(ctx, dur, t0) {
+  const n = Math.max(1, Math.floor(dur * ctx.sampleRate));
+  if (!noiseBuf || noiseBuf.length < n) {
+    noiseBuf = ctx.createBuffer(1, Math.max(n, ctx.sampleRate), ctx.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuf;
+  src.start(t0);
+  src.stop(t0 + dur);
+  return src;
+}
+
+function toneAt(ctx, dest, type, freq, vol, t0, a, hold, rel) {
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + a);
+  g.gain.exponentialRampToValueAtTime(vol * 0.65, t0 + a + hold);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + hold + rel);
+  osc.connect(g);
+  g.connect(dest);
+  osc.start(t0);
+  osc.stop(t0 + a + hold + rel + 0.02);
+}
+
+function sfx(kind) {
+  if (!soundOn) return;
+  const ctx = ensureAudio();
+  if (!ctx || !sfxGain) return;
+  const t = ctx.currentTime;
+  try {
+    if (kind === "tap") toneAt(ctx, sfxGain, "sine", 520, 0.07, t, 0.01, 0.02, 0.06);
+    else if (kind === "grabWood") {
+      const src = noiseSrc(ctx, 0.12, t);
+      const f = ctx.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.setValueAtTime(380, t);
+      f.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.35, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      src.connect(f);
+      f.connect(g);
+      g.connect(sfxGain);
+      toneAt(ctx, sfxGain, "sine", 170, 0.12, t, 0.01, 0.04, 0.1);
+    } else if (kind === "grabPak") toneAt(ctx, sfxGain, "triangle", 680, 0.08, t, 0.005, 0.03, 0.05);
+    else if (kind === "dropPak") {
+      toneAt(ctx, sfxGain, "sine", 240, 0.14, t, 0.01, 0.04, 0.1);
+      toneAt(ctx, sfxGain, "triangle", 420, 0.06, t + 0.03, 0.01, 0.03, 0.08);
+    } else if (kind === "dropWood") {
+      const src = noiseSrc(ctx, 0.16, t);
+      const f = ctx.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.setValueAtTime(260, t);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.4, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      src.connect(f);
+      f.connect(g);
+      g.connect(sfxGain);
+      toneAt(ctx, sfxGain, "sine", 130, 0.16, t, 0.01, 0.05, 0.14);
+    } else if (kind === "full") {
+      toneAt(ctx, sfxGain, "sine", 392, 0.08, t, 0.02, 0.08, 0.18);
+      toneAt(ctx, sfxGain, "sine", 523, 0.08, t + 0.08, 0.02, 0.1, 0.22);
+      toneAt(ctx, sfxGain, "sine", 659, 0.07, t + 0.16, 0.02, 0.12, 0.28);
+    } else if (kind === "truck") {
+      toneAt(ctx, sfxGain, "sawtooth", 92, 0.07, t, 0.04, 0.22, 0.28);
+      toneAt(ctx, sfxGain, "triangle", 196, 0.08, t + 0.12, 0.02, 0.12, 0.2);
+      toneAt(ctx, sfxGain, "triangle", 165, 0.07, t + 0.28, 0.02, 0.16, 0.22);
+    } else if (kind === "doors") {
+      [0, 0.14].forEach((off) => {
+        const src = noiseSrc(ctx, 0.14, t + off);
+        const f = ctx.createBiquadFilter();
+        f.type = "bandpass";
+        f.frequency.setValueAtTime(900 - off * 400, t + off);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.22, t + off);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.14);
+        src.connect(f);
+        f.connect(g);
+        g.connect(sfxGain);
+      });
+    } else if (kind === "buy") {
+      toneAt(ctx, sfxGain, "triangle", 784, 0.1, t, 0.01, 0.06, 0.12);
+      toneAt(ctx, sfxGain, "triangle", 1046, 0.1, t + 0.08, 0.01, 0.08, 0.16);
+    } else if (kind === "coin") toneAt(ctx, sfxGain, "sine", 1200, 0.07, t, 0.005, 0.03, 0.08);
+    else if (kind === "whoosh") {
+      const src = noiseSrc(ctx, 0.35, t);
+      const f = ctx.createBiquadFilter();
+      f.type = "highpass";
+      f.frequency.setValueAtTime(400, t);
+      f.frequency.exponentialRampToValueAtTime(1800, t + 0.32);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      src.connect(f);
+      f.connect(g);
+      g.connect(sfxGain);
+    } else if (kind === "done") {
+      toneAt(ctx, sfxGain, "sine", 523, 0.09, t, 0.02, 0.1, 0.2);
+      toneAt(ctx, sfxGain, "sine", 659, 0.09, t + 0.1, 0.02, 0.12, 0.22);
+      toneAt(ctx, sfxGain, "sine", 784, 0.1, t + 0.22, 0.02, 0.16, 0.32);
+    } else if (kind === "no") {
+      toneAt(ctx, sfxGain, "square", 180, 0.06, t, 0.01, 0.05, 0.08);
+      toneAt(ctx, sfxGain, "square", 120, 0.06, t + 0.07, 0.01, 0.08, 0.1);
+    } else if (kind === "paper") {
+      const src = noiseSrc(ctx, 0.18, t);
+      const f = ctx.createBiquadFilter();
+      f.type = "highpass";
+      f.frequency.setValueAtTime(1800, t);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      src.connect(f);
+      f.connect(g);
+      g.connect(sfxGain);
+    } else if (kind === "gift") {
+      toneAt(ctx, sfxGain, "sine", 659, 0.08, t, 0.02, 0.08, 0.16);
+      toneAt(ctx, sfxGain, "sine", 784, 0.08, t + 0.1, 0.02, 0.1, 0.2);
+      toneAt(ctx, sfxGain, "sine", 988, 0.09, t + 0.22, 0.02, 0.14, 0.28);
+    }
+  } catch (e) {}
+}
+
+function scheduleMusic(t0) {
+  const ctx = audioCtx;
+  if (!ctx || !musicGain) return;
+  const pads = [
+    [146.83, 220.0, 293.66],
+    [174.61, 220.0, 261.63],
+    [196.0, 246.94, 293.66],
+    [164.81, 196.0, 246.94],
+  ];
+  pads.forEach((chord, i) => {
+    const t = t0 + i * 4;
+    chord.forEach((f) => {
+      toneAt(ctx, musicGain, "sine", f, 0.055, t, 0.9, 2.1, 1.3);
+      toneAt(ctx, musicGain, "triangle", f * 2, 0.012, t, 1.1, 2, 1.2);
+    });
+  });
+  const tune = [293.66, 0, 349.23, 392, 0, 440, 392, 349.23, 293.66, 0, 261.63, 293.66, 0, 0, 220, 261.63];
+  tune.forEach((f, i) => {
+    if (!f) return;
+    toneAt(ctx, musicGain, "triangle", f, 0.032, t0 + i * 1, 0.06, 0.38, 0.5);
+  });
+  musicNext = t0 + 16;
+}
+
+function pumpMusic() {
+  if (!soundOn || !audioCtx || !musicGain) return;
+  if (musicNext < audioCtx.currentTime + 5) {
+    scheduleMusic(Math.max(audioCtx.currentTime + 0.08, musicNext || 0));
+  }
+}
+
+function startMusic() {
+  if (!soundOn) return;
+  const ctx = ensureAudio();
+  if (!ctx || !musicGain) return;
+  musicGain.gain.cancelScheduledValues(ctx.currentTime);
+  musicGain.gain.setValueAtTime(musicGain.gain.value || 0.0001, ctx.currentTime);
+  musicGain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.6);
+  if (!musicTimer) {
+    musicNext = 0;
+    pumpMusic();
+    musicTimer = window.setInterval(pumpMusic, 1500);
+  }
+}
+
+function stopMusic() {
+  if (musicGain && audioCtx) {
+    const t = audioCtx.currentTime;
+    musicGain.gain.cancelScheduledValues(t);
+    musicGain.gain.setValueAtTime(musicGain.gain.value, t);
+    musicGain.gain.linearRampToValueAtTime(0.0001, t + 0.25);
+  }
+  if (musicTimer) {
+    window.clearInterval(musicTimer);
+    musicTimer = 0;
+  }
+}
+
+function paintSoundBtn() {
+  const btn = document.getElementById("btn-sound");
+  if (!btn) return;
+  btn.classList.toggle("is-off", !soundOn);
+  btn.setAttribute("aria-label", soundOn ? "Звук вкл" : "Звук выкл");
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  localStorage.setItem(SOUND_KEY, soundOn ? "1" : "0");
+  paintSoundBtn();
+  if (soundOn) {
+    ensureAudio();
+    startMusic();
+    sfx("tap");
+  } else stopMusic();
+}
+
+function unlockAudio() {
+  if (!soundOn) return;
+  ensureAudio();
+  startMusic();
+}
 
 function skuOf(id) {
   return SKUS.find((s) => s.id === id) || SKUS[0];
@@ -651,6 +892,7 @@ function toast(text) {
 }
 
 function shake(el) {
+  sfx("no");
   if (!el) return;
   el.classList.remove("shake");
   void el.offsetWidth;
@@ -744,6 +986,7 @@ async function rentRoom(id, btn) {
   saveProgress();
   paintHud();
   btn.classList.add("bought");
+  sfx("buy");
   await playBuyRoom(room);
   state.busy = false;
   openFloor();
@@ -1024,6 +1267,7 @@ function startUnload() {
   if (!canUnloadHere()) {
     toast(emptyWoods() ? "Сначала поставь поддон со стопки" : "Нужен свободный поддон");
   }
+  sfx("doors");
   state.unloading = true;
   paintDock();
   if (inGuide() && (progress.guide === "unload" || progress.guide === "place")) {
@@ -1613,6 +1857,7 @@ function checkout(btn) {
     return;
   }
   progress.coins -= total;
+  sfx("buy");
   for (let i = 0; i < woods; i += 1) {
     progress.stack.push(makeWood());
     progress.boughtWoods += 1;
@@ -1750,6 +1995,7 @@ function tickShip() {
     arrived.forEach((item) => {
       toast("Машина приехала. Жми «Принять»");
     });
+    sfx("truck");
     if (document.getElementById("ship-pane").classList.contains("show")) paintShipList();
     if (floor.classList.contains("show")) {
       paintDock();
@@ -1976,6 +2222,7 @@ function spawnRushJob() {
 }
 
 function giftRushPal() {
+  sfx("gift");
   progress.stack.push(makeWood());
   saveProgress();
   paintHud();
@@ -2143,6 +2390,7 @@ function startShip(id) {
   if (build) state.shipPalId = build.id;
   document.body.classList.add("shipping");
   document.body.classList.remove("loading", "gone");
+  sfx("paper");
   paintWaybill(true);
   paintSlots();
   if (!state.shipPalId && (progress.stack || []).some((p) => p.units < 1)) {
@@ -2174,6 +2422,7 @@ function startBulk(id) {
   saveProgress();
   document.body.classList.add("bulk-ship", "shipping", "loading");
   document.body.classList.remove("gone");
+  sfx("paper");
   paintWaybill(true);
   paintSlots();
   toast("Перетащи полные поддоны в машину. Заберёт с деревом");
@@ -2414,6 +2663,7 @@ function startWoodDrag(e, palId, from) {
   bindDrag(e);
   beginGhost(palStandHtml(pal), e.clientX, e.clientY);
   paintSlots();
+  sfx("grabWood");
 }
 
 function startPackDrag(e, id, from) {
@@ -2449,6 +2699,7 @@ function startPackDrag(e, id, from) {
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
   bindDrag(e);
+  sfx("grabPak");
 }
 
 const DRAG_LISTEN = { capture: true, passive: false };
@@ -2565,6 +2816,7 @@ async function flyGhostIntoTruck() {
   ghost.style.left = box.left + box.width * 0.32 + "px";
   ghost.style.top = box.top + box.height * 0.48 + "px";
   ghost.style.opacity = "0";
+  sfx("whoosh");
   await wait(340);
   hideGhost();
 }
@@ -2629,8 +2881,11 @@ async function onDragEnd(e) {
     paintSlots();
     if (gift) markGiftStack();
     if (placed) {
+      sfx("dropWood");
       const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
       if (stand) stand.classList.add("drop-in");
+    } else if (pal && pal.units < 1) {
+      sfx("dropWood");
     }
     if (inGuide() && progress.guide === "place") {
       if (placed && spotEl) window.setTimeout(() => showGuide(dockList().length ? "unload" : "wait"), 80);
@@ -2646,6 +2901,7 @@ async function onDragEnd(e) {
     restoreHeld(drag);
     hideGhost();
     paintSlots();
+    sfx("no");
     if (pal && drag.from === "floor") toast("Сюда только такой же товар");
     return;
   }
@@ -2676,12 +2932,18 @@ async function dropPackOn(pal, drag) {
     saveProgress();
     paintSlots();
     paintWaybill();
-    if (orderDone(order)) toast("Собрано. Можно отгрузить");
+    sfx("dropPak");
+    if (orderDone(order)) {
+      sfx("full");
+      toast("Собрано. Можно отгрузить");
+    }
     return;
   }
   drag.held = false;
   pal.units += 1;
   pal.sku = pal.sku || drag.sku;
+  sfx("dropPak");
+  if (pal.units >= PALLET_PACKS) sfx("full");
   progress.incoming = (progress.incoming || []).filter((item) => item.left > 0);
   saveProgress();
   paintHud();
@@ -2719,6 +2981,7 @@ async function finishShip(order) {
   const stand = document.querySelector(".pal-stand.ship-now");
   const load = stand && stand.querySelector(".pal-load");
   if (load) load.classList.add("into-truck");
+  sfx("whoosh");
   await wait(620);
   const ship = progress.pallets.find((p) => p.id === state.shipPalId);
   if (ship) {
@@ -2753,6 +3016,7 @@ async function finishShip(order) {
   paintSlots();
   maybeOrders();
   paintJobs();
+  sfx("done");
   toast(rush ? "Товар уехал. Пустой поддон в подарок" : "Товар уехал");
   state.busy = false;
   if (progress.guide === "send" || progress.guide === "build" || progress.guide === "jobs") {
@@ -2779,6 +3043,7 @@ function flyCoins(fromEl, toEl, n) {
     bit.style.setProperty("--dy", dy + "px");
     bit.style.animationDelay = i * 55 + "ms";
     document.body.appendChild(bit);
+    window.setTimeout(() => sfx("coin"), i * 55);
     window.setTimeout(() => bit.remove(), 880 + i * 55);
   }
 }
@@ -3028,6 +3293,7 @@ function onGuideOk() {
 
 function playGuideGift() {
   if (progress.giftedPal) return;
+  sfx("gift");
   progress.giftedPal = true;
   progress.stack.push(makeWood());
   saveProgress();
@@ -3060,6 +3326,7 @@ function playGuideGift() {
 }
 
 function goPlay() {
+  unlockAudio();
   paintHud();
   if (!progress.gifted) giftStart();
   if (progress.guide !== "done" && !progress.room) {
@@ -3103,7 +3370,23 @@ function goBack() {
   }
 }
 
+document.getElementById("btn-sound").addEventListener("click", toggleSound);
 document.getElementById("boot-play").addEventListener("click", goPlay);
+window.addEventListener(
+  "pointerdown",
+  () => {
+    unlockAudio();
+  },
+  { once: true, capture: true }
+);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (audioCtx && audioCtx.state === "running") audioCtx.suspend();
+  } else if (soundOn) {
+    ensureAudio();
+    startMusic();
+  }
+});
 document.getElementById("guide-ok").addEventListener("click", onGuideOk);
 window.addEventListener("resize", () => {
   if (!document.getElementById("guide") || document.getElementById("guide").hidden) return;
@@ -3159,4 +3442,5 @@ window.setInterval(tickShip, 250);
 
 seedDust();
 paintHud();
+paintSoundBtn();
 showScreen(boot);

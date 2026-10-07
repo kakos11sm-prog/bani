@@ -83,7 +83,8 @@ body {
 .cart-buy,
 .cart-toggle,
 .cart-line,
-.reset {
+.reset,
+.sound-btn {
   border: 0;
   font: inherit;
   color: inherit;
@@ -2188,6 +2189,58 @@ body.guide-place .pal-spot:not(.has-pal)::after {
 @keyframes dropPulse {
   0%, 100% { opacity: 0.72; }
   50% { opacity: 1; }
+}
+
+.sound-btn {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #2a2218;
+  cursor: pointer;
+  position: relative;
+}
+
+.sound-btn i {
+  display: block;
+  width: 14px;
+  height: 12px;
+  margin: 16px auto 0;
+  border-radius: 1px 0 0 1px;
+  background: var(--tape);
+  box-shadow: 6px -3px 0 -3px var(--tape);
+}
+
+.sound-btn i::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 14px;
+  width: 8px;
+  height: 16px;
+  border: 2px solid var(--tape);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.sound-btn.is-off i {
+  opacity: 0.45;
+}
+
+.sound-btn.is-off::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 50%;
+  height: 2px;
+  background: #e85d4c;
+  transform: rotate(-28deg);
+  box-shadow: 0 0 0 1px #2a2218;
+}
+
+.sound-btn:active {
+  transform: scale(0.97);
 }
 
 .chip.wood i {
