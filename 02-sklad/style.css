@@ -3424,7 +3424,7 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   position: fixed;
   z-index: 40;
   width: 35px;
-  margin: -40px 0 0 -17px;
+  margin: 0;
   background: transparent;
   pointer-events: none;
 }
@@ -3435,7 +3435,7 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 .drag-ghost.is-pal {
   width: 108px;
-  margin: -28px 0 0 -54px;
+  margin: 0;
 }
 
 .drag-ghost.is-pal .pal-live {

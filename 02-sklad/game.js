@@ -2218,11 +2218,38 @@ function hideGhost() {
   ghost.removeAttribute("style");
 }
 
+function palGrabFrom(e) {
+  const stand = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest(".pal-stand") : null;
+  const layer =
+    !stand && e.currentTarget && e.currentTarget.querySelector
+      ? e.currentTarget.querySelector(".stack-layer.top")
+      : null;
+  const el = stand || layer || e.currentTarget;
+  if (!el || !el.getBoundingClientRect) {
+    return { startX: e.clientX, startY: e.clientY, left: e.clientX - 54, top: e.clientY - 90 };
+  }
+  const box = el.getBoundingClientRect();
+  return {
+    startX: e.clientX,
+    startY: e.clientY,
+    left: box.left,
+    top: box.top,
+  };
+}
+
 function moveGhost(x, y) {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
-  ghost.style.left = x + "px";
-  ghost.style.top = y + "px";
+  const grab = state.drag && state.drag.grab;
+  if (grab && grab.alignX != null) {
+    ghost.style.left = grab.alignX + (x - grab.startX) + "px";
+    ghost.style.top = grab.alignY + (y - grab.startY) + "px";
+    return;
+  }
+  const ox = ghost.classList.contains("is-pal") ? 54 : 17;
+  const oy = ghost.classList.contains("is-pal") ? 28 : 40;
+  ghost.style.left = x - ox + "px";
+  ghost.style.top = y - oy + "px";
 }
 
 function findPal(id) {
@@ -2259,8 +2286,17 @@ function beginGhost(html, x, y, skin) {
   const ghost = document.getElementById("drag-ghost");
   ghost.hidden = false;
   ghost.classList.toggle("is-pal", html.indexOf("pal-live") >= 0);
+  ghost.removeAttribute("style");
   if (skin) ghost.setAttribute("style", skin);
   ghost.innerHTML = html;
+  const grab = state.drag && state.drag.grab;
+  if (grab && grab.startX != null) {
+    ghost.style.left = "0px";
+    ghost.style.top = "0px";
+    const box = ghost.getBoundingClientRect();
+    grab.alignX = grab.left - box.left;
+    grab.alignY = grab.top - box.top;
+  }
   moveGhost(x, y);
 }
 
@@ -2274,9 +2310,10 @@ function startWoodDrag(e, palId, from) {
     return;
   }
   if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT && !state.bulkId) return;
+  const grab = palGrabFrom(e);
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
-  state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, fromSpot: pal.spot, held: true };
+  state.drag = { kind: "wood", pal: pal, palId: pal.id, from: from, fromSpot: pal.spot, held: true, grab: grab };
   if (from === "stack") {
     progress.stack = progress.stack.filter((p) => p.id !== pal.id);
     if (progress.guide === "place") hideGuide();
