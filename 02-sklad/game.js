@@ -343,25 +343,37 @@ function sfx(kind) {
 function scheduleMusic(t0) {
   const ctx = audioCtx;
   if (!ctx || !musicGain) return;
-  const pads = [
-    [146.83, 220.0, 293.66],
-    [174.61, 220.0, 261.63],
-    [196.0, 246.94, 293.66],
-    [164.81, 196.0, 246.94],
+  const beat = 0.7;
+  const bars = [
+    { bass: 73.42, chord: [146.83, 174.61, 220.0] },
+    { bass: 87.31, chord: [174.61, 220.0, 261.63] },
+    { bass: 98.0, chord: [196.0, 246.94, 293.66] },
+    { bass: 65.41, chord: [130.81, 164.81, 196.0] },
   ];
-  pads.forEach((chord, i) => {
-    const t = t0 + i * 4;
-    chord.forEach((f) => {
-      toneAt(ctx, musicGain, "sine", f, 0.055, t, 0.9, 2.1, 1.3);
-      toneAt(ctx, musicGain, "triangle", f * 2, 0.012, t, 1.1, 2, 1.2);
+  bars.forEach((bar, i) => {
+    const t = t0 + i * 4 * beat;
+    bar.chord.forEach((f) => {
+      toneAt(ctx, musicGain, "sine", f, 0.042, t, 0.35, 2.15, 0.7);
+      toneAt(ctx, musicGain, "triangle", f * 2, 0.01, t + 0.08, 0.5, 1.8, 0.7);
+    });
+    [0, 2].forEach((step) => {
+      toneAt(ctx, musicGain, "sine", bar.bass, 0.07, t + step * beat, 0.02, 0.22, 0.28);
+    });
+    [1, 3].forEach((step) => {
+      toneAt(ctx, musicGain, "triangle", bar.chord[1] * 2, 0.011, t + step * beat, 0.01, 0.07, 0.12);
     });
   });
-  const tune = [293.66, 0, 349.23, 392, 0, 440, 392, 349.23, 293.66, 0, 261.63, 293.66, 0, 0, 220, 261.63];
+  const tune = [
+    220.0, 0, 261.63, 293.66, 261.63, 220.0, 0, 174.61,
+    196.0, 220.0, 261.63, 0, 293.66, 261.63, 220.0, 196.0,
+    293.66, 349.23, 0, 392.0, 349.23, 293.66, 261.63, 0,
+    246.94, 261.63, 220.0, 196.0, 174.61, 196.0, 220.0, 0,
+  ];
   tune.forEach((f, i) => {
     if (!f) return;
-    toneAt(ctx, musicGain, "triangle", f, 0.032, t0 + i * 1, 0.06, 0.38, 0.5);
+    toneAt(ctx, musicGain, "triangle", f, 0.03, t0 + i * (beat / 2), 0.03, 0.18, 0.22);
   });
-  musicNext = t0 + 16;
+  musicNext = t0 + 16 * beat;
 }
 
 function pumpMusic() {
