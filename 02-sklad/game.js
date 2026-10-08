@@ -3515,7 +3515,7 @@ function layoutGuide(sel, side) {
     left = r.left - w - 16;
     card.dataset.side = "right";
   } else {
-    top = r.bottom + 26;
+    top = r.bottom + (pinCoin ? 36 : 26);
     left = pinCoin ? r.left - 8 : cx - w / 2;
     card.dataset.side = "up";
   }
@@ -3613,8 +3613,8 @@ async function playCoinsIntro() {
     const w = Math.min(window.innerWidth * 0.92, 380);
     card.style.width = w + "px";
     card.style.left = "50%";
-    card.style.top = Math.max(24, window.innerHeight * 0.16) + "px";
-    card.style.transform = "translateX(-50%)";
+    card.style.top = "50%";
+    card.style.transform = "translate(-50%, -50%)";
     if (spot) {
       spot.style.left = "50%";
       spot.style.top = "42%";
@@ -3640,11 +3640,10 @@ async function playCoinsIntro() {
     }
     card.classList.add("settle", "still");
     card.classList.remove("hero");
-    card.style.transform = "none";
     if (pay) pay.hidden = true;
     if (ok) ok.hidden = false;
     window.setTimeout(() => card.classList.remove("settle"), 480);
-    await wait(50);
+    await wait(40);
     if (progress.guide !== "coins") return;
   }
   if (spec.wobble) {

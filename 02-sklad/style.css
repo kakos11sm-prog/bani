@@ -4022,9 +4022,13 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 
 .guide-card.hero {
   left: 50% !important;
-  min-height: 42vh;
+  top: 50% !important;
+  min-height: 50vh;
   padding: 28px 22px 22px;
-  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transform: translate(-50%, -50%);
   animation: guideHeroIn 0.72s cubic-bezier(0.2, 1.05, 0.3, 1);
 }
 
@@ -4037,7 +4041,7 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 }
 
 .guide-card.hero p {
-  margin: 0;
+  margin: 0 0 16px;
   font-size: 22px;
   text-align: center;
 }
@@ -4049,7 +4053,8 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
     top 0.45s ease,
     width 0.45s ease,
     min-height 0.45s ease,
-    padding 0.45s ease;
+    padding 0.45s ease,
+    transform 0.45s ease;
 }
 
 .guide-card.still {
@@ -4059,15 +4064,15 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 @keyframes guideHeroIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(28px) rotate(-8deg) scale(0.82);
+    transform: translate(-50%, -50%) translateY(28px) rotate(-8deg) scale(0.82);
   }
   58% {
     opacity: 1;
-    transform: translateX(-50%) translateY(-6px) rotate(1.8deg) scale(1.04);
+    transform: translate(-50%, -50%) translateY(-6px) rotate(1.8deg) scale(1.04);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
   }
 }
 
