@@ -1069,6 +1069,11 @@ function coinChip() {
   return document.getElementById("hud-coin") || document.querySelector(".hud .chip.coin");
 }
 
+function coinAim() {
+  const chip = coinChip();
+  return (chip && chip.querySelector("i")) || chip;
+}
+
 function paintHud() {
   const coins = document.getElementById("hud-coins");
   if (coins) coins.textContent = String(state.coinHold ? 0 : progress.coins);
@@ -3478,6 +3483,7 @@ function hideGuide() {
     box.classList.remove("show");
   }
   if (card) card.classList.remove("hero", "settle", "still");
+  document.body.classList.remove("aim-coins");
   if (pay) pay.hidden = true;
   if (ok) ok.hidden = false;
   document.querySelectorAll(".guide-on, .wobble").forEach((el) => el.classList.remove("guide-on", "wobble"));
@@ -3498,13 +3504,15 @@ function layoutGuide(sel, side) {
   if (r.width < 4 || r.height < 4) return false;
   target.classList.add("guide-on");
   const pinCoin = sel === "#hud-coin" || sel === ".chip.coin";
-  const w = Math.min(pinCoin ? Math.max(r.width + 20, 148) : 240, window.innerWidth - 16);
+  const aim = pinCoin ? coinAim() || target : target;
+  const a = aim.getBoundingClientRect();
+  const w = Math.min(pinCoin ? 200 : 240, window.innerWidth - 16);
   card.classList.toggle("still", pinCoin);
   if (pinCoin) card.style.transform = "none";
   card.style.width = w + "px";
   const h = card.offsetHeight || 130;
-  const cx = r.left + r.width / 2;
-  const cy = r.top + r.height / 2;
+  const cx = a.left + a.width / 2;
+  const cy = a.top + a.height / 2;
   let top;
   let left;
   if (side === "above") {
@@ -3521,7 +3529,7 @@ function layoutGuide(sel, side) {
     card.dataset.side = "right";
   } else {
     top = r.bottom + (pinCoin ? 36 : 26);
-    left = pinCoin ? r.left - 8 : cx - w / 2;
+    left = cx - w / 2;
     card.dataset.side = "up";
   }
   left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
@@ -3530,7 +3538,7 @@ function layoutGuide(sel, side) {
   card.style.top = top + "px";
   const spot = document.getElementById("guide-spot");
   if (spot) {
-    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .recv-spot, .waybill, .ship-go, .cart-buy, .menu-btn, .back") || target;
+    const hole = pinCoin ? coinChip() || target : target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .recv-spot, .waybill, .ship-go, .cart-buy, .menu-btn, .back") || target;
     const hr = hole.getBoundingClientRect();
     const pad = 8;
     spot.style.left = hr.left - pad + "px";
@@ -3545,7 +3553,8 @@ function layoutGuide(sel, side) {
     arrow.style.bottom = "";
     arrow.style.margin = "0";
     if (card.dataset.side === "up" || card.dataset.side === "down") {
-      const ax = Math.max(18, Math.min(cx - left, w - 18));
+      const live = pinCoin && coinAim() ? coinAim().getBoundingClientRect() : a;
+      const ax = Math.max(18, Math.min(live.left + live.width / 2 - left, w - 18));
       arrow.style.left = ax + "px";
       arrow.style.marginLeft = "-11px";
       if (card.dataset.side === "up") arrow.style.top = "-20px";
@@ -3606,6 +3615,7 @@ async function playCoinsIntro() {
   box.classList.add("show");
   const flyIn = !progress.gifted || progress.coins < START_COINS;
   if (flyIn) {
+    document.body.classList.add("aim-coins");
     state.coinHold = true;
     paintHud();
     if (ok) ok.hidden = true;
@@ -3629,7 +3639,7 @@ async function playCoinsIntro() {
     sfx("paper");
     await wait(780);
     if (progress.guide !== "coins") return;
-    flyCoins(pay || card, coinChip(), 9);
+    flyCoins(pay || card, coinAim(), 9);
     await wait(820);
     if (progress.guide !== "coins") return;
     state.coinHold = false;
@@ -3750,6 +3760,8 @@ function goPlay() {
   unlockAudio();
   if (progress.guide !== "done" && !progress.room) {
     paintHud();
+    paintRooms();
+    showScreen(rent);
     showGuide("coins");
     return;
   }

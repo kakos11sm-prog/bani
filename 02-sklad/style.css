@@ -126,6 +126,17 @@ body {
   min-width: 108px;
 }
 
+body.aim-coins .chip.rate,
+body.aim-coins .chip.wood {
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+body.aim-coins #hud-coin {
+  z-index: 50;
+  box-shadow: 0 0 0 2px #f0b429, 0 0 14px rgba(240, 180, 41, 0.5);
+}
+
 .chip.coin i {
   width: 18px;
   height: 18px;
