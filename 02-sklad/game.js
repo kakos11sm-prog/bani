@@ -51,7 +51,7 @@ const toastEl = document.getElementById("toast");
 
 function emptyProgress() {
   return {
-    coins: START_COINS,
+    coins: 0,
     room: "",
     pallets: [],
     stack: [],
@@ -170,7 +170,7 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
-const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, shipGone: false, shipLoad: [], wayPeek: false, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0 };
+const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, shipGone: false, shipLoad: [], wayPeek: false, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0, coinHold: false };
 
 const FIZ_NAMES = [
   "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
@@ -1040,7 +1040,7 @@ function shake(el) {
 
 function paintHud() {
   const coins = document.getElementById("hud-coins");
-  if (coins) coins.textContent = String(progress.coins);
+  if (coins) coins.textContent = String(state.coinHold ? 0 : progress.coins);
   const coinChip = document.querySelector(".chip.coin");
   if (coinChip) coinChip.classList.toggle("debt", progress.coins < 0);
   const woods = document.getElementById("hud-woods");
@@ -3418,11 +3418,18 @@ const GUIDE = {
 };
 
 function hideGuide() {
+  state.coinHold = false;
   const box = document.getElementById("guide");
+  const card = document.getElementById("guide-card");
+  const pay = document.getElementById("guide-pay");
+  const ok = document.getElementById("guide-ok");
   if (box) {
     box.hidden = true;
     box.classList.remove("show");
   }
+  if (card) card.classList.remove("hero", "settle");
+  if (pay) pay.hidden = true;
+  if (ok) ok.hidden = false;
   document.querySelectorAll(".guide-on, .wobble").forEach((el) => el.classList.remove("guide-on", "wobble"));
   paintGuideDrops();
 }
@@ -3460,7 +3467,7 @@ function layoutGuide(sel, side) {
     left = r.left - w - 16;
     card.dataset.side = "right";
   } else {
-    top = r.bottom + 16;
+    top = r.bottom + 26;
     left = cx - w / 2;
     card.dataset.side = "up";
   }
@@ -3510,6 +3517,10 @@ function showGuide(step) {
   saveProgress();
   hideGuide();
   text.textContent = spec.text;
+  if (step === "coins") {
+    playCoinsIntro();
+    return;
+  }
   const wait = scrollGuideTarget(spec.sel);
   const reveal = () => {
     if (progress.guide !== step) return;
@@ -3523,6 +3534,70 @@ function showGuide(step) {
   };
   if (wait) window.setTimeout(reveal, wait);
   else reveal();
+}
+
+async function playCoinsIntro() {
+  const spec = GUIDE.coins;
+  const box = document.getElementById("guide");
+  const card = document.getElementById("guide-card");
+  const text = document.getElementById("guide-text");
+  const pay = document.getElementById("guide-pay");
+  const payN = document.getElementById("guide-pay-n");
+  const ok = document.getElementById("guide-ok");
+  const spot = document.getElementById("guide-spot");
+  if (!spec || !box || !card || !text) return;
+  text.textContent = spec.text;
+  box.hidden = false;
+  box.classList.add("show");
+  const flyIn = !progress.gifted || progress.coins < START_COINS;
+  if (flyIn) {
+    state.coinHold = true;
+    paintHud();
+    if (ok) ok.hidden = true;
+    if (pay) {
+      pay.hidden = false;
+      if (payN) payN.textContent = "+" + START_COINS;
+    }
+    card.classList.add("hero");
+    card.dataset.side = "up";
+    const w = Math.min(window.innerWidth * 0.92, 380);
+    card.style.width = w + "px";
+    card.style.left = Math.max(8, (window.innerWidth - w) / 2) + "px";
+    card.style.top = Math.max(24, window.innerHeight * 0.16) + "px";
+    if (spot) {
+      spot.style.left = "50%";
+      spot.style.top = "42%";
+      spot.style.width = "2px";
+      spot.style.height = "2px";
+    }
+    sfx("paper");
+    await wait(780);
+    if (progress.guide !== "coins") return;
+    flyCoins(pay || card, document.querySelector(".chip.coin"), 9);
+    await wait(820);
+    if (progress.guide !== "coins") return;
+    state.coinHold = false;
+    progress.gifted = true;
+    progress.coins = START_COINS;
+    saveProgress();
+    paintHud();
+    const chip = document.querySelector(".chip.coin");
+    if (chip) {
+      chip.classList.remove("catch");
+      void chip.offsetWidth;
+      chip.classList.add("catch");
+    }
+    card.classList.add("settle");
+    card.classList.remove("hero");
+    if (pay) pay.hidden = true;
+    if (ok) ok.hidden = false;
+    window.setTimeout(() => card.classList.remove("settle"), 480);
+  }
+  if (spec.wobble) {
+    const wob = document.querySelector(spec.wobble);
+    if (wob) wob.classList.add("wobble");
+  }
+  followGuide(spec.sel, spec.side, flyIn ? 520 : 420);
 }
 
 function scrollGuideTarget(sel) {
@@ -3608,12 +3683,13 @@ function playGuideGift() {
 
 function goPlay() {
   unlockAudio();
-  paintHud();
-  if (!progress.gifted) giftStart();
   if (progress.guide !== "done" && !progress.room) {
+    paintHud();
     showGuide("coins");
     return;
   }
+  if (!progress.gifted) giftStart();
+  else paintHud();
   if (!progress.room) {
     paintRooms();
     showScreen(rent);

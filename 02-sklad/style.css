@@ -3826,6 +3826,78 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   line-height: 1.35;
 }
 
+.guide-pay {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 18px;
+  font-weight: 800;
+  color: #b07a12;
+}
+
+.guide-pay[hidden] {
+  display: none !important;
+}
+
+.guide-pay i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, #f0b429 55%, #a66a10);
+  box-shadow: 0 0 12px rgba(240, 180, 41, 0.55);
+}
+
+.guide-pay b {
+  font-size: 34px;
+  letter-spacing: 0.02em;
+}
+
+.guide-card.hero {
+  min-height: 42vh;
+  padding: 28px 22px 22px;
+  animation: guideHeroIn 0.72s cubic-bezier(0.2, 1.05, 0.3, 1);
+}
+
+.guide-card.hero .guide-pay:not([hidden]) {
+  display: flex;
+}
+
+.guide-card.hero .guide-arrow {
+  display: none;
+}
+
+.guide-card.hero p {
+  margin: 0;
+  font-size: 22px;
+  text-align: center;
+}
+
+.guide-card.settle {
+  animation: none;
+  transition:
+    left 0.45s ease,
+    top 0.45s ease,
+    width 0.45s ease,
+    min-height 0.45s ease,
+    padding 0.45s ease;
+}
+
+@keyframes guideHeroIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) rotate(-8deg) scale(0.82);
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(-6px) rotate(1.8deg) scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .guide-ok {
   display: block;
   width: 100%;
