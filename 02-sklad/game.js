@@ -411,10 +411,25 @@ function stopMusic() {
 }
 
 function paintSoundBtn() {
-  const btn = document.getElementById("btn-sound");
-  if (!btn) return;
-  btn.classList.toggle("is-off", !soundOn);
-  btn.setAttribute("aria-label", soundOn ? "Звук вкл" : "Звук выкл");
+  const row = document.getElementById("set-sound");
+  const label = document.getElementById("set-sound-label");
+  if (row) {
+    row.classList.toggle("is-off", !soundOn);
+    row.setAttribute("aria-pressed", soundOn ? "true" : "false");
+  }
+  if (label) label.textContent = soundOn ? "Звук вкл" : "Звук выкл";
+}
+
+function openSet() {
+  const pane = document.getElementById("set-pane");
+  if (!pane) return;
+  paintSoundBtn();
+  pane.classList.add("show");
+}
+
+function closeSet() {
+  const pane = document.getElementById("set-pane");
+  if (pane) pane.classList.remove("show");
 }
 
 function toggleSound() {
@@ -3712,6 +3727,10 @@ function goPlay() {
 
 function goBack() {
   if (state.busy) return;
+  if (document.getElementById("set-pane") && document.getElementById("set-pane").classList.contains("show")) {
+    closeSet();
+    return;
+  }
   if (document.getElementById("shop").classList.contains("show")) {
     closeShop();
     return;
@@ -3739,7 +3758,16 @@ function goBack() {
   }
 }
 
-document.getElementById("btn-sound").addEventListener("click", toggleSound);
+document.getElementById("btn-menu").addEventListener("click", () => {
+  const pane = document.getElementById("set-pane");
+  if (pane && pane.classList.contains("show")) closeSet();
+  else openSet();
+});
+document.getElementById("set-sound").addEventListener("click", toggleSound);
+document.getElementById("set-close").addEventListener("click", closeSet);
+document.getElementById("set-pane").addEventListener("click", (e) => {
+  if (e.target.id === "set-pane") closeSet();
+});
 document.getElementById("boot-play").addEventListener("click", goPlay);
 window.addEventListener(
   "pointerdown",

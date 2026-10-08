@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="style.css?v=104" />
+    <link rel="stylesheet" href="style.css?v=106" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -22,10 +22,21 @@
       <div class="chip coin"><i></i><b id="hud-coins">0</b></div>
       <div class="chip rate" id="hud-rate-chip"><i></i><b id="hud-rate">5.0</b></div>
       <div class="chip wood"><i></i><b id="hud-woods">0</b></div>
-      <button class="sound-btn" id="btn-sound" type="button" aria-label="Звук"><i></i></button>
+      <button class="menu-btn" id="btn-menu" type="button" aria-label="Меню"><i></i></button>
     </div>
 
     <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="set-pane" id="set-pane">
+      <div class="set-card">
+        <h2>Настройки</h2>
+        <button class="set-sound" id="set-sound" type="button">
+          <span class="spk" aria-hidden="true"><b></b><i></i></span>
+          <strong id="set-sound-label">Звук вкл</strong>
+          <em class="sw" id="set-sound-sw"></em>
+        </button>
+        <button class="ghost" id="set-close" type="button">Закрыть</button>
+      </div>
+    </div>
     <button class="shop-btn" id="shop-btn" type="button">Магазин</button>
     <button class="jobs-tab" id="jobs-tab" type="button">
       <span id="jobs-tab-label">Заявки</span>
@@ -202,6 +213,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=105"></script>
+    <script src="game.js?v=106"></script>
   </body>
 </html>

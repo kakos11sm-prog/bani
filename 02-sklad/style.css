@@ -85,6 +85,8 @@ body {
 .cart-toggle,
 .cart-line,
 .reset,
+.menu-btn,
+.set-sound,
 .sound-btn {
   border: 0;
   font: inherit;
@@ -466,11 +468,24 @@ body.on-floor .shop-btn {
   display: flex;
 }
 
+#boot.show,
+#rent.show {
+  align-items: center;
+  justify-content: center;
+}
+
 .home,
 .panel,
 .yard,
 .sheet {
   width: min(520px, 100%);
+}
+
+.home,
+.panel {
+  max-width: 520px;
+  margin-inline: auto;
+  align-self: center;
 }
 
 .home {
@@ -2251,7 +2266,7 @@ body.guide-place .pal-spot:not(.has-pal)::after {
   50% { opacity: 1; }
 }
 
-.sound-btn {
+.menu-btn {
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
@@ -2261,46 +2276,189 @@ body.guide-place .pal-spot:not(.has-pal)::after {
   position: relative;
 }
 
-.sound-btn i {
+.menu-btn i,
+.menu-btn i::before,
+.menu-btn i::after {
   display: block;
-  width: 14px;
-  height: 12px;
-  margin: 16px auto 0;
-  border-radius: 1px 0 0 1px;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
   background: var(--tape);
-  box-shadow: 6px -3px 0 -3px var(--tape);
 }
 
-.sound-btn i::after {
+.menu-btn i {
+  position: relative;
+  margin: 21px auto 0;
+}
+
+.menu-btn i::before,
+.menu-btn i::after {
   content: "";
   position: absolute;
-  left: 24px;
-  top: 14px;
-  width: 8px;
-  height: 16px;
+  left: 0;
+}
+
+.menu-btn i::before {
+  top: -6px;
+}
+
+.menu-btn i::after {
+  top: 6px;
+}
+
+.menu-btn:active {
+  transform: scale(0.97);
+}
+
+.set-pane {
+  position: fixed;
+  inset: 0;
+  z-index: 52;
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: calc(62px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 16px;
+  background: rgba(8, 6, 4, 0.46);
+}
+
+.set-pane.show {
+  display: flex;
+}
+
+.set-card {
+  width: min(300px, 86vw);
+  padding: 16px 14px 10px;
+  border-radius: 16px;
+  background: #241c14;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  animation: shopIn 0.28s ease both;
+}
+
+.set-card h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.set-sound {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #2f261c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.set-sound strong {
+  font-size: 16px;
+}
+
+.spk {
+  position: relative;
+  width: 28px;
+  height: 24px;
+}
+
+.spk b {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 7px;
+  height: 8px;
+  border-radius: 2px 0 0 2px;
+  background: var(--tape);
+}
+
+.spk i {
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 12px;
+  height: 20px;
+  background: var(--tape);
+  clip-path: polygon(0 7px, 100% 0, 100% 100%, 0 13px);
+}
+
+.spk::before,
+.spk::after {
+  content: "";
+  position: absolute;
+  top: 50%;
   border: 2px solid var(--tape);
   border-left: 0;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 40px 40px 0;
 }
 
-.sound-btn.is-off i {
-  opacity: 0.45;
+.spk::before {
+  left: 16px;
+  width: 6px;
+  height: 8px;
+  margin-top: -4px;
 }
 
-.sound-btn.is-off::after {
+.spk::after {
+  left: 16px;
+  width: 11px;
+  height: 16px;
+  margin-top: -8px;
+  opacity: 0.55;
+}
+
+.set-sound.is-off .spk::before,
+.set-sound.is-off .spk::after {
+  opacity: 0;
+}
+
+.set-sound.is-off .spk {
+  opacity: 0.55;
+}
+
+.set-sound.is-off::after {
   content: "";
   position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 50%;
+  left: 16px;
+  top: 27px;
+  width: 22px;
   height: 2px;
   background: #e85d4c;
   transform: rotate(-28deg);
-  box-shadow: 0 0 0 1px #2a2218;
+  box-shadow: 0 0 0 1px #241c14;
 }
 
-.sound-btn:active {
-  transform: scale(0.97);
+.sw {
+  display: block;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #1a1410;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.45);
+  font-style: normal;
+}
+
+.sw::after {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 3px 0 0 3px;
+  border-radius: 50%;
+  background: #b8a78f;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.set-sound:not(.is-off) .sw {
+  background: #3a6a32;
+}
+
+.set-sound:not(.is-off) .sw::after {
+  background: #f0c14a;
+  transform: translateX(20px);
 }
 
 .chip.wood i {
