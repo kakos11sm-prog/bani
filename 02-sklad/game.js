@@ -2044,6 +2044,9 @@ function addPalToCart(skuId, btn) {
   }
   state.cart.pals.push(skuId);
   syncShop();
+  if (progress.guide === "water" && skuId === "water") {
+    window.setTimeout(() => showGuide("unlock"), 80);
+  }
 }
 
 function addWoodToCart(btn) {
@@ -2059,6 +2062,11 @@ function addWoodToCart(btn) {
   }
   state.cart.woods += 1;
   syncShop();
+  if (progress.guide === "wood") {
+    const cart = document.getElementById("cart");
+    if (cart) cart.classList.add("open");
+    window.setTimeout(() => showGuide("buy"), 80);
+  }
 }
 
 function dropPalFromCart(skuId) {
@@ -2128,7 +2136,7 @@ function checkout(btn) {
   if (woods && pals.length) toast("Поддоны на стопке. Товар едет минуту.");
   else if (pals.length) toast("Заказал. Машина справа через минуту.");
   else toast("Поддон на стопке слева. Ставь его на место.");
-  if (inGuide() && pals.length) {
+  if (inGuide() && (progress.guide === "buy" || pals.length)) {
     closeShop();
     window.setTimeout(() => showGuide("wait"), 280);
   }
@@ -3369,12 +3377,12 @@ function inGuide() {
 const GUIDE = {
   coins: {
     text: "Твой начальный капитал в этой сфере",
-    sel: ".chip.coin i",
+    sel: ".chip.coin",
     side: "below",
     wobble: ".chip.coin",
   },
   garage: {
-    text: "Для начала тебе достаточно купить гараж",
+    text: "У тебя денег хватит для старта только на гараж",
     sel: '#rooms .room[data-room="garage"]',
     side: "below",
   },
@@ -3383,11 +3391,13 @@ const GUIDE = {
     sel: "#shop-btn",
     side: "below",
     wobble: "#shop-btn",
+    tap: true,
   },
   water: {
     text: "Сначала купить можно только воду",
     sel: '.good[data-sku="water"]',
     side: "below",
+    tap: true,
   },
   unlock: {
     text: "Остальное сначала разблокируй — иначе не купить",
@@ -3399,6 +3409,14 @@ const GUIDE = {
     sel: ".good.woods",
     side: "above",
     wobble: ".good.woods",
+    tap: true,
+  },
+  buy: {
+    text: "Нажми «Купить», чтобы заказать",
+    sel: "#cart-buy",
+    side: "above",
+    wobble: "#cart-buy",
+    tap: true,
   },
   wait: {
     text: "Доставка занимает время",
@@ -3504,7 +3522,7 @@ function layoutGuide(sel, side) {
   card.style.top = top + "px";
   const spot = document.getElementById("guide-spot");
   if (spot) {
-    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .recv-spot, .waybill, .ship-go") || target;
+    const hole = target.closest(".chip, .room, .good, .shop-btn, .jobs-tab, .wood-stack, .truck, .in-dock, .dock-pak, .build-spot, .recv-spot, .waybill, .ship-go, .cart-buy, .menu-btn, .back") || target;
     const hr = hole.getBoundingClientRect();
     const pad = 8;
     spot.style.left = hr.left - pad + "px";
@@ -3548,6 +3566,8 @@ function showGuide(step) {
     playCoinsIntro();
     return;
   }
+  const ok = document.getElementById("guide-ok");
+  if (ok) ok.hidden = !!spec.tap;
   const wait = scrollGuideTarget(spec.sel);
   const reveal = () => {
     if (progress.guide !== step) return;
@@ -3589,8 +3609,9 @@ async function playCoinsIntro() {
     card.dataset.side = "up";
     const w = Math.min(window.innerWidth * 0.92, 380);
     card.style.width = w + "px";
-    card.style.left = Math.max(8, (window.innerWidth - w) / 2) + "px";
+    card.style.left = "50%";
     card.style.top = Math.max(24, window.innerHeight * 0.16) + "px";
+    card.style.transform = "translateX(-50%)";
     if (spot) {
       spot.style.left = "50%";
       spot.style.top = "42%";
@@ -3616,6 +3637,7 @@ async function playCoinsIntro() {
     }
     card.classList.add("settle");
     card.classList.remove("hero");
+    card.style.transform = "";
     if (pay) pay.hidden = true;
     if (ok) ok.hidden = false;
     window.setTimeout(() => card.classList.remove("settle"), 480);
@@ -3661,10 +3683,6 @@ function onGuideOk() {
     paintRooms();
     showScreen(rent);
     window.setTimeout(() => showGuide("garage"), 80);
-    return;
-  }
-  if (step === "water") {
-    showGuide("unlock");
     return;
   }
   if (step === "unlock") {

@@ -94,10 +94,18 @@ body {
 }
 
 .back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
+  padding: 0 0 3px;
   border-radius: 12px;
   background: #2a2218;
+  color: var(--tape);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -2389,24 +2397,25 @@ body.guide-place .pal-spot:not(.has-pal)::after {
 .spk::after {
   content: "";
   position: absolute;
-  top: 50%;
   border: 2px solid var(--tape);
   border-left: 0;
   border-radius: 0 40px 40px 0;
 }
 
 .spk::before {
-  left: 16px;
+  left: 18px;
+  top: 8px;
   width: 6px;
   height: 8px;
-  margin-top: -4px;
+  margin-top: 0;
 }
 
 .spk::after {
-  left: 16px;
+  left: 18px;
+  top: 4px;
   width: 11px;
   height: 16px;
-  margin-top: -8px;
+  margin-top: 0;
   opacity: 0.55;
 }
 
@@ -4012,8 +4021,10 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 }
 
 .guide-card.hero {
+  left: 50% !important;
   min-height: 42vh;
   padding: 28px 22px 22px;
+  transform: translateX(-50%);
   animation: guideHeroIn 0.72s cubic-bezier(0.2, 1.05, 0.3, 1);
 }
 
@@ -4044,15 +4055,15 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 @keyframes guideHeroIn {
   from {
     opacity: 0;
-    transform: translateY(28px) rotate(-8deg) scale(0.82);
+    transform: translateX(-50%) translateY(28px) rotate(-8deg) scale(0.82);
   }
   58% {
     opacity: 1;
-    transform: translateY(-6px) rotate(1.8deg) scale(1.04);
+    transform: translateX(-50%) translateY(-6px) rotate(1.8deg) scale(1.04);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: translateX(-50%);
   }
 }
 
@@ -4119,6 +4130,7 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
 .chip.coin.wobble,
 .chip.wobble,
 .shop-btn.wobble,
+.cart-buy.wobble,
 .jobs-tab.wobble,
 .good.woods.wobble,
 .wood-stack.wobble,
