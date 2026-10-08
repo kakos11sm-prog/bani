@@ -3472,7 +3472,7 @@ function hideGuide() {
     box.hidden = true;
     box.classList.remove("show");
   }
-  if (card) card.classList.remove("hero", "settle");
+  if (card) card.classList.remove("hero", "settle", "still");
   if (pay) pay.hidden = true;
   if (ok) ok.hidden = false;
   document.querySelectorAll(".guide-on, .wobble").forEach((el) => el.classList.remove("guide-on", "wobble"));
@@ -3492,7 +3492,10 @@ function layoutGuide(sel, side) {
   const r = target.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return false;
   target.classList.add("guide-on");
-  const w = Math.min(240, window.innerWidth - 16);
+  const pinCoin = sel === ".chip.coin";
+  const w = Math.min(pinCoin ? 188 : 240, window.innerWidth - 16);
+  card.classList.toggle("still", pinCoin);
+  if (pinCoin) card.style.transform = "none";
   card.style.width = w + "px";
   const h = card.offsetHeight || 130;
   const cx = r.left + r.width / 2;
@@ -3513,7 +3516,7 @@ function layoutGuide(sel, side) {
     card.dataset.side = "right";
   } else {
     top = r.bottom + 26;
-    left = cx - w / 2;
+    left = pinCoin ? r.left - 8 : cx - w / 2;
     card.dataset.side = "up";
   }
   left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
@@ -3635,18 +3638,21 @@ async function playCoinsIntro() {
       void chip.offsetWidth;
       chip.classList.add("catch");
     }
-    card.classList.add("settle");
+    card.classList.add("settle", "still");
     card.classList.remove("hero");
-    card.style.transform = "";
+    card.style.transform = "none";
     if (pay) pay.hidden = true;
     if (ok) ok.hidden = false;
     window.setTimeout(() => card.classList.remove("settle"), 480);
+    await wait(50);
+    if (progress.guide !== "coins") return;
   }
   if (spec.wobble) {
     const wob = document.querySelector(spec.wobble);
     if (wob) wob.classList.add("wobble");
   }
-  followGuide(spec.sel, spec.side, flyIn ? 520 : 420);
+  layoutGuide(spec.sel, spec.side);
+  followGuide(spec.sel, spec.side, flyIn ? 900 : 420);
 }
 
 function scrollGuideTarget(sel) {

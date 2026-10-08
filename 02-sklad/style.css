@@ -4052,6 +4052,10 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
     padding 0.45s ease;
 }
 
+.guide-card.still {
+  animation: none;
+}
+
 @keyframes guideHeroIn {
   from {
     opacity: 0;
