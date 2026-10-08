@@ -61,7 +61,8 @@ body {
   z-index: 49;
   top: max(8px, env(safe-area-inset-top));
   left: max(8px, env(safe-area-inset-left));
-  width: min(420px, calc(100% - 128px));
+  width: max-content;
+  max-width: calc(100% - 16px);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -111,6 +112,7 @@ body {
 
 .chip {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   min-height: 44px;
@@ -118,6 +120,10 @@ body {
   border-radius: 12px;
   background: #2a2218;
   font-weight: 800;
+}
+
+.chip.coin {
+  min-width: 108px;
 }
 
 .chip.coin i {
@@ -217,6 +223,10 @@ body {
     inset 0 1px 0 rgba(255, 244, 200, 0.7),
     inset 0 -2px 0 rgba(120, 70, 8, 0.28);
   cursor: pointer;
+}
+
+body.on-floor .hud {
+  max-width: calc(100% - 128px);
 }
 
 body.on-floor .shop-btn {

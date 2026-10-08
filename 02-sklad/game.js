@@ -1065,11 +1065,15 @@ function shake(el) {
   el.classList.add("shake");
 }
 
+function coinChip() {
+  return document.getElementById("hud-coin") || document.querySelector(".hud .chip.coin");
+}
+
 function paintHud() {
   const coins = document.getElementById("hud-coins");
   if (coins) coins.textContent = String(state.coinHold ? 0 : progress.coins);
-  const coinChip = document.querySelector(".chip.coin");
-  if (coinChip) coinChip.classList.toggle("debt", progress.coins < 0);
+  const chip = coinChip();
+  if (chip) chip.classList.toggle("debt", progress.coins < 0);
   const woods = document.getElementById("hud-woods");
   if (woods) woods.textContent = String(emptyWoods());
   const rateEl = document.getElementById("hud-rate");
@@ -1115,7 +1119,7 @@ function giftStart() {
   progress.coins = START_COINS;
   saveProgress();
   paintHud();
-  const chip = document.querySelector(".chip.coin");
+  const chip = coinChip();
   if (chip) chip.classList.add("catch");
   if (!inGuide()) toast("На старт " + START_COINS);
 }
@@ -2130,7 +2134,8 @@ function checkout(btn) {
   syncShop();
   paintSlots();
   paintTruck();
-  document.querySelector(".chip.coin").classList.add("catch");
+  const payChip = coinChip();
+  if (payChip) payChip.classList.add("catch");
   const woodChip = document.querySelector(".chip.wood");
   if (woods && woodChip) woodChip.classList.add("catch");
   if (woods && pals.length) toast("Поддоны на стопке. Товар едет минуту.");
@@ -2736,13 +2741,13 @@ async function finishBulk(order) {
   if (state.busy || !order) return;
   state.busy = true;
   document.body.classList.add("gone");
-  flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
+  flyCoins(document.getElementById("way-pay"), coinChip(), 9);
   await wait(780);
   progress.coins += order.pay;
   progress.orders = progress.orders.filter((o) => o.id !== order.id);
   saveProgress();
   paintHud();
-  const chip = document.querySelector(".chip.coin");
+  const chip = coinChip();
   if (chip) {
     chip.classList.remove("catch");
     void chip.offsetWidth;
@@ -3297,10 +3302,10 @@ async function finishShip(order) {
   if (sheet) sheet.classList.add("big");
   await wait(420);
   if (verdict.pay > 0) {
-    flyCoins(document.getElementById("way-pay"), document.querySelector(".chip.coin"), 9);
+    flyCoins(document.getElementById("way-pay"), coinChip(), 9);
     await wait(780);
   } else {
-    const chipBad = document.querySelector(".chip.coin");
+    const chipBad = coinChip();
     if (chipBad) shake(chipBad);
     sfx("no");
     await wait(520);
@@ -3311,7 +3316,7 @@ async function finishShip(order) {
   if (rush) progress.rushAt = Date.now();
   saveProgress();
   paintHud();
-  const chip = document.querySelector(".chip.coin");
+  const chip = coinChip();
   if (chip && verdict.pay > 0) {
     chip.classList.remove("catch");
     void chip.offsetWidth;
@@ -3377,9 +3382,9 @@ function inGuide() {
 const GUIDE = {
   coins: {
     text: "Твой начальный капитал в этой сфере",
-    sel: ".chip.coin",
+    sel: "#hud-coin",
     side: "below",
-    wobble: ".chip.coin",
+    wobble: "#hud-coin",
   },
   garage: {
     text: "У тебя денег хватит для старта только на гараж",
@@ -3492,8 +3497,8 @@ function layoutGuide(sel, side) {
   const r = target.getBoundingClientRect();
   if (r.width < 4 || r.height < 4) return false;
   target.classList.add("guide-on");
-  const pinCoin = sel === ".chip.coin";
-  const w = Math.min(pinCoin ? 188 : 240, window.innerWidth - 16);
+  const pinCoin = sel === "#hud-coin" || sel === ".chip.coin";
+  const w = Math.min(pinCoin ? Math.max(r.width + 20, 148) : 240, window.innerWidth - 16);
   card.classList.toggle("still", pinCoin);
   if (pinCoin) card.style.transform = "none";
   card.style.width = w + "px";
@@ -3624,7 +3629,7 @@ async function playCoinsIntro() {
     sfx("paper");
     await wait(780);
     if (progress.guide !== "coins") return;
-    flyCoins(pay || card, document.querySelector(".chip.coin"), 9);
+    flyCoins(pay || card, coinChip(), 9);
     await wait(820);
     if (progress.guide !== "coins") return;
     state.coinHold = false;
@@ -3632,17 +3637,27 @@ async function playCoinsIntro() {
     progress.coins = START_COINS;
     saveProgress();
     paintHud();
-    const chip = document.querySelector(".chip.coin");
+    const chip = coinChip();
     if (chip) {
       chip.classList.remove("catch");
       void chip.offsetWidth;
       chip.classList.add("catch");
     }
-    card.classList.add("settle", "still");
-    card.classList.remove("hero");
     if (pay) pay.hidden = true;
     if (ok) ok.hidden = false;
-    window.setTimeout(() => card.classList.remove("settle"), 480);
+    const nowBox = card.getBoundingClientRect();
+    card.classList.add("settle", "still");
+    card.classList.remove("hero");
+    card.style.left = nowBox.left + "px";
+    card.style.top = nowBox.top + "px";
+    card.style.width = nowBox.width + "px";
+    card.style.minHeight = nowBox.height + "px";
+    card.style.transform = "none";
+    void card.offsetWidth;
+    window.setTimeout(() => {
+      card.classList.remove("settle");
+      card.style.minHeight = "";
+    }, 480);
     await wait(40);
     if (progress.guide !== "coins") return;
   }
