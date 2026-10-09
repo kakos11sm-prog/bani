@@ -1705,7 +1705,7 @@ function paintJobsLead() {
   const lead = document.querySelector("#jobs-pane .lead");
   if (!lead) return;
   lead.textContent =
-    "Глянь накладную, закрой и собирай сам. Ошибка бьёт рейтинг и деньги. Выше рейтинг — выше оплата. Сейчас " +
+    "Обычная — все открытые виды вразнобой. Опт забирает 1 полный поддон. Ошибка бьёт рейтинг и деньги. Сейчас " +
     rateOf().toFixed(1) +
     " ★ · обычная " +
     jobPct("norm") +
@@ -1769,7 +1769,7 @@ function paintJobs() {
 
 function jobMixHtml(order) {
   if (jobKind(order) === "bulk") {
-    return "<span class=\"job-sku\">" + order.bulkN + " полных · " + skuOf(bulkSkuOf(order)).name + "</span>";
+    return "<span class=\"job-sku\">1 полный · " + skuOf(bulkSkuOf(order)).name + "</span>";
   }
   return (order.lines || [])
     .map((line) => "<span class=\"job-sku\">" + line.need + "× " + skuOf(line.sku).name + "</span>")
@@ -1786,7 +1786,7 @@ function jobPalHtml(order) {
     return "<small class=\"job-pal plus\"><b>+1</b>" + jobPalPic() + "</small>";
   }
   if (kind === "bulk") {
-    const n = Math.max(2, Math.min(4, order.bulkN || 2));
+    const n = Math.max(1, order.bulkN || 1);
     return "<small class=\"job-pal minus\"><b>−" + n + "</b>" + jobPalPic() + "</small>";
   }
   const shop = (order.lines || []).some((line) => stockHave(line.sku) < line.need - line.fill);
@@ -2336,12 +2336,12 @@ function boughtPals() {
   return floorPals() + (progress.incoming || []).reduce((sum, item) => sum + (item.left > 0 ? 1 : 0), 0);
 }
 
-function gradeNeed(grade, pals) {
-  const n = Math.max(1, pals);
-  if (grade === "easy") return Math.min(SHIP_SLOTS, 3 * Math.min(3, 1 + Math.floor((n - 1) / 3)));
-  if (grade === "mid") return Math.min(SHIP_SLOTS, 3 * Math.min(6, 2 + Math.floor(n / 2)));
-  if (grade === "hard") return Math.min(SHIP_SLOTS, Math.max(6, 3 + n));
-  return Math.min(SHIP_SLOTS, Math.max(6, 6 + n));
+function gradeNeed(grade, kinds) {
+  const k = Math.max(1, kinds);
+  if (grade === "easy") return Math.min(PALLET_PACKS, Math.max(k, 4 + k));
+  if (grade === "mid") return Math.min(PALLET_PACKS, Math.max(k + 4, 10 + k));
+  if (grade === "hard") return PALLET_PACKS;
+  return Math.min(PALLET_PACKS, Math.max(k + 2, 8 + k));
 }
 
 function orderIdle(order) {
@@ -2374,6 +2374,41 @@ function rotateList(list, shift) {
   return list.slice(i).concat(list.slice(0, i));
 }
 
+function seedRand(seed) {
+  let s = Math.abs(Math.floor(Number(seed) || 1)) % 2147483647;
+  if (s < 1) s = 1;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function unlockedIds() {
+  return SKUS.map((s) => s.id).filter((id) => isUnlocked(id));
+}
+
+function mixAllUnlocked(grade, shift) {
+  const ids = unlockedIds();
+  if (!ids.length) return null;
+  const rnd = seedRand((shift == null ? progress.nextOrder : shift) * 47 + ids.length * 13 + (grade === "mid" ? 91 : 3));
+  const want = gradeNeed(grade, ids.length);
+  const lo = ids.length;
+  const hi = Math.max(lo, want);
+  let left = lo + Math.floor(rnd() * (hi - lo + 1));
+  const need = ids.map(() => 0);
+  ids.forEach((_, i) => {
+    need[i] = 1;
+    left -= 1;
+  });
+  while (left > 0) {
+    need[Math.floor(rnd() * ids.length)] += 1;
+    left -= 1;
+  }
+  const order = ids.map((sku, i) => ({ sku: sku, need: need[i], fill: 0 }));
+  const cut = Math.floor(rnd() * order.length);
+  return order.slice(cut).concat(order.slice(0, cut));
+}
+
 function mergeLines(lines) {
   const map = {};
   (lines || []).forEach((line) => {
@@ -2399,45 +2434,12 @@ function linesFrom(picks, total) {
 }
 
 function linesForGrade(grade, shift) {
-  const have = rotateList(
-    onFloor().filter((row) => isUnlocked(row.sku)),
-    shift == null ? progress.nextOrder : shift
-  );
-  const pals = boughtPals();
-  const want = gradeNeed(grade, pals);
-  const locked = SKUS.map((s) => s.id).filter((id) => !isUnlocked(id));
-  if (grade !== "wild" && !have.length) return null;
-  if (grade === "easy") {
-    return [{ sku: have[0].sku, need: Math.min(want, have[0].have), fill: 0 }];
+  if (inGuide() && grade === "easy") {
+    const have = onFloor().filter((row) => isUnlocked(row.sku));
+    if (!have.length) return [{ sku: "water", need: 3, fill: 0 }];
+    return [{ sku: have[0].sku, need: Math.min(6, Math.max(3, have[0].have)), fill: 0 }];
   }
-  if (grade === "mid" || grade === "hard") {
-    const pool = have.reduce((sum, row) => sum + row.have, 0);
-    const cap = Math.min(want, pool);
-    if (cap < 1) return null;
-    const kinds =
-      grade === "hard"
-        ? Math.min(have.length, cap >= 6 ? 3 : 2)
-        : Math.min(have.length, have.length >= 2 && cap >= 2 ? 2 : 1);
-    return linesFrom(have.slice(0, kinds), cap);
-  }
-  const extra = 2 + Math.floor(pals / 4);
-  const missing = offFloor().filter((id) => isUnlocked(id));
-  const shopSku = locked[0] || (missing.length ? missing[(shift == null ? progress.nextOrder : shift) % missing.length] : "");
-  const stockWant = Math.max(1, want - extra);
-  const pool = have.reduce((sum, row) => sum + row.have, 0);
-  const base = have.length
-    ? linesFrom(
-        have.slice(0, Math.min(have.length, stockWant >= 4 ? 2 : 1)),
-        Math.min(stockWant, Math.max(1, pool))
-      )
-    : [];
-  if (shopSku) {
-    base.push({ sku: shopSku, need: extra, fill: 0 });
-    return capNeed(mergeLines(base), SHIP_SLOTS);
-  }
-  if (!have.length) return null;
-  base.push({ sku: have[0].sku, need: extra, fill: 0 });
-  return capNeed(mergeLines(base), SHIP_SLOTS);
+  return mixAllUnlocked(grade, shift);
 }
 
 function maybeOrders() {
@@ -2493,12 +2495,9 @@ function maybeOrders() {
   spawnBulkJob();
   progress.orders.forEach((order) => {
     if (jobKind(order) === "bulk" && !order.taken && state.bulkId !== order.id) {
-      const sku = pickBulkSku();
-      const n = Math.max(2, order.bulkN || pickBulkN());
-      if (sku && (!order.lines[0] || order.lines[0].sku !== sku)) {
-        order.lines = [{ sku: sku, need: n * PALLET_PACKS, fill: 0 }];
-        order.bulkN = n;
-      }
+      const sku = pickBulkSku(order.id);
+      order.lines = [{ sku: sku, need: PALLET_PACKS, fill: 0 }];
+      order.bulkN = 1;
     }
     order.pay = Math.max(1, jobPay(order.lines, jobKind(order)));
   });
@@ -2531,8 +2530,10 @@ function spawnRushJob() {
     return true;
   }
   if (Date.now() < progress.rushAt + RUSH_COOLDOWN) return false;
-  const lines = linesForGrade("easy");
-  if (!lines || !lines.length) return false;
+  const ids = unlockedIds();
+  const sku = ids.length ? ids[Math.floor(Math.random() * ids.length)] : "water";
+  const need = 3 + Math.floor(Math.random() * 6);
+  const lines = [{ sku: sku, need: need, fill: 0 }];
   progress.orders.push({
     id: progress.nextOrder,
     kind: "rush",
@@ -2592,30 +2593,15 @@ async function flyRushPalGift() {
   giftRushPal();
 }
 
-function pickBulkSku() {
-  const unlocked = SKUS.map((s) => s.id).filter((id) => isUnlocked(id)).reverse();
-  const full = {};
-  const any = {};
-  goodsPals().forEach((p) => {
-    if (!p.sku) return;
-    if (p.units >= PALLET_PACKS) full[p.sku] = (full[p.sku] || 0) + 1;
-    if (p.units > 0) any[p.sku] = true;
-  });
-  for (let i = 0; i < unlocked.length; i += 1) {
-    if (full[unlocked[i]]) return unlocked[i];
-  }
-  for (let i = 0; i < unlocked.length; i += 1) {
-    if (any[unlocked[i]]) return unlocked[i];
-  }
-  return unlocked[0] || "water";
+function pickBulkSku(shift) {
+  const unlocked = unlockedIds();
+  if (!unlocked.length) return "water";
+  const rnd = seedRand((shift == null ? progress.nextOrder : shift) * 29 + unlocked.length * 11);
+  return unlocked[Math.floor(rnd() * unlocked.length)];
 }
 
 function pickBulkN() {
-  const room = roomOf(progress.room);
-  const cap = room ? room.slots : 5;
-  const max = Math.max(2, Math.min(4, cap - 1));
-  const min = 2;
-  return min + Math.floor(Math.random() * (max - min + 1));
+  return 1;
 }
 
 function spawnBulkJob() {
@@ -2759,7 +2745,7 @@ function startBulk(id) {
   sfx("paper");
   paintWaybill(true);
   paintSlots();
-  toast("Перетащи полные поддоны в машину. Заберёт с деревом");
+  toast("Перетащи 1 полный поддон в машину. Заберёт с деревом");
 }
 
 function endBulk() {
@@ -2819,7 +2805,7 @@ async function finishBulk(order) {
   paintSlots();
   maybeOrders();
   paintJobs();
-  toast("Опт забрал " + order.bulkN + " поддонов");
+  toast(order.bulkN === 1 ? "Опт забрал поддон" : "Опт забрал " + order.bulkN + " поддонов");
   state.busy = false;
 }
 
