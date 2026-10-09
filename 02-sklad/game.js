@@ -625,7 +625,7 @@ function jobRateOf(kind) {
 }
 
 function jobPct(kind) {
-  return Math.round((jobRateOf(kind) - 1) * 100);
+  return Math.round((jobRateOf(kind) * ratingPayK() - 1) * 100);
 }
 
 function gradeTitle(grade) {
@@ -649,7 +649,7 @@ function rateOf() {
 }
 
 function ratingPayK() {
-  const n = Math.max(1, Math.min(5, rateOf()));
+  const n = Math.max(1, rateOf());
   return 0.55 + 0.45 * ((n - 1) / 4);
 }
 
@@ -1653,7 +1653,7 @@ function paintJobsLead() {
   const lead = document.querySelector("#jobs-pane .lead");
   if (!lead) return;
   lead.textContent =
-    "Глянь накладную, закрой и собирай сам. Ошибка бьёт рейтинг и деньги. С рейтингом падают заявки и процент. Сейчас " +
+    "Глянь накладную, закрой и собирай сам. Ошибка бьёт рейтинг и деньги. Выше рейтинг — выше оплата. Сейчас " +
     rateOf().toFixed(1) +
     " ★ · обычная " +
     jobPct("norm") +
