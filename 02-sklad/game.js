@@ -41,6 +41,15 @@ const GARAGE_SPOTS = [
   { x: 70, b: 28, s: 1, lift: 26 },
   { x: 90, b: 28, s: 1, lift: 26 },
 ];
+const FIZ_NAMES = [
+  "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
+  "Гончар", "Марчук", "Олейник", "Данилюк", "Петренко", "Иваненко", "Сидоренко", "Юрченко", "Захарченко", "Белоус",
+  "Кравец", "Павленко", "Гриценко", "Литвин", "Мороз", "Козак", "Дяченко", "Руденко", "Назаренко", "Волошин",
+];
+const SHOP_NAMES = [
+  "Маркет «Родина»", "«Продукты 24»", "«Эконом»", "«Семья»", "«Фортуна»",
+  "«На углу»", "«Доброцена»", "«Корзина»", "«Вкус»", "«Опт-Хаус»",
+];
 
 const boot = document.getElementById("boot");
 const rent = document.getElementById("rent");
@@ -172,9 +181,15 @@ function loadProgress() {
     if (!base.giftedPal && (woods >= 2 || (base.room && base.room !== "garage"))) {
       base.giftedPal = true;
     }
-    base.orders = Array.isArray(raw.orders)
-      ? raw.orders.map((o) => normalizeOrder(o)).filter((o) => o.id && o.lines.length)
-      : [];
+    base.orders = [];
+    if (Array.isArray(raw.orders)) {
+      raw.orders.forEach((row) => {
+        try {
+          const order = normalizeOrder(row);
+          if (order.id && order.lines.length) base.orders.push(order);
+        } catch (e) {}
+      });
+    }
     const open = { water: true };
     if (Array.isArray(raw.unlocked)) {
       raw.unlocked.forEach((id) => {
@@ -201,17 +216,11 @@ function saveProgress() {
 }
 
 const progress = loadProgress();
+(progress.orders || []).forEach((order) => {
+  if (!order.pay) order.pay = jobPay(order.lines, jobKind(order));
+  if (!order.client) order.client = orderClient(order);
+});
 const state = { packId: 0, pickId: 0, shipId: 0, shipPalId: 0, shipGone: false, shipLoad: [], wayPeek: false, bulkId: 0, unloading: false, busy: false, drag: null, cart: { pals: [], woods: 0 }, orderTick: 0, coinHold: false };
-
-const FIZ_NAMES = [
-  "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
-  "Гончар", "Марчук", "Олейник", "Данилюк", "Петренко", "Иваненко", "Сидоренко", "Юрченко", "Захарченко", "Белоус",
-  "Кравец", "Павленко", "Гриценко", "Литвин", "Мороз", "Козак", "Дяченко", "Руденко", "Назаренко", "Волошин",
-];
-const SHOP_NAMES = [
-  "Маркет «Родина»", "«Продукты 24»", "«Эконом»", "«Семья»", "«Фортуна»",
-  "«На углу»", "«Доброцена»", "«Корзина»", "«Вкус»", "«Опт-Хаус»",
-];
 
 let audioCtx = null;
 let soundOn = localStorage.getItem(SOUND_KEY) !== "0";
@@ -644,7 +653,8 @@ function jobKind(order) {
 
 function unlockTier() {
   let t = 0;
-  (progress.unlocked || []).forEach((id) => {
+  const list = (liveProgress() && liveProgress().unlocked) || [];
+  list.forEach((id) => {
     const i = SKUS.findIndex((s) => s.id === id);
     if (i > t) t = i;
   });
@@ -718,41 +728,42 @@ function gradePay(lines, grade) {
 
 function readLine(line) {
   return {
-    sku: SKUS.some((s) => s.id === line.sku) ? line.sku : "water",
-    need: Math.max(1, Number(line.need) || 1),
-    fill: Math.max(0, Number(line.fill) || 0),
+    sku: line && SKUS.some((s) => s.id === line.sku) ? line.sku : "water",
+    need: Math.max(1, Number(line && line.need) || 1),
+    fill: Math.max(0, Number(line && line.fill) || 0),
   };
 }
 
 function normalizeOrder(raw) {
-  const id = Number(raw && raw.id) || 0;
+  if (!raw || typeof raw !== "object") {
+    return { id: 0, lines: [], kind: "norm", grade: "easy", pay: 0, until: 0, bulkN: 0, taken: 0, client: "" };
+  }
+  const id = Number(raw.id) || 0;
   let lines = [];
-  if (raw && Array.isArray(raw.lines) && raw.lines.length) {
+  if (Array.isArray(raw.lines) && raw.lines.length) {
     lines = raw.lines.map(readLine);
-  } else if (raw && raw.sku) {
+  } else if (raw.sku) {
     lines = [readLine({ sku: raw.sku, need: raw.need, fill: raw.fill })];
   }
-  const need = lines.reduce((sum, line) => sum + line.need, 0);
   const kind =
-    raw && (raw.kind === "rush" || raw.kind === "bulk")
+    raw.kind === "rush" || raw.kind === "bulk"
       ? raw.kind
-      : raw && (raw.grade === "rush" || raw.grade === "bulk")
+      : raw.grade === "rush" || raw.grade === "bulk"
         ? raw.grade
         : "norm";
-  const grade = kind === "norm" ? (JOB_GRADES.indexOf(raw && raw.grade) >= 0 ? raw.grade : "easy") : kind;
-  const row = {
+  const grade = kind === "norm" ? (JOB_GRADES.indexOf(raw.grade) >= 0 ? raw.grade : "easy") : kind;
+  const pay = Math.max(0, Math.round(Number(raw.pay) || 0));
+  return {
     id: id,
     lines: lines,
     kind: kind,
     grade: grade,
-    pay: jobPay(lines, kind),
-    until: Math.max(0, Number(raw && raw.until) || 0),
-    bulkN: Math.max(0, Number(raw && raw.bulkN) || 0),
-    taken: Math.max(0, Number(raw && raw.taken) || 0),
-    client: "",
+    pay: pay,
+    until: Math.max(0, Number(raw.until) || 0),
+    bulkN: Math.max(0, Number(raw.bulkN) || 0),
+    taken: Math.max(0, Number(raw.taken) || 0),
+    client: typeof raw.client === "string" ? raw.client : "",
   };
-  row.client = typeof raw.client === "string" && raw.client ? raw.client : orderClient(row);
-  return row;
 }
 
 function orderNeed(order) {
