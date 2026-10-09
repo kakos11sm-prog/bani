@@ -3014,7 +3014,7 @@ body.shipping .pal-stand.can-take {
   margin-bottom: -8px;
 }
 
-.pal-live:not(.ship-pal) .pak-layer {
+.pal-live .pak-layer {
   position: absolute;
   left: 0;
   right: 0;
@@ -3028,12 +3028,12 @@ body.shipping .pal-stand.can-take {
   z-index: calc(var(--lift) * 3 + (2 - var(--back)));
 }
 
-.pal-live:not(.ship-pal) .pak-layer.lift-0 { --lift: 0; }
-.pal-live:not(.ship-pal) .pak-layer.lift-1 { --lift: 1; }
-.pal-live:not(.ship-pal) .pak-layer.lift-2 { --lift: 2; }
-.pal-live:not(.ship-pal) .pak-layer.depth-0 { --back: 2; }
-.pal-live:not(.ship-pal) .pak-layer.depth-1 { --back: 1; }
-.pal-live:not(.ship-pal) .pak-layer.depth-2 { --back: 0; }
+.pal-live .pak-layer.lift-0 { --lift: 0; }
+.pal-live .pak-layer.lift-1 { --lift: 1; }
+.pal-live .pak-layer.lift-2 { --lift: 2; }
+.pal-live .pak-layer.depth-0 { --back: 2; }
+.pal-live .pak-layer.depth-1 { --back: 1; }
+.pal-live .pak-layer.depth-2 { --back: 0; }
 
 .pak-layer:last-child {
   margin-bottom: 0;
@@ -3684,57 +3684,9 @@ body.shipping:not(.loading):not(.gone):not(.bulk-ship) .ship-go:not([hidden]) {
   z-index: 0;
 }
 
-.ship-pal .pal-wood::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 36px;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 8px, rgba(70, 40, 12, 0.22) 8px 9px),
-    linear-gradient(180deg, #c9a056, #8a5a28 70%, #6a4218);
-  clip-path: polygon(16% 0, 84% 0, 100% 100%, 0 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.28);
-}
-
 .ship-pal .pal-load {
   position: relative;
   z-index: 1;
-  height: 86px;
-  width: 100%;
-}
-
-.ship-pal .pak-layer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0;
-  gap: 2px;
-}
-
-.ship-pal .depth-0 {
-  bottom: 36px;
-  z-index: 0;
-  transform: scale(0.92);
-  transform-origin: 50% 100%;
-  opacity: 1;
-}
-
-.ship-pal .depth-1 {
-  bottom: 22px;
-  z-index: 1;
-  transform: scale(0.98);
-  transform-origin: 50% 100%;
-  opacity: 1;
-}
-
-.ship-pal .depth-2 {
-  bottom: 10px;
-  z-index: 2;
-  transform: scale(1.05);
-  transform-origin: 50% 100%;
 }
 
 .load-hint {

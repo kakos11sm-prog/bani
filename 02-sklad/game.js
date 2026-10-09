@@ -8,9 +8,7 @@ const PALLET_LAYERS = 3;
 const PALLET_PACKS = PALLET_COLS * PALLET_DEPTH * PALLET_LAYERS;
 const BUILD_SPOT = 99;
 const RECV_SPOT = 98;
-const SHIP_COLS = 3;
-const SHIP_ROWS = 3;
-const SHIP_SLOTS = SHIP_COLS * SHIP_ROWS;
+const SHIP_SLOTS = PALLET_PACKS;
 const WOOD_PRICE = [40, 90, 160, 260, 400, 600, 850, 1200, 1700, 2300];
 const PACK_MARGIN = 20;
 const DELIVERY_FEE = 40;
@@ -994,27 +992,37 @@ function palMarkup(sku, packs) {
 }
 
 function mixPalMarkup(skuIds) {
-  const list = (skuIds || []).slice(0, SHIP_SLOTS);
-  const start = SHIP_SLOTS - list.length;
+  const list = (skuIds || []).slice(0, PALLET_PACKS);
+  const n = list.length;
   let load = "";
-  for (let row = 0; row < SHIP_ROWS; row += 1) {
-    load += "<span class=\"pak-layer depth-" + row + "\">";
-    for (let col = 0; col < SHIP_COLS; col += 1) {
-      const slot = row * SHIP_COLS + col;
-      const sku = slot >= start ? skuOf(list[slot - start]) : null;
-      load += sku
-        ? "<span class=\"pak\" data-sku=\"" +
-          sku.id +
-          "\" data-i=\"" +
-          (slot - start) +
-          "\" style=\"" +
-          palSkin(sku) +
-          "\">" +
-          pakInner(sku) +
-          "</span>"
-        : "<span class=\"pak empty\"></span>";
+  for (let layer = 0; layer < PALLET_LAYERS; layer += 1) {
+    for (let depth = 0; depth < PALLET_DEPTH; depth += 1) {
+      const base = layer * PALLET_COLS * PALLET_DEPTH + depth * PALLET_COLS;
+      const shown = base < n;
+      load +=
+        "<span class=\"pak-layer lift-" +
+        layer +
+        " depth-" +
+        depth +
+        (shown ? "" : " vacant") +
+        "\">";
+      for (let col = 0; col < PALLET_COLS; col += 1) {
+        const slot = base + col;
+        const sku = slot < n ? skuOf(list[slot]) : null;
+        load += sku
+          ? "<span class=\"pak\" data-sku=\"" +
+            sku.id +
+            "\" data-i=\"" +
+            slot +
+            "\" style=\"" +
+            palSkin(sku) +
+            "\">" +
+            pakInner(sku) +
+            "</span>"
+          : "<span class=\"pak empty\"></span>";
+      }
+      load += "</span>";
     }
-    load += "</span>";
   }
   return (
     "<div class=\"pal-live ship-pal\">" +
@@ -1253,7 +1261,7 @@ function canTakePal(pal) {
 function canDropPackOn(pal, sku) {
   if (!pal) return false;
   if (state.shipId) {
-    if (pal.id === state.shipPalId) return (state.shipLoad || []).length < SHIP_SLOTS;
+    if (pal.id === state.shipPalId) return (state.shipLoad || []).length < PALLET_PACKS;
     return pal.units < PALLET_PACKS && (!pal.units || pal.sku === sku);
   }
   if (pal.spot === BUILD_SPOT) return false;
