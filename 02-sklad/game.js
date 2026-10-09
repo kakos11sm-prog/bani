@@ -1,4 +1,5 @@
 const SAVE_KEY = "sklad-progress-v4";
+const SAVE_KEYS = ["sklad-progress-v4", "sklad-progress-v3", "sklad-progress-v2", "sklad-progress-v1"];
 const SOUND_KEY = "sklad-sound-on";
 const START_COINS = 1200;
 const PALLET_COLS = 2;
@@ -94,15 +95,44 @@ function readIncoming(raw) {
   };
 }
 
+function storeRead(key) {
+  try {
+    const a = localStorage.getItem(key);
+    if (a) return a;
+  } catch (e) {}
+  try {
+    const b = sessionStorage.getItem(key);
+    if (b) return b;
+  } catch (e) {}
+  return "";
+}
+
+function storeWrite(key, text) {
+  try {
+    localStorage.setItem(key, text);
+  } catch (e) {}
+  try {
+    sessionStorage.setItem(key, text);
+  } catch (e) {}
+}
+
 function loadProgress() {
   try {
-    let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "");
+    let raw = null;
     let fromOld = false;
-    if (!raw || typeof raw !== "object") {
-      raw = JSON.parse(localStorage.getItem("sklad-progress-v3") || "");
-      fromOld = !!(raw && typeof raw === "object");
+    for (let i = 0; i < SAVE_KEYS.length; i += 1) {
+      const text = storeRead(SAVE_KEYS[i]);
+      if (!text) continue;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed === "object") {
+          raw = parsed;
+          fromOld = i > 0;
+          break;
+        }
+      } catch (e) {}
     }
-    if (!raw || typeof raw !== "object") return emptyProgress();
+    if (!raw) return emptyProgress();
     const base = emptyProgress();
     const coins = Number(raw.coins);
     base.coins = Number.isFinite(coins) ? Math.round(coins) : 0;
@@ -112,6 +142,7 @@ function loadProgress() {
     base.nextShip = Math.max(1, Number(raw.nextShip) || 1);
     base.gifted = raw.gifted === true;
     base.giftedPal = raw.giftedPal === true;
+    if (!base.gifted && (base.coins > 0 || base.room)) base.gifted = true;
     base.rushAt = Math.max(0, Number(raw.rushAt) || 0);
     const rate = Number(raw.rate);
     base.rate = rate >= 1 ? Math.round(rate * 10) / 10 : 5;
@@ -166,7 +197,9 @@ function loadProgress() {
 }
 
 function saveProgress() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
+  try {
+    storeWrite(SAVE_KEY, JSON.stringify(progress));
+  } catch (e) {}
 }
 
 const progress = loadProgress();
@@ -1121,7 +1154,7 @@ function seedDust() {
 function giftStart() {
   if (progress.gifted) return;
   progress.gifted = true;
-  progress.coins = START_COINS;
+  if (progress.coins < START_COINS) progress.coins = START_COINS;
   saveProgress();
   paintHud();
   const chip = coinChip();
@@ -2628,10 +2661,14 @@ function clearCart() {
 
 function resetProgress() {
   if (!window.confirm("Сбросить весь прогресс?")) return;
-  localStorage.removeItem(SAVE_KEY);
-  localStorage.removeItem("sklad-progress-v1");
-  localStorage.removeItem("sklad-progress-v2");
-  localStorage.removeItem("sklad-progress-v3");
+  SAVE_KEYS.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {}
+    try {
+      sessionStorage.removeItem(key);
+    } catch (e) {}
+  });
   const fresh = emptyProgress();
   Object.keys(progress).forEach((key) => {
     delete progress[key];
@@ -3613,7 +3650,7 @@ async function playCoinsIntro() {
   text.textContent = spec.text;
   box.hidden = false;
   box.classList.add("show");
-  const flyIn = !progress.gifted || progress.coins < START_COINS;
+  const flyIn = !progress.gifted && progress.coins < START_COINS;
   if (flyIn) {
     document.body.classList.add("aim-coins");
     state.coinHold = true;
@@ -3758,21 +3795,26 @@ function playGuideGift() {
 
 function goPlay() {
   unlockAudio();
-  if (progress.guide !== "done" && !progress.room) {
+  if (progress.room) {
+    if (!progress.gifted) {
+      progress.gifted = true;
+      saveProgress();
+    }
+    paintHud();
+    openFloor();
+    return;
+  }
+  if (!progress.gifted) {
     paintHud();
     paintRooms();
     showScreen(rent);
     showGuide("coins");
     return;
   }
-  if (!progress.gifted) giftStart();
-  else paintHud();
-  if (!progress.room) {
-    paintRooms();
-    showScreen(rent);
-    return;
-  }
-  openFloor();
+  paintHud();
+  paintRooms();
+  showScreen(rent);
+  if (inGuide() && progress.guide !== "coins" && GUIDE[progress.guide]) showGuide(progress.guide);
 }
 
 function goBack() {
@@ -3826,8 +3868,10 @@ window.addEventListener(
   },
   { once: true, capture: true }
 );
+window.addEventListener("pagehide", saveProgress);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    saveProgress();
     if (audioCtx && audioCtx.state === "running") audioCtx.suspend();
   } else if (soundOn) {
     ensureAudio();
@@ -3895,6 +3939,7 @@ window.addEventListener("resize", syncYardPan);
 window.setInterval(tickShip, 250);
 
 seedDust();
+if (progress.gifted || progress.room || progress.coins) saveProgress();
 paintHud();
 paintSoundBtn();
 showScreen(boot);
