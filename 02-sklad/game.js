@@ -30,19 +30,21 @@ const SKUS = [
   { id: "cherry", name: "Вишня", tag: "ВИШНЯ", tone: "#6a3a40", liq: "#5a242c", cap: "#4a2024", paper: "#ead8d0", ink: "#3a181c", cost: 520 },
 ];
 const ROOMS = [
-  { id: "garage", name: "Гараж", slots: 5, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
-  { id: "hangar", name: "Ангар", slots: 8, price: 2400, pic: "room-hangar.jpg", inside: "" },
-  { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
+  { id: "garage", name: "Гараж", slots: 15, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
+  { id: "hangar", name: "Ангар", slots: 15, price: 2400, pic: "room-hangar.jpg", inside: "" },
+  { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
-/** Iso tile 2:1 — screen from world: sx=(wx-wy)*(tw/2), sy=(wx+wy)*(th/2). Percents of #slots. */
-const ISO_GRID = { ox: 50, ob: 34, tw: 12, th: 6 };
-const GARAGE_CELLS = [
-  { wx: 0, wy: 2 },
-  { wx: 1, wy: 2 },
-  { wx: 2, wy: 2 },
-  { wx: 0.5, wy: 0 },
-  { wx: 1.5, wy: 0 },
-];
+/** Iso tile 2:1 — screen from world: sx=(wx-wy)*(tw/2), sy=(wx+wy)*(th/2). Percents of yard stage. */
+const ISO_GRID = { ox: 48, ob: 20, tw: 14, th: 7 };
+/** 15 storage cells: 4 along wall × 3 rows + 3 front/side. */
+const YARD_CELLS = (function () {
+  const cells = [];
+  for (let wy = 3; wy >= 1; wy -= 1) {
+    for (let wx = 0; wx < 4; wx += 1) cells.push({ wx: wx, wy: wy });
+  }
+  for (let wx = 0; wx < 3; wx += 1) cells.push({ wx: wx + 0.5, wy: 0 });
+  return cells;
+})();
 
 function isoProject(wx, wy) {
   const sx = (wx - wy) * (ISO_GRID.tw / 2);
@@ -1036,23 +1038,12 @@ function mixPalMarkup(skuIds) {
 
 function palSpots() {
   const room = roomOf(progress.room);
-  const n = room ? room.slots : 5;
-  if (progress.room === "garage") return GARAGE_CELLS.map((c) => isoProject(c.wx, c.wy));
-  const spots = [];
-  const cols = n <= 5 ? 2 : 3;
-  const rows = Math.ceil(n / cols);
-  for (let i = 0; i < n; i += 1) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const wx = col - (cols - 1) / 2;
-    const wy = rows - 1 - row;
-    spots.push(isoProject(wx, wy));
-  }
-  return spots;
+  const n = room ? room.slots : YARD_CELLS.length;
+  return YARD_CELLS.slice(0, n).map((c) => isoProject(c.wx, c.wy));
 }
 
 function pointerToIso(clientX, clientY) {
-  const host = document.getElementById("slots") || document.getElementById("inside");
+  const host = document.getElementById("inside-stage") || document.getElementById("slots") || document.getElementById("inside");
   if (!host) return { wx: 0, wy: 0 };
   const box = host.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return { wx: 0, wy: 0 };
@@ -1361,12 +1352,31 @@ function shadePals() {
 function syncYardPan() {
   const inside = document.getElementById("inside");
   const stage = document.getElementById("inside-stage");
-  const host = document.getElementById("slots");
-  if (!inside || !stage || !host) return;
-  inside.classList.remove("can-pan");
-  stage.style.width = "";
-  inside.scrollLeft = 0;
-  shadePals();
+  if (!inside || !stage) return;
+  const fit = (nw, nh) => {
+    const vh = Math.max(1, inside.clientHeight);
+    const vw = Math.max(1, inside.clientWidth);
+    const stageH = vh;
+    const byAspect = stageH * (nw / Math.max(1, nh));
+    const stageW = Math.max(vw * 1.35, byAspect);
+    stage.style.width = Math.round(stageW) + "px";
+    stage.style.height = "100%";
+    inside.classList.add("can-pan");
+    if (!state.yardCentered) {
+      inside.scrollLeft = Math.max(0, (stage.offsetWidth - inside.clientWidth) / 2);
+      state.yardCentered = true;
+    }
+    shadePals();
+  };
+  fit(1600, 900);
+  if (!state.yardImg) {
+    const img = new Image();
+    state.yardImg = img;
+    img.onload = () => fit(img.naturalWidth || 1600, img.naturalHeight || 900);
+    img.src = "art/yard.jpg";
+  } else if (state.yardImg.naturalWidth) {
+    fit(state.yardImg.naturalWidth, state.yardImg.naturalHeight);
+  }
 }
 
 function bindStand(stand, pal) {
@@ -2680,6 +2690,7 @@ function openFloor() {
   const room = roomOf(progress.room);
   document.getElementById("yard-name").textContent = room ? room.name : "Склад";
   applyInside();
+  state.yardCentered = false;
   maybeOrders();
   paintHud();
   paintJobs();
@@ -2693,6 +2704,12 @@ function openFloor() {
     paintLoad();
   }
   paintTruck();
+  if (!state.yardResizeBound) {
+    state.yardResizeBound = true;
+    window.addEventListener("resize", () => {
+      if (document.body.classList.contains("iso-yard")) syncYardPan();
+    });
+  }
 }
 
 function clearCart() {
