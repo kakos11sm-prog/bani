@@ -4194,3 +4194,200 @@ body.guide-build .build-spot:not(.has-pal)::after {
 .guide-gift.fly {
   transform: scale(0.55);
 }
+
+body.iso-yard {
+  --bg: #c9b48a;
+}
+
+body.iso-yard .scene {
+  background:
+    radial-gradient(80vw 40vh at 70% 90%, rgba(180, 150, 80, 0.35), transparent 55%),
+    #b8a06a;
+}
+
+body.iso-yard .scene-lamp,
+body.iso-yard .lantern,
+body.iso-yard .lantern-glow,
+body.iso-yard .floor-lit,
+body.iso-yard .lamp-shade,
+body.iso-yard .shelves {
+  display: none !important;
+}
+
+body.iso-yard .inside-pic {
+  background:
+    url("art/yard.jpg") center 42% / cover no-repeat,
+    #c4b48c;
+}
+
+body.iso-yard .inside-stage {
+  pointer-events: none;
+}
+
+body.iso-yard .floor-pals {
+  display: block;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+}
+
+body.iso-yard .pal-spot {
+  position: absolute;
+  flex: none;
+  width: 88px;
+  min-height: 96px;
+  margin-left: -44px;
+  padding: 0;
+  transform: scale(var(--sc, 1));
+  transform-origin: 50% 100%;
+}
+
+body.iso-yard .build-spot,
+body.iso-yard .recv-spot {
+  width: 110px;
+  min-height: 120px;
+}
+
+body.iso-yard .build-spot {
+  left: 29%;
+  bottom: 18%;
+  margin-left: -55px;
+}
+
+body.iso-yard .recv-spot {
+  right: auto;
+  left: 64%;
+  bottom: 16%;
+}
+
+body.iso-yard .wood-stack {
+  left: 16%;
+  bottom: 26%;
+  width: 100px;
+  z-index: 6;
+}
+
+body.iso-yard .iso-pal {
+  position: relative;
+  width: 86px;
+  height: 92px;
+  display: block;
+  background: none;
+  overflow: visible;
+}
+
+body.iso-yard .iso-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+body.iso-yard .iso-pal .iso-empty,
+body.iso-yard .iso-pal .iso-full {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+}
+
+body.iso-yard .iso-pal.full .iso-empty {
+  display: none;
+}
+
+body.iso-yard .iso-pal.part .iso-full {
+  clip-path: inset(calc((1 - var(--fill, 1)) * 68%) 0 0 0);
+}
+
+body.iso-yard .pal-stand .pal-live,
+body.iso-yard .build-spot .pal-stand .pal-live,
+body.iso-yard .recv-spot .pal-stand .pal-live,
+body.iso-yard .floor-pals .pal-stand .pal-live,
+body.iso-yard .wood-stack .stack-layer .pal-live {
+  width: 86px;
+  transform: none;
+  margin: 0 auto;
+}
+
+body.iso-yard .wood-stack .stack-layer {
+  height: 28px;
+  margin-top: -16px;
+  transform: translate(calc(var(--i, 0) * 4px), calc(var(--i, 0) * -10px));
+}
+
+body.iso-yard .iso-mix {
+  position: absolute;
+  inset: 8% 10% 18%;
+  pointer-events: auto;
+}
+
+body.iso-yard .iso-pack {
+  position: absolute;
+  left: calc(18% + (var(--i, 0) % 3) * 22%);
+  bottom: calc((var(--i, 0) / 3) * 14%);
+  width: 38%;
+  height: auto;
+  z-index: calc(2 + var(--i, 0));
+}
+
+body.iso-yard .iso-pack img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+
+body.iso-yard .out-truck {
+  right: 4%;
+  bottom: 2%;
+  width: min(220px, 52vw);
+  height: auto;
+  z-index: 7;
+}
+
+body.iso-yard .out-truck .out-box,
+body.iso-yard .out-truck .out-door,
+body.iso-yard .out-truck .out-bumper,
+body.iso-yard .out-truck .out-whl {
+  display: none;
+}
+
+.iso-truck {
+  display: none;
+}
+
+body.iso-yard .iso-truck {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+body.iso-yard .in-dock {
+  right: 2%;
+  bottom: 6%;
+  width: min(240px, 58vw);
+  transform: none;
+}
+
+body.iso-yard .yard-name {
+  color: #3a2a14;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body.iso-yard .build-spot em,
+body.iso-yard .recv-spot em,
+body.iso-yard .wood-stack b,
+body.iso-yard .wood-stack em {
+  color: #2c1c0c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}

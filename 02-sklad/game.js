@@ -35,11 +35,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 10, b: 28, s: 1, lift: 26 },
-  { x: 30, b: 28, s: 1, lift: 26 },
-  { x: 50, b: 28, s: 1, lift: 26 },
-  { x: 70, b: 28, s: 1, lift: 26 },
-  { x: 90, b: 28, s: 1, lift: 26 },
+  { x: 40, b: 44, s: 0.82 },
+  { x: 54, b: 42, s: 0.82 },
+  { x: 34, b: 34, s: 0.92 },
+  { x: 48, b: 32, s: 0.92 },
+  { x: 42, b: 22, s: 1.04 },
 ];
 const FIZ_NAMES = [
   "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
@@ -955,93 +955,56 @@ function palWood(name) {
   );
 }
 
+function palPic(sku) {
+  if (!sku) return "art/empty.jpg";
+  if (sku.id === "water") return "art/pal-water.jpg";
+  if (sku.id === "cola" || sku.id === "grape") return "art/pal-cans.jpg";
+  return "art/pal-soda.jpg";
+}
+
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
   if (!sku || !n) {
-    return "<div class=\"pal-live empty-wood\">" + palWood("") + "</div>";
+    return "<div class=\"pal-live empty-wood iso-pal\"><img class=\"iso-img\" src=\"art/empty.jpg\" alt=\"\"></div>";
   }
-  let load = "";
-  for (let layer = 0; layer < PALLET_LAYERS; layer += 1) {
-    for (let depth = 0; depth < PALLET_DEPTH; depth += 1) {
-      const base = layer * PALLET_COLS * PALLET_DEPTH + depth * PALLET_COLS;
-      const shown = base < n;
-      load +=
-        "<span class=\"pak-layer lift-" +
-        layer +
-        " depth-" +
-        depth +
-        (shown ? "" : " vacant") +
-        "\">";
-      for (let col = 0; col < PALLET_COLS; col += 1) {
-        const slot = base + col;
-        if (slot < n) {
-          load += "<span class=\"pak\">" + pakInner(sku) + "</span>";
-        } else {
-          load += "<span class=\"pak empty\"></span>";
-        }
-      }
-      load += "</span>";
-    }
-  }
-  const banner =
-    n >= PALLET_PACKS
-      ? "<b class=\"pal-banner\" aria-hidden=\"true\"><span>" + sku.name + "</span></b>"
-      : "";
+  const fill = n / PALLET_PACKS;
   return (
-    "<div class=\"pal-live sku-" +
+    "<div class=\"pal-live iso-pal sku-" +
     sku.id +
-    "\" style=\"" +
+    (n >= PALLET_PACKS ? " full" : " part") +
+    "\" style=\"--fill:" +
+    fill.toFixed(3) +
+    ";" +
     palSkin(sku) +
-    "\">" +
-    "<div class=\"pal-load\">" +
-    load +
-    banner +
-    "</div>" +
-    palWood(sku.name) +
-    "</div>"
+    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.jpg\" alt=\"\"><img class=\"iso-img iso-full\" src=\"" +
+    palPic(sku) +
+    "\" alt=\"\"></div>"
   );
 }
 
 function mixPalMarkup(skuIds) {
   const list = (skuIds || []).slice(0, PALLET_PACKS);
-  const n = list.length;
-  let load = "";
-  for (let layer = 0; layer < PALLET_LAYERS; layer += 1) {
-    for (let depth = 0; depth < PALLET_DEPTH; depth += 1) {
-      const base = layer * PALLET_COLS * PALLET_DEPTH + depth * PALLET_COLS;
-      const shown = base < n;
-      load +=
-        "<span class=\"pak-layer lift-" +
-        layer +
-        " depth-" +
-        depth +
-        (shown ? "" : " vacant") +
-        "\">";
-      for (let col = 0; col < PALLET_COLS; col += 1) {
-        const slot = base + col;
-        const sku = slot < n ? skuOf(list[slot]) : null;
-        load += sku
-          ? "<span class=\"pak\" data-sku=\"" +
-            sku.id +
-            "\" data-i=\"" +
-            slot +
-            "\" style=\"" +
-            palSkin(sku) +
-            "\">" +
-            pakInner(sku) +
-            "</span>"
-          : "<span class=\"pak empty\"></span>";
-      }
-      load += "</span>";
-    }
+  if (!list.length) {
+    return "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img\" src=\"art/empty.jpg\" alt=\"\"></div>";
   }
+  let load = "";
+  list.forEach((id, i) => {
+    const sku = skuOf(id);
+    load +=
+      "<span class=\"pak iso-pack\" data-sku=\"" +
+      sku.id +
+      "\" data-i=\"" +
+      i +
+      "\" style=\"" +
+      palSkin(sku) +
+      ";--i:" +
+      i +
+      "\"><img src=\"art/pack.jpg\" alt=\"\"></span>";
+  });
   return (
-    "<div class=\"pal-live ship-pal\">" +
-    "<div class=\"pal-load\">" +
+    "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img iso-empty\" src=\"art/empty.jpg\" alt=\"\"><div class=\"iso-mix\">" +
     load +
-    "</div>" +
-    palWood("Сборка") +
-    "</div>"
+    "</div></div>"
   );
 }
 
@@ -1050,14 +1013,16 @@ function palSpots() {
   const n = room ? room.slots : 5;
   if (progress.room === "garage") return GARAGE_SPOTS;
   const spots = [];
-  const cols = n <= 4 ? 2 : 3;
+  const cols = n <= 5 ? 2 : 3;
+  const rows = Math.ceil(n / cols);
   for (let i = 0; i < n; i += 1) {
     const col = i % cols;
     const row = Math.floor(i / cols);
+    const back = rows - 1 - row;
     spots.push({
-      x: 16 + col * (68 / Math.max(1, cols - 1)),
-      b: 6 + (Math.floor((n - 1) / cols) - row) * 22,
-      s: row === 0 ? 0.86 : 1,
+      x: 30 + col * 13 + back * 5,
+      b: 20 + back * 9,
+      s: 0.78 + row * 0.08,
     });
   }
   return spots;
@@ -1093,6 +1058,7 @@ function showScreen(el) {
   [boot, rent, floor, pack].forEach((node) => node.classList.toggle("show", node === el));
   document.body.classList.toggle("home", el === boot);
   document.body.classList.toggle("on-floor", el === floor);
+  document.body.classList.toggle("iso-yard", el === floor);
   if (el !== floor) {
     document.body.classList.remove("in-garage", "in-hangar", "in-depot");
     endShip();
@@ -1315,30 +1281,9 @@ function syncYardPan() {
   const stage = document.getElementById("inside-stage");
   const host = document.getElementById("slots");
   if (!inside || !stage || !host) return;
-  const keep = inside.scrollLeft;
-  if (progress.room !== "garage") {
-    inside.classList.remove("can-pan");
-    stage.style.width = "";
-    inside.scrollLeft = 0;
-    shadePals();
-    return;
-  }
-  const n = host.children.length;
-  const need = 32 + n * 108 + Math.max(0, n - 1) * 12;
-  const view = inside.clientWidth;
-  if (!view) {
-    shadePals();
-    return;
-  }
-  if (need > view + 8) {
-    stage.style.width = need + "px";
-    inside.classList.add("can-pan");
-    inside.scrollLeft = keep;
-  } else {
-    stage.style.width = "";
-    inside.classList.remove("can-pan");
-    inside.scrollLeft = 0;
-  }
+  inside.classList.remove("can-pan");
+  stage.style.width = "";
+  inside.scrollLeft = 0;
   shadePals();
 }
 
@@ -1364,10 +1309,8 @@ function paintSlots() {
     const cell = document.createElement("div");
     cell.className = "pal-spot";
     cell.dataset.spot = String(i);
-    if (progress.room !== "garage") {
-      cell.style.left = spot.x + "%";
-      cell.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 15) + "px)";
-    }
+    cell.style.left = spot.x + "%";
+    cell.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 8) + "px)";
     cell.style.setProperty("--sc", String(spot.s || 1));
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {
@@ -1861,7 +1804,7 @@ function applyInside() {
   document.body.classList.toggle("in-depot", progress.room === "depot");
   const pic = document.getElementById("inside-pic");
   if (!pic) return;
-  pic.style.backgroundImage = room && room.inside ? "url(\"" + room.inside + "?v=3\")" : "";
+  pic.style.backgroundImage = "url(\"art/yard.jpg\")";
 }
 
 function cartCountSku(id) {
