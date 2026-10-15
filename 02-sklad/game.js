@@ -34,13 +34,36 @@ const ROOMS = [
   { id: "hangar", name: "Ангар", slots: 8, price: 2400, pic: "room-hangar.jpg", inside: "" },
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
-const GARAGE_SPOTS = [
-  { x: 38, b: 48, s: 0.78 },
-  { x: 50, b: 47, s: 0.78 },
-  { x: 62, b: 46, s: 0.78 },
-  { x: 45, b: 38, s: 0.9 },
-  { x: 57, b: 36, s: 0.9 },
+/** Iso tile 2:1 — screen from world: sx=(wx-wy)*(tw/2), sy=(wx+wy)*(th/2). Percents of #slots. */
+const ISO_GRID = { ox: 50, ob: 34, tw: 12, th: 6 };
+const GARAGE_CELLS = [
+  { wx: 0, wy: 2 },
+  { wx: 1, wy: 2 },
+  { wx: 2, wy: 2 },
+  { wx: 0.5, wy: 0 },
+  { wx: 1.5, wy: 0 },
 ];
+
+function isoProject(wx, wy) {
+  const sx = (wx - wy) * (ISO_GRID.tw / 2);
+  const sy = (wx + wy) * (ISO_GRID.th / 2);
+  const depth = wx + wy;
+  return {
+    wx,
+    wy,
+    x: ISO_GRID.ox + sx,
+    b: ISO_GRID.ob + sy,
+    depth,
+    s: Math.max(0.72, Math.min(0.96, 0.94 - depth * 0.04)),
+  };
+}
+
+function packSlotStyle(i) {
+  const col = i % PALLET_COLS;
+  const depth = Math.floor(i / PALLET_COLS) % PALLET_DEPTH;
+  const layer = Math.floor(i / (PALLET_COLS * PALLET_DEPTH));
+  return "--i:" + i + ";--col:" + col + ";--dep:" + depth + ";--lay:" + layer;
+}
 const FIZ_NAMES = [
   "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
   "Гончар", "Марчук", "Олейник", "Данилюк", "Петренко", "Иваненко", "Сидоренко", "Юрченко", "Захарченко", "Белоус",
@@ -971,7 +994,7 @@ function palMarkup(sku, packs) {
   return (
     "<div class=\"pal-live iso-pal sku-" +
     sku.id +
-    (n >= PALLET_PACKS ? " full" : " part") +
+    (n >= PALLET_PACKS ? " full sealed" : " part") +
     "\" style=\"--fill:" +
     fill.toFixed(3) +
     ";" +
@@ -987,6 +1010,7 @@ function mixPalMarkup(skuIds) {
   if (!list.length) {
     return "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img\" src=\"art/empty.png\" alt=\"\"></div>";
   }
+  const full = list.length >= PALLET_PACKS;
   let load = "";
   list.forEach((id, i) => {
     const sku = skuOf(id);
@@ -997,12 +1021,14 @@ function mixPalMarkup(skuIds) {
       i +
       "\" style=\"" +
       palSkin(sku) +
-      ";--i:" +
-      i +
+      ";" +
+      packSlotStyle(i) +
       "\"><img src=\"art/pack.png\" alt=\"\"></span>";
   });
   return (
-    "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><div class=\"iso-mix\">" +
+    "<div class=\"pal-live ship-pal iso-pal" +
+    (full ? " sealed full" : "") +
+    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><div class=\"iso-mix\">" +
     load +
     "</div></div>"
   );
@@ -1011,21 +1037,77 @@ function mixPalMarkup(skuIds) {
 function palSpots() {
   const room = roomOf(progress.room);
   const n = room ? room.slots : 5;
-  if (progress.room === "garage") return GARAGE_SPOTS;
+  if (progress.room === "garage") return GARAGE_CELLS.map((c) => isoProject(c.wx, c.wy));
   const spots = [];
   const cols = n <= 5 ? 2 : 3;
   const rows = Math.ceil(n / cols);
   for (let i = 0; i < n; i += 1) {
     const col = i % cols;
     const row = Math.floor(i / cols);
-    const back = rows - 1 - row;
-    spots.push({
-      x: 30 + col * 13 + back * 5,
-      b: 20 + back * 9,
-      s: 0.78 + row * 0.08,
-    });
+    const wx = col - (cols - 1) / 2;
+    const wy = rows - 1 - row;
+    spots.push(isoProject(wx, wy));
   }
   return spots;
+}
+
+function pointerToIso(clientX, clientY) {
+  const host = document.getElementById("slots") || document.getElementById("inside");
+  if (!host) return { wx: 0, wy: 0 };
+  const box = host.getBoundingClientRect();
+  if (box.width < 1 || box.height < 1) return { wx: 0, wy: 0 };
+  const px = ((clientX - box.left) / box.width) * 100;
+  const pb = ((box.bottom - clientY) / box.height) * 100;
+  const sx = (px - ISO_GRID.ox) / (ISO_GRID.tw / 2);
+  const sy = (pb - ISO_GRID.ob) / (ISO_GRID.th / 2);
+  return { wx: (sx + sy) / 2, wy: (sy - sx) / 2 };
+}
+
+function nearestFreeSpot(clientX, clientY, excludeSpot) {
+  const spots = palSpots();
+  const p = pointerToIso(clientX, clientY);
+  let best = -1;
+  let bestD = Infinity;
+  spots.forEach((spot, i) => {
+    if (i === excludeSpot) {
+      /* free for self */
+    } else if (progress.pallets.some((pal) => pal.spot === i)) {
+      return;
+    }
+    const d = (spot.wx - p.wx) * (spot.wx - p.wx) + (spot.wy - p.wy) * (spot.wy - p.wy);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  if (best < 0 || bestD > 2.4) return -1;
+  return best;
+}
+
+function sortYardDepth() {
+  document.querySelectorAll("#slots .pal-spot").forEach((cell) => {
+    const i = Number(cell.dataset.spot);
+    const spot = palSpots()[i];
+    const depth = spot ? spot.depth : i;
+    cell.style.zIndex = String(20 + Math.round(depth * 10));
+  });
+  const stack = document.getElementById("wood-stack");
+  if (stack) stack.style.zIndex = "55";
+  const build = document.getElementById("build-spot");
+  if (build) build.style.zIndex = "48";
+  const recv = document.getElementById("recv-spot");
+  if (recv) recv.style.zIndex = "46";
+}
+
+function puffAtEl(el) {
+  if (!el) return;
+  const box = el.getBoundingClientRect();
+  const puff = document.createElement("i");
+  puff.className = "drop-puff";
+  puff.style.left = box.left + box.width * 0.5 + "px";
+  puff.style.top = box.top + box.height * 0.88 + "px";
+  document.body.appendChild(puff);
+  window.setTimeout(() => puff.remove(), 520);
 }
 
 function roomOf(id) {
@@ -1309,9 +1391,12 @@ function paintSlots() {
     const cell = document.createElement("div");
     cell.className = "pal-spot";
     cell.dataset.spot = String(i);
+    cell.dataset.wx = String(spot.wx);
+    cell.dataset.wy = String(spot.wy);
     cell.style.left = spot.x + "%";
     cell.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 8) + "px)";
     cell.style.setProperty("--sc", String(spot.s || 1));
+    cell.style.zIndex = String(20 + Math.round((spot.depth || 0) * 10));
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {
       const take = state.shipId && canTakePal(pal);
@@ -1320,6 +1405,7 @@ function paintSlots() {
       stand.className =
         "pal-stand" +
         (bulkOk ? " bulk-ok" : "") +
+        (pal.units >= PALLET_PACKS ? " sealed" : "") +
         (state.shipId ? (take ? " can-take" : " no-take") : "");
       stand.dataset.id = String(pal.id);
       stand.innerHTML = palStandHtml(pal);
@@ -1333,6 +1419,7 @@ function paintSlots() {
   paintRecv();
   paintStack();
   paintDock();
+  sortYardDepth();
   syncYardPan();
   paintGuideDrops();
 }
@@ -1397,11 +1484,13 @@ function paintStack() {
   host.innerHTML = "";
   host.classList.toggle("empty", !list.length);
   host.classList.toggle("can-drop", true);
-  const show = list.slice(-4);
+  host.style.setProperty("--stack-n", String(list.length));
+  const show = list.slice(-6);
   show.forEach((pal, i) => {
     const layer = document.createElement("div");
     layer.className = "stack-layer" + (i === show.length - 1 ? " top" : "");
     layer.style.setProperty("--i", String(i));
+    layer.style.zIndex = String(i + 1);
     layer.innerHTML = palStandHtml(pal);
     host.appendChild(layer);
   });
@@ -1414,6 +1503,10 @@ function paintStack() {
   if (list.length) {
     host.onpointerdown = (e) => {
       const top = list[list.length - 1];
+      if (top && top.units > 0) {
+        toast("На стопку только пустой поддон");
+        return;
+      }
       startWoodDrag(e, top.id, "stack");
     };
   } else {
@@ -3060,7 +3153,13 @@ function onDragMove(e) {
     if (stack && !loaded) stack.classList.add("hot");
     else if (recv && !recv.classList.contains("has-pal") && !(state.shipId && build && !build.classList.contains("has-pal"))) recv.classList.add("hot");
     else if (build && !build.classList.contains("has-pal")) build.classList.add("hot");
-    else if (spot && !spot.classList.contains("has-pal")) spot.classList.add("hot");
+    else {
+      const snap = nearestFreeSpot(e.clientX, e.clientY, state.drag.fromSpot);
+      const cell =
+        (snap >= 0 && document.querySelector('.pal-spot[data-spot="' + snap + '"]')) ||
+        (spot && !spot.classList.contains("has-pal") ? spot : null);
+      if (cell) cell.classList.add("hot");
+    }
   } else {
     if (
       recv &&
@@ -3150,8 +3249,15 @@ async function onDragEnd(e) {
     const stackHit = hitEl(x, y, ".wood-stack", 16);
     const buildEl = hitEl(x, y, ".build-spot:not(.has-pal)", 24);
     const recvEl = hitEl(x, y, ".recv-spot:not(.has-pal)", 24);
-    const spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
-    if (pal && !stackHit && recvEl && !(state.shipId && buildEl)) {
+    let spotEl = hitEl(x, y, ".pal-spot:not(.has-pal)", 24);
+    const snap = !stackHit && !buildEl && !recvEl ? nearestFreeSpot(x, y, drag.fromSpot) : -1;
+    if (!spotEl && snap >= 0) {
+      spotEl = document.querySelector('.pal-spot[data-spot="' + snap + '"]');
+    }
+    if (pal && stackHit && pal.units > 0) {
+      restoreWoodPal(drag);
+      toast("На стопку только пустой поддон");
+    } else if (pal && !stackHit && recvEl && !(state.shipId && buildEl)) {
       pal.spot = RECV_SPOT;
       progress.pallets.push(pal);
     } else if (pal && !stackHit && buildEl) {
@@ -3163,7 +3269,6 @@ async function onDragEnd(e) {
       progress.pallets.push(pal);
     } else if (pal && pal.units > 0) {
       restoreWoodPal(drag);
-      if (stackHit) toast("На стопку только пустой поддон");
     } else if (pal) {
       pal.spot = -1;
       progress.stack.push(pal);
@@ -3179,9 +3284,13 @@ async function onDragEnd(e) {
     if (placed) {
       sfx("dropWood");
       const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
-      if (stand) stand.classList.add("drop-in");
+      if (stand) {
+        stand.classList.add("drop-in", "drop-bounce");
+        puffAtEl(stand);
+      }
     } else if (pal && pal.units < 1) {
       sfx("dropWood");
+      puffAtEl(document.getElementById("wood-stack"));
     }
     if (inGuide() && progress.guide === "place") {
       if (placed && spotEl) window.setTimeout(() => showGuide(dockList().length ? "unload" : "wait"), 80);
@@ -3239,9 +3348,13 @@ async function dropPackOn(pal, drag) {
   saveProgress();
   paintHud();
   paintSlots();
-  if (pal.spot === RECV_SPOT && pal.units === 1) {
+  {
     const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
-    if (stand) stand.classList.add("drop-in");
+    if (stand) {
+      stand.classList.add("drop-bounce");
+      if (pal.spot === RECV_SPOT && pal.units === 1) stand.classList.add("drop-in");
+      puffAtEl(stand);
+    }
   }
   maybeOrders();
   paintJobs();
