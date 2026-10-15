@@ -34,29 +34,33 @@ const ROOMS = [
   { id: "hangar", name: "Ангар", slots: 15, price: 2400, pic: "room-hangar.jpg", inside: "" },
   { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
-/** Iso tile 2:1 — screen from world: sx=(wx-wy)*(tw/2), sy=(wx+wy)*(th/2). Percents of yard stage. */
-const ISO_GRID = { ox: 48, ob: 20, tw: 14, th: 7 };
-/** 15 storage cells: 4 along wall × 3 rows + 3 front/side. */
+/**
+ * Grid locked to rear brick wall on yard.jpg (percents of stage = bg pixels).
+ * Origin [0,0]: left-inner foot of the upper brick wall.
+ * wx = along wall to the right, wy = into the yard (toward camera / down screen).
+ * Tile 2:1: th = tw/2. Skew keeps the iso diamond feel.
+ */
+const ISO_GRID = { ox: 22, oy: 30, tw: 11, th: 5.5, skew: 2.2 };
+/** 15 cells: 4 along wall × 3 rows + 3 front. */
 const YARD_CELLS = (function () {
   const cells = [];
-  for (let wy = 3; wy >= 1; wy -= 1) {
+  for (let wy = 0; wy < 3; wy += 1) {
     for (let wx = 0; wx < 4; wx += 1) cells.push({ wx: wx, wy: wy });
   }
-  for (let wx = 0; wx < 3; wx += 1) cells.push({ wx: wx + 0.5, wy: 0 });
+  for (let wx = 0; wx < 3; wx += 1) cells.push({ wx: wx + 0.5, wy: 3 });
   return cells;
 })();
 
 function isoProject(wx, wy) {
-  const sx = (wx - wy) * (ISO_GRID.tw / 2);
-  const sy = (wx + wy) * (ISO_GRID.th / 2);
-  const depth = wx + wy;
+  const sx = wx * ISO_GRID.tw + wy * ISO_GRID.skew;
+  const sy = wy * ISO_GRID.th + wx * (ISO_GRID.th * 0.08);
   return {
     wx,
     wy,
     x: ISO_GRID.ox + sx,
-    b: ISO_GRID.ob + sy,
-    depth,
-    s: Math.max(0.72, Math.min(0.96, 0.94 - depth * 0.04)),
+    t: ISO_GRID.oy + sy,
+    depth: wy * 10 + wx,
+    s: 1,
   };
 }
 
@@ -1048,10 +1052,12 @@ function pointerToIso(clientX, clientY) {
   const box = host.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return { wx: 0, wy: 0 };
   const px = ((clientX - box.left) / box.width) * 100;
-  const pb = ((box.bottom - clientY) / box.height) * 100;
-  const sx = (px - ISO_GRID.ox) / (ISO_GRID.tw / 2);
-  const sy = (pb - ISO_GRID.ob) / (ISO_GRID.th / 2);
-  return { wx: (sx + sy) / 2, wy: (sy - sx) / 2 };
+  const pt = ((clientY - box.top) / box.height) * 100;
+  const relX = px - ISO_GRID.ox;
+  const relT = pt - ISO_GRID.oy;
+  const wy = (relT * ISO_GRID.tw - relX * ISO_GRID.th * 0.08) / (ISO_GRID.th * ISO_GRID.tw + ISO_GRID.skew * ISO_GRID.th * 0.08 || 1);
+  const wx = (relX - wy * ISO_GRID.skew) / ISO_GRID.tw;
+  return { wx: wx, wy: wy };
 }
 
 function nearestFreeSpot(clientX, clientY, excludeSpot) {
@@ -1356,11 +1362,15 @@ function syncYardPan() {
   const fit = (nw, nh) => {
     const vh = Math.max(1, inside.clientHeight);
     const vw = Math.max(1, inside.clientWidth);
-    const stageH = vh;
-    const byAspect = stageH * (nw / Math.max(1, nh));
-    const stageW = Math.max(vw * 1.35, byAspect);
+    const aspect = nw / Math.max(1, nh);
+    let stageH = vh;
+    let stageW = stageH * aspect;
+    if (stageW < vw) {
+      stageW = vw;
+      stageH = stageW / aspect;
+    }
     stage.style.width = Math.round(stageW) + "px";
-    stage.style.height = "100%";
+    stage.style.height = Math.round(stageH) + "px";
     inside.classList.add("can-pan");
     if (!state.yardCentered) {
       inside.scrollLeft = Math.max(0, (stage.offsetWidth - inside.clientWidth) / 2);
@@ -1404,7 +1414,8 @@ function paintSlots() {
     cell.dataset.wx = String(spot.wx);
     cell.dataset.wy = String(spot.wy);
     cell.style.left = spot.x + "%";
-    cell.style.bottom = "calc(" + (spot.b ?? 6) + "% + " + ((spot.lift || 0) + 8) + "px)";
+    cell.style.top = spot.t + "%";
+    cell.style.bottom = "auto";
     cell.style.setProperty("--sc", String(spot.s || 1));
     cell.style.zIndex = String(20 + Math.round((spot.depth || 0) * 10));
     const pal = progress.pallets.find((p) => p.spot === i);
