@@ -35,11 +35,11 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 const GARAGE_SPOTS = [
-  { x: 40, b: 44, s: 0.82 },
-  { x: 54, b: 42, s: 0.82 },
-  { x: 34, b: 34, s: 0.92 },
-  { x: 48, b: 32, s: 0.92 },
-  { x: 42, b: 22, s: 1.04 },
+  { x: 38, b: 48, s: 0.78 },
+  { x: 50, b: 47, s: 0.78 },
+  { x: 62, b: 46, s: 0.78 },
+  { x: 45, b: 38, s: 0.9 },
+  { x: 57, b: 36, s: 0.9 },
 ];
 const FIZ_NAMES = [
   "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
@@ -956,16 +956,16 @@ function palWood(name) {
 }
 
 function palPic(sku) {
-  if (!sku) return "art/empty.jpg";
-  if (sku.id === "water") return "art/pal-water.jpg";
-  if (sku.id === "cola" || sku.id === "grape") return "art/pal-cans.jpg";
-  return "art/pal-soda.jpg";
+  if (!sku) return "art/empty.png";
+  if (sku.id === "water") return "art/pal-water.png";
+  if (sku.id === "cola" || sku.id === "grape") return "art/pal-cans.png";
+  return "art/pal-soda.png";
 }
 
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
   if (!sku || !n) {
-    return "<div class=\"pal-live empty-wood iso-pal\"><img class=\"iso-img\" src=\"art/empty.jpg\" alt=\"\"></div>";
+    return "<div class=\"pal-live empty-wood iso-pal\"><img class=\"iso-img\" src=\"art/empty.png\" alt=\"\"></div>";
   }
   const fill = n / PALLET_PACKS;
   return (
@@ -976,7 +976,7 @@ function palMarkup(sku, packs) {
     fill.toFixed(3) +
     ";" +
     palSkin(sku) +
-    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.jpg\" alt=\"\"><img class=\"iso-img iso-full\" src=\"" +
+    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><img class=\"iso-img iso-full\" src=\"" +
     palPic(sku) +
     "\" alt=\"\"></div>"
   );
@@ -985,7 +985,7 @@ function palMarkup(sku, packs) {
 function mixPalMarkup(skuIds) {
   const list = (skuIds || []).slice(0, PALLET_PACKS);
   if (!list.length) {
-    return "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img\" src=\"art/empty.jpg\" alt=\"\"></div>";
+    return "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img\" src=\"art/empty.png\" alt=\"\"></div>";
   }
   let load = "";
   list.forEach((id, i) => {
@@ -999,10 +999,10 @@ function mixPalMarkup(skuIds) {
       palSkin(sku) +
       ";--i:" +
       i +
-      "\"><img src=\"art/pack.jpg\" alt=\"\"></span>";
+      "\"><img src=\"art/pack.png\" alt=\"\"></span>";
   });
   return (
-    "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img iso-empty\" src=\"art/empty.jpg\" alt=\"\"><div class=\"iso-mix\">" +
+    "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><div class=\"iso-mix\">" +
     load +
     "</div></div>"
   );

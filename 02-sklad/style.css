@@ -4251,31 +4251,32 @@ body.iso-yard .recv-spot {
 }
 
 body.iso-yard .build-spot {
-  left: 29%;
-  bottom: 18%;
+  left: 42%;
+  bottom: 28%;
   margin-left: -55px;
 }
 
 body.iso-yard .recv-spot {
   right: auto;
-  left: 64%;
-  bottom: 16%;
+  left: 58%;
+  bottom: 24%;
 }
 
 body.iso-yard .wood-stack {
-  left: 16%;
-  bottom: 26%;
-  width: 100px;
+  left: 22%;
+  bottom: 30%;
+  width: 92px;
   z-index: 6;
 }
 
 body.iso-yard .iso-pal {
   position: relative;
-  width: 86px;
-  height: 92px;
+  width: 78px;
+  height: 86px;
   display: block;
   background: none;
   overflow: visible;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.28));
 }
 
 body.iso-yard .iso-img {
@@ -4284,7 +4285,6 @@ body.iso-yard .iso-img {
   height: 100%;
   object-fit: contain;
   object-position: 50% 100%;
-  mix-blend-mode: screen;
   pointer-events: none;
 }
 
@@ -4310,7 +4310,7 @@ body.iso-yard .build-spot .pal-stand .pal-live,
 body.iso-yard .recv-spot .pal-stand .pal-live,
 body.iso-yard .floor-pals .pal-stand .pal-live,
 body.iso-yard .wood-stack .stack-layer .pal-live {
-  width: 86px;
+  width: 78px;
   transform: none;
   margin: 0 auto;
 }
@@ -4340,16 +4340,24 @@ body.iso-yard .iso-pack img {
   display: block;
   width: 100%;
   height: auto;
-  mix-blend-mode: screen;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 
 body.iso-yard .out-truck {
-  right: 4%;
-  bottom: 2%;
-  width: min(220px, 52vw);
+  right: -80%;
+  bottom: 4%;
+  width: min(200px, 48vw);
   height: auto;
   z-index: 7;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.iso-yard.shipping.loading .out-truck,
+body.iso-yard.bulk-ship .out-truck {
+  right: 6%;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 body.iso-yard .out-truck .out-box,
@@ -4367,16 +4375,21 @@ body.iso-yard .iso-truck {
   display: block;
   width: 100%;
   height: auto;
-  mix-blend-mode: screen;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
   pointer-events: none;
 }
 
 body.iso-yard .in-dock {
-  right: 2%;
-  bottom: 6%;
-  width: min(240px, 58vw);
+  right: -80%;
+  bottom: 8%;
+  width: min(220px, 52vw);
   transform: none;
+  opacity: 0;
+}
+
+body.iso-yard .in-dock:not([hidden]) {
+  right: 4%;
+  opacity: 1;
 }
 
 body.iso-yard .yard-name {
@@ -4390,4 +4403,15 @@ body.iso-yard .wood-stack b,
 body.iso-yard .wood-stack em {
   color: #2c1c0c;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+body.iso-yard .pal-spot:not(.has-pal)::after,
+body.iso-yard .build-spot:not(.has-pal)::after,
+body.iso-yard .recv-spot:not(.has-pal)::after,
+body.iso-yard .pal-stand::after,
+body.iso-yard .build-spot .pal-stand::after,
+body.iso-yard .recv-spot .pal-stand::after,
+body.iso-yard .floor-pals .pal-stand::after,
+body.iso-yard .pal-shade {
+  display: none !important;
 }
