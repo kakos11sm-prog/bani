@@ -984,9 +984,10 @@ function palWood(name) {
   );
 }
 
+const EMPTY_PAL = "art/pal-empty.png";
 const ART_URLS = [
   "art/yard.jpg",
-  "art/empty.png",
+  EMPTY_PAL,
   "art/pack.png",
   "art/pal-water.png",
   "art/pal-cans.png",
@@ -1015,7 +1016,7 @@ function preloadArt() {
 }
 
 function palPic(sku) {
-  if (!sku) return "art/empty.png";
+  if (!sku) return EMPTY_PAL;
   if (sku.id === "water") return "art/pal-water.png";
   if (sku.id === "cola" || sku.id === "grape") return "art/pal-cans.png";
   return "art/pal-soda.png";
@@ -1023,7 +1024,7 @@ function palPic(sku) {
 
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
-  const base = "<img class=\"iso-img iso-base\" src=\"art/empty.png\" alt=\"\" decoding=\"async\">";
+  const base = "<img class=\"iso-img iso-base\" src=\"" + EMPTY_PAL + "\" alt=\"\" decoding=\"async\">";
   if (!sku || !n) {
     return "<div class=\"pal-live empty-wood iso-pal\">" + base + "</div>";
   }
@@ -1046,7 +1047,7 @@ function palMarkup(sku, packs) {
 
 function mixPalMarkup(skuIds) {
   const list = (skuIds || []).slice(0, PALLET_PACKS);
-  const base = "<img class=\"iso-img iso-base\" src=\"art/empty.png\" alt=\"\" decoding=\"async\">";
+  const base = "<img class=\"iso-img iso-base\" src=\"" + EMPTY_PAL + "\" alt=\"\" decoding=\"async\">";
   if (!list.length) {
     return "<div class=\"pal-live ship-pal iso-pal\">" + base + "</div>";
   }
