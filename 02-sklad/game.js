@@ -35,32 +35,50 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 /**
- * Grid locked to rear brick wall on yard.jpg (percents of stage = bg pixels).
- * Origin [0,0]: left-inner foot of the upper brick wall.
- * wx = along wall to the right, wy = into the yard (toward camera / down screen).
- * Tile 2:1: th = tw/2. Skew keeps the iso diamond feel.
+ * Yard grid 100×56 over background (origin = top-left of art).
+ * Pivot = bottom-center of pallet. Scale = 1 + (Y - 17) * 0.018.
+ * First 6 anchors match the brief; remaining 9 follow the same iso steps.
  */
-const ISO_GRID = { ox: 22, oy: 30, tw: 11, th: 5.5, skew: 2.2 };
-/** 15 cells: 4 along wall × 3 rows + 3 front. */
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 4.2, palHCells: 4.2 };
+const STEP_ALONG = { x: 4.4, y: 2.05 };
+const STEP_INTO = { x: -5.2, y: 2.8 };
+const YARD_ORIGIN = { x: 51.0, y: 14.2 };
 const YARD_CELLS = (function () {
   const cells = [];
-  for (let wy = 0; wy < 3; wy += 1) {
-    for (let wx = 0; wx < 4; wx += 1) cells.push({ wx: wx, wy: wy });
+  for (let r = 0; r < 3; r += 1) {
+    for (let c = 0; c < 4; c += 1) {
+      cells.push({
+        gx: YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x,
+        gy: YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y,
+      });
+    }
   }
-  for (let wx = 0; wx < 3; wx += 1) cells.push({ wx: wx + 0.5, wy: 3 });
+  for (let c = 0; c < 3; c += 1) {
+    const k = c + 0.5;
+    cells.push({
+      gx: YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x,
+      gy: YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y,
+    });
+  }
   return cells;
 })();
 
-function isoProject(wx, wy) {
-  const sx = wx * ISO_GRID.tw + wy * ISO_GRID.skew;
-  const sy = wy * ISO_GRID.th + wx * (ISO_GRID.th * 0.08);
+function gridScale(gy) {
+  return 1 + (gy - GRID.baseY) * GRID.scaleK;
+}
+
+function gridProject(gx, gy) {
+  const s = gridScale(gy);
   return {
-    wx,
-    wy,
-    x: ISO_GRID.ox + sx,
-    t: ISO_GRID.oy + sy,
-    depth: wy * 10 + wx,
-    s: 1,
+    gx,
+    gy,
+    wx: gx,
+    wy: gy,
+    x: gx,
+    t: (gy / GRID.rows) * 100,
+    depth: gy,
+    s: s,
+    z: Math.round(gy * 100),
   };
 }
 
@@ -1080,41 +1098,36 @@ function mixPalMarkup(skuIds) {
 function palSpots() {
   const room = roomOf(progress.room);
   const n = room ? room.slots : YARD_CELLS.length;
-  return YARD_CELLS.slice(0, n).map((c) => isoProject(c.wx, c.wy));
+  return YARD_CELLS.slice(0, n).map((c) => gridProject(c.gx, c.gy));
 }
 
-function pointerToIso(clientX, clientY) {
+function pointerToGrid(clientX, clientY) {
   const host = document.getElementById("inside-stage") || document.getElementById("slots") || document.getElementById("inside");
-  if (!host) return { wx: 0, wy: 0 };
+  if (!host) return { gx: 0, gy: 0 };
   const box = host.getBoundingClientRect();
-  if (box.width < 1 || box.height < 1) return { wx: 0, wy: 0 };
-  const px = ((clientX - box.left) / box.width) * 100;
-  const pt = ((clientY - box.top) / box.height) * 100;
-  const relX = px - ISO_GRID.ox;
-  const relT = pt - ISO_GRID.oy;
-  const wy = (relT * ISO_GRID.tw - relX * ISO_GRID.th * 0.08) / (ISO_GRID.th * ISO_GRID.tw + ISO_GRID.skew * ISO_GRID.th * 0.08 || 1);
-  const wx = (relX - wy * ISO_GRID.skew) / ISO_GRID.tw;
-  return { wx: wx, wy: wy };
+  if (box.width < 1 || box.height < 1) return { gx: 0, gy: 0 };
+  return {
+    gx: ((clientX - box.left) / box.width) * GRID.cols,
+    gy: ((clientY - box.top) / box.height) * GRID.rows,
+  };
 }
 
 function nearestFreeSpot(clientX, clientY, excludeSpot) {
   const spots = palSpots();
-  const p = pointerToIso(clientX, clientY);
+  const p = pointerToGrid(clientX, clientY);
   let best = -1;
   let bestD = Infinity;
   spots.forEach((spot, i) => {
-    if (i === excludeSpot) {
-      /* free for self */
-    } else if (progress.pallets.some((pal) => pal.spot === i)) {
-      return;
-    }
-    const d = (spot.wx - p.wx) * (spot.wx - p.wx) + (spot.wy - p.wy) * (spot.wy - p.wy);
+    if (i !== excludeSpot && progress.pallets.some((pal) => pal.spot === i)) return;
+    const dx = spot.gx - p.gx;
+    const dy = spot.gy - p.gy;
+    const d = dx * dx + dy * dy;
     if (d < bestD) {
       bestD = d;
       best = i;
     }
   });
-  if (best < 0 || bestD > 2.4) return -1;
+  if (best < 0 || bestD > 18) return -1;
   return best;
 }
 
@@ -1122,15 +1135,14 @@ function sortYardDepth() {
   document.querySelectorAll("#slots .pal-spot").forEach((cell) => {
     const i = Number(cell.dataset.spot);
     const spot = palSpots()[i];
-    const depth = spot ? spot.depth : i;
-    cell.style.zIndex = String(20 + Math.round(depth * 10));
+    if (spot) cell.style.zIndex = String(spot.z || Math.round(spot.gy * 100));
   });
   const stack = document.getElementById("wood-stack");
-  if (stack) stack.style.zIndex = "55";
+  if (stack) stack.style.zIndex = "1600";
   const build = document.getElementById("build-spot");
-  if (build) build.style.zIndex = "48";
+  if (build) build.style.zIndex = "2400";
   const recv = document.getElementById("recv-spot");
-  if (recv) recv.style.zIndex = "46";
+  if (recv) recv.style.zIndex = "2200";
 }
 
 function puffAtEl(el) {
@@ -1408,10 +1420,11 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Pallet sprite height = 1/10.67 of background height — locked to stage pixels. */
-    const palH = stageH / 10.67;
+    /* Pallet ≈ 4.2 grid cells wide; height from Y cells (depth+boards). */
+    const palW = stageW * (GRID.palW / GRID.cols);
+    const palH = stageH * (GRID.palHCells / GRID.rows);
+    stage.style.setProperty("--pal-w", palW.toFixed(2) + "px");
     stage.style.setProperty("--pal-h", palH.toFixed(2) + "px");
-    stage.style.setProperty("--pal-w", (palH * (220 / 240)).toFixed(2) + "px");
     inside.classList.add("can-pan");
     if (!state.yardCentered) {
       inside.scrollLeft = Math.max(0, (stage.offsetWidth - inside.clientWidth) / 2);
@@ -1452,13 +1465,16 @@ function paintSlots() {
     const cell = document.createElement("div");
     cell.className = "pal-spot";
     cell.dataset.spot = String(i);
-    cell.dataset.wx = String(spot.wx);
-    cell.dataset.wy = String(spot.wy);
+    cell.dataset.wx = String(spot.gx);
+    cell.dataset.wy = String(spot.gy);
     cell.style.left = spot.x + "%";
     cell.style.top = spot.t + "%";
     cell.style.bottom = "auto";
+    cell.style.marginLeft = "0";
     cell.style.setProperty("--sc", String(spot.s || 1));
-    cell.style.zIndex = String(20 + Math.round((spot.depth || 0) * 10));
+    cell.style.transformOrigin = "50% 100%";
+    cell.style.transform = "translate(-50%, -100%) scale(" + (spot.s || 1).toFixed(4) + ")";
+    cell.style.zIndex = String(spot.z || Math.round((spot.gy || 0) * 100));
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {
       const take = state.shipId && canTakePal(pal);
