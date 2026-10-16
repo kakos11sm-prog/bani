@@ -984,7 +984,7 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png";
+const EMPTY_PAL = "art/pal-empty.png?v=124";
 const ART_URLS = [
   "art/yard.jpg",
   EMPTY_PAL,
