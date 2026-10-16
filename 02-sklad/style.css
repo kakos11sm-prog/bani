@@ -4297,11 +4297,10 @@ body.iso-yard .floor-pals {
 body.iso-yard .pal-spot {
   position: absolute;
   flex: none;
-  width: 15%;
-  margin-left: -7.5%;
-  aspect-ratio: 1 / 1.1;
+  width: var(--pal-w, 15%);
+  height: var(--pal-h, 9.37%);
+  margin-left: calc(var(--pal-w, 15%) / -2);
   min-height: 0;
-  height: auto;
   padding: 0;
   transform: scale(var(--sc, 1));
   transform-origin: 50% 0%;
@@ -4309,9 +4308,9 @@ body.iso-yard .pal-spot {
 
 body.iso-yard .build-spot,
 body.iso-yard .recv-spot {
-  width: 16%;
-  margin-left: -8%;
-  aspect-ratio: 1 / 1.1;
+  width: var(--pal-w, 16%);
+  height: var(--pal-h, 9.37%);
+  margin-left: calc(var(--pal-w, 16%) / -2);
   min-height: 0;
 }
 
@@ -4335,15 +4334,14 @@ body.iso-yard .wood-stack {
   left: 4%;
   top: 28%;
   bottom: auto;
-  width: 14%;
+  width: var(--pal-w, 14%);
   z-index: 55;
 }
 
 body.iso-yard .iso-pal {
   position: relative;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 220 / 240;
+  width: var(--pal-w, 100%);
+  height: var(--pal-h, auto);
   display: block;
   background: none;
   overflow: visible;
@@ -4359,8 +4357,8 @@ body.iso-yard .iso-img {
   pointer-events: none;
 }
 
-body.iso-yard .iso-pal .iso-empty,
-body.iso-yard .iso-pal .iso-full {
+body.iso-yard .iso-pal .iso-base,
+body.iso-yard .iso-pal .iso-goods {
   position: absolute;
   left: 0;
   right: 0;
@@ -4368,12 +4366,26 @@ body.iso-yard .iso-pal .iso-full {
   top: 0;
 }
 
-body.iso-yard .iso-pal.full .iso-empty {
-  display: none;
+body.iso-yard .iso-pal.stacked .iso-base {
+  z-index: 1;
 }
 
-body.iso-yard .iso-pal.part .iso-full {
-  clip-path: inset(calc((1 - var(--fill, 1)) * 68%) 0 0 0);
+body.iso-yard .iso-pal.stacked .iso-goods {
+  z-index: 2;
+  transform: translateY(-18%);
+  clip-path: inset(calc((1 - var(--fill, 1)) * 62%) 0 0 0);
+}
+
+body.iso-yard .iso-pal.stacked.full .iso-goods {
+  clip-path: none;
+}
+
+body.iso-yard .iso-mix {
+  position: absolute;
+  inset: 8% 10% 18%;
+  z-index: 3;
+  transform: translateY(-12%);
+  pointer-events: auto;
 }
 
 body.iso-yard .pal-stand .pal-live,
@@ -4381,24 +4393,22 @@ body.iso-yard .build-spot .pal-stand .pal-live,
 body.iso-yard .recv-spot .pal-stand .pal-live,
 body.iso-yard .floor-pals .pal-stand .pal-live,
 body.iso-yard .wood-stack .stack-layer .pal-live {
-  width: 100%;
+  width: var(--pal-w, 100%);
+  height: var(--pal-h, auto);
   transform: none;
   margin: 0 auto;
 }
 
 body.iso-yard .drag-ghost.is-pal {
-  width: min(42vw, 220px);
+  width: var(--pal-w, min(42vw, 220px));
+  height: var(--pal-h, auto);
 }
 
-body.iso-yard .drag-ghost.is-pal .pal-live {
-  width: 100%;
-  transform: none;
-}
-
+body.iso-yard .drag-ghost.is-pal .pal-live,
 body.iso-yard .drag-ghost .iso-pal {
   width: 100%;
-  height: auto;
-  aspect-ratio: 220 / 240;
+  height: 100%;
+  transform: none;
 }
 
 body.iso-yard .fork,

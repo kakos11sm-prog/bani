@@ -984,6 +984,36 @@ function palWood(name) {
   );
 }
 
+const ART_URLS = [
+  "art/yard.jpg",
+  "art/empty.png",
+  "art/pack.png",
+  "art/pal-water.png",
+  "art/pal-cans.png",
+  "art/pal-soda.png",
+  "art/truck.png",
+];
+
+function preloadArt() {
+  if (state.artReady) return Promise.resolve();
+  if (state.artWait) return state.artWait;
+  state.artWait = Promise.all(
+    ART_URLS.map(
+      (src) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.onload = () => resolve(src);
+          img.onerror = () => resolve(src);
+          img.src = src;
+        })
+    )
+  ).then(() => {
+    state.artReady = true;
+  });
+  return state.artWait;
+}
+
 function palPic(sku) {
   if (!sku) return "art/empty.png";
   if (sku.id === "water") return "art/pal-water.png";
@@ -993,28 +1023,32 @@ function palPic(sku) {
 
 function palMarkup(sku, packs) {
   const n = Math.max(0, Math.min(PALLET_PACKS, Number(packs) || 0));
+  const base = "<img class=\"iso-img iso-base\" src=\"art/empty.png\" alt=\"\" decoding=\"async\">";
   if (!sku || !n) {
-    return "<div class=\"pal-live empty-wood iso-pal\"><img class=\"iso-img\" src=\"art/empty.png\" alt=\"\"></div>";
+    return "<div class=\"pal-live empty-wood iso-pal\">" + base + "</div>";
   }
   const fill = n / PALLET_PACKS;
   return (
-    "<div class=\"pal-live iso-pal sku-" +
+    "<div class=\"pal-live iso-pal stacked sku-" +
     sku.id +
     (n >= PALLET_PACKS ? " full sealed" : " part") +
     "\" style=\"--fill:" +
     fill.toFixed(3) +
     ";" +
     palSkin(sku) +
-    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><img class=\"iso-img iso-full\" src=\"" +
+    "\">" +
+    base +
+    "<img class=\"iso-img iso-goods\" src=\"" +
     palPic(sku) +
-    "\" alt=\"\"></div>"
+    "\" alt=\"\" decoding=\"async\"></div>"
   );
 }
 
 function mixPalMarkup(skuIds) {
   const list = (skuIds || []).slice(0, PALLET_PACKS);
+  const base = "<img class=\"iso-img iso-base\" src=\"art/empty.png\" alt=\"\" decoding=\"async\">";
   if (!list.length) {
-    return "<div class=\"pal-live ship-pal iso-pal\"><img class=\"iso-img\" src=\"art/empty.png\" alt=\"\"></div>";
+    return "<div class=\"pal-live ship-pal iso-pal\">" + base + "</div>";
   }
   const full = list.length >= PALLET_PACKS;
   let load = "";
@@ -1029,12 +1063,14 @@ function mixPalMarkup(skuIds) {
       palSkin(sku) +
       ";" +
       packSlotStyle(i) +
-      "\"><img src=\"art/pack.png\" alt=\"\"></span>";
+      "\"><img src=\"art/pack.png\" alt=\"\" decoding=\"async\"></span>";
   });
   return (
-    "<div class=\"pal-live ship-pal iso-pal" +
+    "<div class=\"pal-live ship-pal iso-pal stacked" +
     (full ? " sealed full" : "") +
-    "\"><img class=\"iso-img iso-empty\" src=\"art/empty.png\" alt=\"\"><div class=\"iso-mix\">" +
+    "\">" +
+    base +
+    "<div class=\"iso-mix\">" +
     load +
     "</div></div>"
   );
@@ -1371,6 +1407,10 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
+    /* Pallet sprite height = 1/10.67 of background height — locked to stage pixels. */
+    const palH = stageH / 10.67;
+    stage.style.setProperty("--pal-h", palH.toFixed(2) + "px");
+    stage.style.setProperty("--pal-w", (palH * (220 / 240)).toFixed(2) + "px");
     inside.classList.add("can-pan");
     if (!state.yardCentered) {
       inside.scrollLeft = Math.max(0, (stage.offsetWidth - inside.clientWidth) / 2);
@@ -2707,14 +2747,17 @@ function openFloor() {
   paintJobs();
   paintShop();
   showScreen(floor);
-  const gift = maybeGiftFirstPal();
-  paintSlots();
-  if (gift) markGiftStack();
-  if (state.shipId || state.bulkId) {
-    paintWaybill();
-    paintLoad();
-  }
-  paintTruck();
+  const paint = () => {
+    const gift = maybeGiftFirstPal();
+    paintSlots();
+    if (gift) markGiftStack();
+    if (state.shipId || state.bulkId) {
+      paintWaybill();
+      paintLoad();
+    }
+    paintTruck();
+  };
+  preloadArt().then(paint);
   if (!state.yardResizeBound) {
     state.yardResizeBound = true;
     window.addEventListener("resize", () => {
@@ -3335,10 +3378,11 @@ async function onDragEnd(e) {
     hideGhost();
     paintSlots();
     sfx("no");
-    if (state.shipId) {
-      if (pal && pal.id === state.shipPalId) toast("Сборка уже полная");
+    if (!pal) toast("Сначала поставь пустой поддон");
+    else if (state.shipId) {
+      if (pal.id === state.shipPalId) toast("Сборка уже полная");
       else if (drag.from === "floor") toast("Клади на нижний поддон");
-    } else if (pal && drag.from === "floor") toast("Сюда только такой же товар");
+    } else if (drag.from === "floor") toast("Сюда только такой же товар");
     return;
   }
   hideGhost();
@@ -4031,4 +4075,7 @@ seedDust();
 if (progress.gifted || progress.room || progress.coins) saveProgress();
 paintHud();
 paintSoundBtn();
+preloadArt().then(() => {
+  document.body.classList.add("art-ready");
+});
 showScreen(boot);
