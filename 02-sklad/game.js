@@ -1505,7 +1505,7 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Play: 10×6 cells. Layout test: smaller 4×3 so 100 pals fit on the pad. */
+    /* Pallet box = 10×6 grid cells (same in layout test). */
     const box = gridBox();
     const palW = stageW * (box.w / GRID.cols);
     const palH = stageH * (box.h / GRID.rows);
