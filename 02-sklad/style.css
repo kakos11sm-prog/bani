@@ -4420,6 +4420,37 @@ body.iso-yard .fork,
   display: none !important;
 }
 
+.layout-banner {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 14, 8, 0.88);
+  color: #ffe7a8;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.layout-test .shop-btn,
+body.layout-test #jobs-tab,
+body.layout-test #truck,
+body.layout-test .build-spot,
+body.layout-test .recv-spot,
+body.layout-test .wood-stack,
+body.layout-test .in-dock,
+body.layout-test .waybill,
+body.layout-test .ship-go,
+body.layout-test .out-truck {
+  display: none !important;
+}
+
 body.iso-yard .wood-stack {
   min-height: calc(90px + var(--stack-n, 0) * 8px);
 }

@@ -1,6 +1,8 @@
 const SAVE_KEY = "sklad-progress-v4";
 const SAVE_KEYS = ["sklad-progress-v4", "sklad-progress-v3", "sklad-progress-v2", "sklad-progress-v1"];
 const SOUND_KEY = "sklad-sound-on";
+const LAYOUT_KEY = "sklad-layout-test";
+const LAYOUT_COUNT = 100;
 const START_COINS = 1200;
 const PALLET_COLS = 2;
 const PALLET_DEPTH = 3;
@@ -64,19 +66,80 @@ const YARD_CELLS = (function () {
   return cells;
 })();
 
+function layoutMode() {
+  try {
+    const q = new URLSearchParams(location.search || "");
+    if (q.get("layout") === "0") {
+      localStorage.removeItem(LAYOUT_KEY);
+      return false;
+    }
+    if (q.get("layout") === "1" || q.has("layout")) {
+      localStorage.setItem(LAYOUT_KEY, "1");
+      return true;
+    }
+    return localStorage.getItem(LAYOUT_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function layoutCells() {
+  const cells = [];
+  const ox = 18;
+  const oy = 11;
+  const stepC = { x: 5.8, y: 1.35 };
+  const stepR = { x: -2.4, y: 2.15 };
+  for (let r = 0; r < 14 && cells.length < LAYOUT_COUNT; r += 1) {
+    for (let c = 0; c < 10 && cells.length < LAYOUT_COUNT; c += 1) {
+      const tlx = ox + c * stepC.x + r * stepR.x;
+      const tly = oy + c * stepC.y + r * stepR.y;
+      if (tlx < 2 || tlx > 88 || tly < 6 || tly > 46) continue;
+      cells.push({ tlx: tlx, tly: tly });
+    }
+  }
+  while (cells.length < LAYOUT_COUNT) {
+    const i = cells.length;
+    cells.push({ tlx: 20 + (i % 10) * 6, tly: 12 + Math.floor(i / 10) * 2.4 });
+  }
+  return cells.slice(0, LAYOUT_COUNT);
+}
+
+function seedLayoutYard() {
+  progress.room = "garage";
+  progress.guide = "";
+  progress.gifted = true;
+  progress.giftedPal = true;
+  progress.orders = [];
+  progress.incoming = [];
+  progress.stack = [];
+  progress.pallets = [];
+  const n = layoutCells().length;
+  for (let i = 0; i < n; i += 1) {
+    progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
+  }
+  progress.nextPallet = n + 1;
+  progress.boughtWoods = Math.max(progress.boughtWoods || 0, n);
+}
+
 function gridScale(tly) {
   return 1 + (tly - GRID.baseY) * GRID.scaleK;
 }
 
+function gridBox() {
+  if (layoutMode()) return { w: 4, h: 3 };
+  return { w: GRID.palW, h: GRID.palHCells };
+}
+
 function gridProject(tlx, tly) {
-  const botY = tly + GRID.palHCells;
+  const box = gridBox();
+  const botY = tly + box.h;
   const s = gridScale(tly);
   return {
     tlx,
     tly,
-    gx: tlx + GRID.palW / 2,
+    gx: tlx + box.w / 2,
     gy: botY,
-    wx: tlx + GRID.palW / 2,
+    wx: tlx + box.w / 2,
     wy: botY,
     x: tlx,
     t: (tly / GRID.rows) * 100,
@@ -1100,6 +1163,7 @@ function mixPalMarkup(skuIds) {
 }
 
 function palSpots() {
+  if (layoutMode()) return layoutCells().map((c) => gridProject(c.tlx, c.tly));
   const room = roomOf(progress.room);
   const n = room ? room.slots : YARD_CELLS.length;
   return YARD_CELLS.slice(0, n).map((c) => gridProject(c.tlx, c.tly));
@@ -1424,9 +1488,10 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Pallet box = 10×6 grid cells on the 100×56 field. */
-    const palW = stageW * (GRID.palW / GRID.cols);
-    const palH = stageH * (GRID.palHCells / GRID.rows);
+    /* Play: 10×6 cells. Layout test: smaller 4×3 so 100 pals fit on the pad. */
+    const box = gridBox();
+    const palW = stageW * (box.w / GRID.cols);
+    const palH = stageH * (box.h / GRID.rows);
     stage.style.setProperty("--pal-w", palW.toFixed(2) + "px");
     stage.style.setProperty("--pal-h", palH.toFixed(2) + "px");
     inside.classList.add("can-pan");
@@ -2323,6 +2388,10 @@ function checkout(btn) {
 }
 
 function openShop() {
+  if (layoutMode()) {
+    toast("Разметка: магазин выкл");
+    return;
+  }
   closeJobs();
   closeShip();
   if (document.querySelector("#goods .good")) syncShop();
@@ -2335,6 +2404,10 @@ function openShop() {
 }
 
 function openJobs() {
+  if (layoutMode()) {
+    toast("Разметка: заявки выкл");
+    return;
+  }
   closeShop();
   paintJobs();
   document.getElementById("jobs-pane").classList.add("show");
@@ -2561,6 +2634,7 @@ function linesForGrade(grade, shift) {
 }
 
 function maybeOrders() {
+  if (layoutMode()) return;
   pruneOrders();
   if (inGuide()) {
     ensureGuideJob();
@@ -2758,17 +2832,41 @@ function bulkPalOk(pal) {
   return pal.spot !== BUILD_SPOT && pal.units >= PALLET_PACKS && pal.sku === bulkSkuOf(order);
 }
 
+function paintLayoutBanner() {
+  let ban = document.getElementById("layout-banner");
+  if (!layoutMode()) {
+    if (ban) ban.remove();
+    document.body.classList.remove("layout-test");
+    return;
+  }
+  document.body.classList.add("layout-test");
+  if (!ban) {
+    ban = document.createElement("div");
+    ban.id = "layout-banner";
+    ban.className = "layout-banner";
+    document.body.appendChild(ban);
+  }
+  ban.textContent = "Режим разметки: " + LAYOUT_COUNT + " поддонов · механика выкл · сброс их не трогает";
+}
+
 function openFloor() {
+  if (layoutMode()) seedLayoutYard();
   const room = roomOf(progress.room);
-  document.getElementById("yard-name").textContent = room ? room.name : "Склад";
+  document.getElementById("yard-name").textContent = layoutMode() ? "Разметка двора" : room ? room.name : "Склад";
   applyInside();
   state.yardCentered = false;
-  maybeOrders();
+  if (!layoutMode()) maybeOrders();
   paintHud();
   paintJobs();
   paintShop();
+  paintLayoutBanner();
   showScreen(floor);
   const paint = () => {
+    if (layoutMode()) {
+      paintSlots();
+      paintTruck();
+      return;
+    }
     const gift = maybeGiftFirstPal();
     paintSlots();
     if (gift) markGiftStack();
@@ -2794,6 +2892,7 @@ function clearCart() {
 
 function resetProgress() {
   if (!window.confirm("Сбросить весь прогресс?")) return;
+  const keepLayout = layoutMode();
   SAVE_KEYS.forEach((key) => {
     try {
       localStorage.removeItem(key);
@@ -2808,6 +2907,17 @@ function resetProgress() {
   });
   Object.assign(progress, fresh);
   clearCart();
+  if (keepLayout) {
+    try {
+      localStorage.setItem(LAYOUT_KEY, "1");
+    } catch (e) {}
+    seedLayoutYard();
+    saveProgress();
+    paintHud();
+    openFloor();
+    toast("Прогресс сброшен, поддоны разметки на месте");
+    return;
+  }
   saveProgress();
   paintHud();
   showScreen(boot);
@@ -3092,6 +3202,10 @@ function beginGhost(html, x, y, skin) {
 }
 
 function startWoodDrag(e, palId, from) {
+  if (layoutMode()) {
+    toast("Разметка: перетаскивание выкл");
+    return;
+  }
   if (state.busy || state.drag) return;
   const pal = findPal(palId);
   if (!pal) return;
@@ -3119,6 +3233,10 @@ function startWoodDrag(e, palId, from) {
 }
 
 function startPackDrag(e, id, from) {
+  if (layoutMode()) {
+    toast("Разметка: перетаскивание выкл");
+    return;
+  }
   if (state.busy || state.drag) return;
   if (from !== "dock" && wayOpen()) {
     shake(e.currentTarget);
@@ -3949,6 +4067,13 @@ function playGuideGift() {
 
 function goPlay() {
   unlockAudio();
+  if (layoutMode()) {
+    seedLayoutYard();
+    saveProgress();
+    paintHud();
+    openFloor();
+    return;
+  }
   if (progress.room) {
     if (!progress.gifted) {
       progress.gifted = true;
@@ -4099,4 +4224,11 @@ paintSoundBtn();
 preloadArt().then(() => {
   document.body.classList.add("art-ready");
 });
-showScreen(boot);
+if (layoutMode()) {
+  seedLayoutYard();
+  saveProgress();
+  paintHud();
+  openFloor();
+} else {
+  showScreen(boot);
+}
