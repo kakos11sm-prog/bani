@@ -4426,12 +4426,6 @@ body.iso-yard .wood-stack .stack-layer {
   transform: translate(calc(var(--i, 0) * 3px), calc(var(--i, 0) * -12px));
 }
 
-body.iso-yard .iso-mix {
-  position: absolute;
-  inset: 8% 10% 18%;
-  pointer-events: auto;
-}
-
 body.iso-yard .iso-pack {
   position: absolute;
   left: calc(16% + var(--col, 0) * 34% + var(--dep, 0) * 6%);
