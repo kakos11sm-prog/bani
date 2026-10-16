@@ -35,11 +35,12 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 /**
- * Yard grid 100×56 over background (origin = top-left of art).
- * Pivot = bottom-center of pallet. Scale = 1 + (Y - 17) * 0.018.
- * First 6 anchors match the brief; remaining 9 follow the same iso steps.
+ * Yard grid 100×56 (origin = top-left of art).
+ * Brief coords are sprite Top-Left; box is 10×6 cells.
+ * DOM uses that top-left; scale from transform-origin bottom-center.
+ * Pivot bottom-center = (X_start+5, Y_start+6); z-index = bottomY*100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 4.2, palHCells: 4.2 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 10, palHCells: 6 };
 const STEP_ALONG = { x: 4.4, y: 2.05 };
 const STEP_INTO = { x: -5.2, y: 2.8 };
 const YARD_ORIGIN = { x: 51.0, y: 14.2 };
@@ -48,37 +49,40 @@ const YARD_CELLS = (function () {
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
       cells.push({
-        gx: YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x,
-        gy: YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y,
+        tlx: YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x,
+        tly: YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y,
       });
     }
   }
   for (let c = 0; c < 3; c += 1) {
     const k = c + 0.5;
     cells.push({
-      gx: YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x,
-      gy: YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y,
+      tlx: YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x,
+      tly: YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y,
     });
   }
   return cells;
 })();
 
-function gridScale(gy) {
-  return 1 + (gy - GRID.baseY) * GRID.scaleK;
+function gridScale(tly) {
+  return 1 + (tly - GRID.baseY) * GRID.scaleK;
 }
 
-function gridProject(gx, gy) {
-  const s = gridScale(gy);
+function gridProject(tlx, tly) {
+  const botY = tly + GRID.palHCells;
+  const s = gridScale(tly);
   return {
-    gx,
-    gy,
-    wx: gx,
-    wy: gy,
-    x: gx,
-    t: (gy / GRID.rows) * 100,
-    depth: gy,
+    tlx,
+    tly,
+    gx: tlx + GRID.palW / 2,
+    gy: botY,
+    wx: tlx + GRID.palW / 2,
+    wy: botY,
+    x: tlx,
+    t: (tly / GRID.rows) * 100,
+    depth: botY,
     s: s,
-    z: Math.round(gy * 100),
+    z: Math.round(botY * 100),
   };
 }
 
@@ -1098,7 +1102,7 @@ function mixPalMarkup(skuIds) {
 function palSpots() {
   const room = roomOf(progress.room);
   const n = room ? room.slots : YARD_CELLS.length;
-  return YARD_CELLS.slice(0, n).map((c) => gridProject(c.gx, c.gy));
+  return YARD_CELLS.slice(0, n).map((c) => gridProject(c.tlx, c.tly));
 }
 
 function pointerToGrid(clientX, clientY) {
@@ -1420,7 +1424,7 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Pallet ≈ 4.2 grid cells wide; height from Y cells (depth+boards). */
+    /* Pallet box = 10×6 grid cells on the 100×56 field. */
     const palW = stageW * (GRID.palW / GRID.cols);
     const palH = stageH * (GRID.palHCells / GRID.rows);
     stage.style.setProperty("--pal-w", palW.toFixed(2) + "px");
@@ -1473,7 +1477,7 @@ function paintSlots() {
     cell.style.marginLeft = "0";
     cell.style.setProperty("--sc", String(spot.s || 1));
     cell.style.transformOrigin = "50% 100%";
-    cell.style.transform = "translate(-50%, -100%) scale(" + (spot.s || 1).toFixed(4) + ")";
+    cell.style.transform = "scale(" + (spot.s || 1).toFixed(4) + ")";
     cell.style.zIndex = String(spot.z || Math.round((spot.gy || 0) * 100));
     const pal = progress.pallets.find((p) => p.spot === i);
     if (pal) {

@@ -4297,8 +4297,8 @@ body.iso-yard .floor-pals {
 body.iso-yard .pal-spot {
   position: absolute;
   flex: none;
-  width: var(--pal-w, 4.2%);
-  height: var(--pal-h, 7.5%);
+  width: var(--pal-w, 10%);
+  height: var(--pal-h, calc(6 / 56 * 100%));
   margin-left: 0;
   min-height: 0;
   padding: 0;
@@ -4307,43 +4307,39 @@ body.iso-yard .pal-spot {
 
 body.iso-yard .build-spot,
 body.iso-yard .recv-spot {
-  width: var(--pal-w, 16%);
-  height: var(--pal-h, 9.37%);
-  margin-left: calc(var(--pal-w, 16%) / -2);
+  width: var(--pal-w, 10%);
+  height: var(--pal-h, calc(6 / 56 * 100%));
+  margin-left: 0;
   min-height: 0;
+  transform-origin: 50% 100%;
 }
 
 body.iso-yard .build-spot {
-  left: 42%;
+  left: 37%;
   top: calc(24 / 56 * 100%);
   bottom: auto;
-  margin-left: 0;
-  transform: translate(-50%, -100%);
-  transform-origin: 50% 100%;
-  z-index: 2400;
+  z-index: 3000;
 }
 
 body.iso-yard .recv-spot {
   right: auto;
-  left: 70%;
+  left: 65%;
   top: calc(22 / 56 * 100%);
   bottom: auto;
-  margin-left: 0;
-  transform: translate(-50%, -100%);
-  transform-origin: 50% 100%;
-  z-index: 2200;
+  z-index: 2800;
 }
 
 body.iso-yard .wood-stack {
   position: absolute;
-  left: 18%;
-  top: calc(16 / 56 * 100%);
+  left: 12%;
+  top: calc(14 / 56 * 100%);
   bottom: auto;
-  width: var(--pal-w, 4.2%);
+  width: var(--pal-w, 10%);
+  height: auto;
+  min-height: var(--pal-h, calc(6 / 56 * 100%));
   margin-left: 0;
-  transform: translate(-50%, -100%);
   transform-origin: 50% 100%;
-  z-index: 1600;
+  z-index: 2000;
 }
 
 body.iso-yard .iso-pal {
