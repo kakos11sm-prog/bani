@@ -4443,12 +4443,16 @@ body.layout-test #jobs-tab,
 body.layout-test #truck,
 body.layout-test .build-spot,
 body.layout-test .recv-spot,
-body.layout-test .wood-stack,
 body.layout-test .in-dock,
 body.layout-test .waybill,
 body.layout-test .ship-go,
 body.layout-test .out-truck {
   display: none !important;
+}
+
+body.layout-test .wood-stack {
+  display: block !important;
+  pointer-events: auto;
 }
 
 body.iso-yard .wood-stack {

@@ -104,21 +104,39 @@ function layoutCells() {
   return cells.slice(0, LAYOUT_COUNT);
 }
 
-function seedLayoutYard() {
+function seedLayoutYard(opts) {
+  const clearFloor = !!(opts && opts.clearFloor);
   progress.room = "garage";
   progress.guide = "";
   progress.gifted = true;
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  progress.stack = [];
-  progress.pallets = [];
-  const n = layoutCells().length;
-  for (let i = 0; i < n; i += 1) {
-    progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
+  let onFloor = clearFloor
+    ? []
+    : (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT && p.spot !== RECV_SPOT);
+  /* Old layout dump: 100 already on floor, none in stack — move all back to stock. */
+  if (!clearFloor && onFloor.length >= LAYOUT_COUNT && !(progress.stack || []).length) {
+    onFloor = [];
   }
-  progress.nextPallet = n + 1;
-  progress.boughtWoods = Math.max(progress.boughtWoods || 0, n);
+  progress.pallets = onFloor.map((p, i) => ({ id: p.id || i + 1, sku: "", units: 0, spot: p.spot }));
+  progress.stack = [];
+  let nextId = 1;
+  progress.pallets.forEach((p) => {
+    nextId = Math.max(nextId, (p.id || 0) + 1);
+  });
+  const need = Math.max(0, LAYOUT_COUNT - progress.pallets.length);
+  for (let i = 0; i < need; i += 1) {
+    progress.stack.push({ id: nextId + i, sku: "", units: 0, spot: -1 });
+  }
+  progress.nextPallet = nextId + need;
+  progress.boughtWoods = Math.max(progress.boughtWoods || 0, LAYOUT_COUNT);
+}
+
+function ensureLayoutStock() {
+  if (!layoutMode()) return;
+  const total = (progress.pallets || []).length + (progress.stack || []).length;
+  if (total < LAYOUT_COUNT) seedLayoutYard();
 }
 
 function gridScale(tly) {
@@ -126,7 +144,6 @@ function gridScale(tly) {
 }
 
 function gridBox() {
-  if (layoutMode()) return { w: 4, h: 3 };
   return { w: GRID.palW, h: GRID.palHCells };
 }
 
@@ -657,7 +674,7 @@ function emptyWoods() {
 
 function freeSpots() {
   const room = roomOf(progress.room);
-  const cap = room ? room.slots : 0;
+  const cap = layoutMode() ? palSpots().length : room ? room.slots : 0;
   return Math.max(0, cap - yardPals().length);
 }
 
@@ -1163,7 +1180,7 @@ function mixPalMarkup(skuIds) {
 }
 
 function palSpots() {
-  if (layoutMode()) return layoutCells().map((c) => gridProject(c.tlx, c.tly));
+  if (layoutMode()) return YARD_CELLS.map((c) => gridProject(c.tlx, c.tly));
   const room = roomOf(progress.room);
   const n = room ? room.slots : YARD_CELLS.length;
   return YARD_CELLS.slice(0, n).map((c) => gridProject(c.tlx, c.tly));
@@ -2846,11 +2863,18 @@ function paintLayoutBanner() {
     ban.className = "layout-banner";
     document.body.appendChild(ban);
   }
-  ban.textContent = "Режим разметки: " + LAYOUT_COUNT + " поддонов · механика выкл · сброс их не трогает";
+  const n = (progress.stack || []).length + (progress.pallets || []).length;
+  ban.textContent =
+    "Разметка: " +
+    n +
+    " поддонов в наличии · тяни со стопки на двор · заявки выкл · сброс запас не трогает";
 }
 
 function openFloor() {
-  if (layoutMode()) seedLayoutYard();
+  if (layoutMode()) {
+    if (!(progress.pallets || []).length && !(progress.stack || []).length) seedLayoutYard();
+    else ensureLayoutStock();
+  }
   const room = roomOf(progress.room);
   document.getElementById("yard-name").textContent = layoutMode() ? "Разметка двора" : room ? room.name : "Склад";
   applyInside();
@@ -2865,6 +2889,7 @@ function openFloor() {
     if (layoutMode()) {
       paintSlots();
       paintTruck();
+      paintLayoutBanner();
       return;
     }
     const gift = maybeGiftFirstPal();
@@ -2911,11 +2936,11 @@ function resetProgress() {
     try {
       localStorage.setItem(LAYOUT_KEY, "1");
     } catch (e) {}
-    seedLayoutYard();
+    seedLayoutYard({ clearFloor: true });
     saveProgress();
     paintHud();
     openFloor();
-    toast("Прогресс сброшен, поддоны разметки на месте");
+    toast("Сброшено. Снова 100 поддонов в стопке — расставляй");
     return;
   }
   saveProgress();
@@ -3202,19 +3227,16 @@ function beginGhost(html, x, y, skin) {
 }
 
 function startWoodDrag(e, palId, from) {
-  if (layoutMode()) {
-    toast("Разметка: перетаскивание выкл");
-    return;
-  }
   if (state.busy || state.drag) return;
   const pal = findPal(palId);
   if (!pal) return;
-  if (state.shipId && pal.id === state.shipPalId && (pal.units > 0 || (state.shipLoad || []).length)) {
+  if (layoutMode()) {
+    /* layout: only empty wood move / place */
+  } else if (state.shipId && pal.id === state.shipPalId && (pal.units > 0 || (state.shipLoad || []).length)) {
     shake(e.currentTarget);
     toast("Сначала отгрузи товар");
     return;
-  }
-  if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT && !state.bulkId) return;
+  } else if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT && !state.bulkId) return;
   const grab = palGrabFrom(e);
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
@@ -3234,7 +3256,7 @@ function startWoodDrag(e, palId, from) {
 
 function startPackDrag(e, id, from) {
   if (layoutMode()) {
-    toast("Разметка: перетаскивание выкл");
+    toast("В разметке только пустые поддоны");
     return;
   }
   if (state.busy || state.drag) return;
