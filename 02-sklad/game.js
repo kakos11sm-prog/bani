@@ -158,12 +158,17 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout: sealed full pallets on yard slots (same coords, L→R) to tune size. */
+  /* Layout: water sealed + orange pack-stacks on yard slots (same coords). */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
     for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_PACKS, spot: i });
+      progress.pallets.push({
+        id: i + 1,
+        sku: i === 0 ? "water" : "orange",
+        units: PALLET_PACKS,
+        spot: i,
+      });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -1173,29 +1178,42 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=234";
-const SEALED_PAL = "art/pal-sealed.jpg?v=234";
-const PACK_PIC = "art/pack.png?v=234";
-const YARD_PIC = "art/yard.jpg?v=234";
+const EMPTY_PAL = "art/pal-empty.png?v=235";
+const SEALED_PAL = "art/pal-sealed.jpg?v=235";
+const PACK_PIC = "art/pack.png?v=235";
+const PACK_ORANGE = "art/pack-orange.jpg?v=235";
+const YARD_PIC = "art/yard.jpg?v=235";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
   SEALED_PAL,
   PACK_PIC,
+  PACK_ORANGE,
   "art/pal-water.png",
   "art/pal-cans.png",
   "art/pal-soda.png",
   "art/truck.png",
 ];
 
-/* Ghost while dragging: same pack.png as on the yard pallet. */
+function packPic(sku) {
+  if (sku && sku.id === "orange") return PACK_ORANGE;
+  return PACK_PIC;
+}
+
+/* Full wrap art only where we have a sealed sprite (water for now). */
+function sealedPic(sku) {
+  if (sku && sku.id === "water") return SEALED_PAL;
+  return "";
+}
+
+/* Ghost while dragging: same pack art as on the yard pallet. */
 function packGhostHtml(sku) {
   if (document.body.classList.contains("iso-yard")) {
     return (
       "<span class=\"pak iso-pack ghost-pack\" data-sku=\"" +
       (sku && sku.id ? sku.id : "") +
       "\"><img src=\"" +
-      PACK_PIC +
+      packPic(sku) +
       "\" alt=\"\" decoding=\"async\"></span>"
     );
   }
@@ -1235,17 +1253,23 @@ function palMarkup(sku, packs) {
   if (!sku || !n) {
     return "<div class=\"pal-live empty-wood iso-pal\">" + base + "</div>";
   }
-  /* Full pallet = sealed wrap sprite (same art in shop). */
+  /* Full pallet: sealed wrap sprite when we have it, else stacked packs. */
   if (n >= PALLET_PACKS) {
-    return (
-      "<div class=\"pal-live iso-pal stacked full sealed sealed-art sku-" +
-      sku.id +
-      "\" style=\"" +
-      palSkin(sku) +
-      "\"><img class=\"iso-img iso-sealed\" src=\"" +
-      SEALED_PAL +
-      "\" alt=\"\" decoding=\"async\"></div>"
-    );
+    const wrap = sealedPic(sku);
+    if (wrap) {
+      return (
+        "<div class=\"pal-live iso-pal stacked full sealed sealed-art sku-" +
+        sku.id +
+        "\" style=\"" +
+        palSkin(sku) +
+        "\"><img class=\"iso-img iso-sealed\" src=\"" +
+        wrap +
+        "\" alt=\"\" decoding=\"async\"></div>"
+      );
+    }
+    const ids = [];
+    for (let i = 0; i < PALLET_PACKS; i += 1) ids.push(sku.id);
+    return mixPalMarkup(ids);
   }
   const fill = n / PALLET_PACKS;
   return (
@@ -1292,7 +1316,7 @@ function mixPalMarkup(skuIds) {
       ";" +
       packSlotStyle(i) +
       "\"><img src=\"" +
-      PACK_PIC +
+      packPic(sku) +
       "\" alt=\"\" decoding=\"async\"></span>";
   });
   return (
