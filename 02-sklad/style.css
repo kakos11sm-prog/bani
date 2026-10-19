@@ -4327,7 +4327,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=189") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=190") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4369,8 +4369,8 @@ body.iso-yard .floor-pals {
 body.iso-yard .pal-spot {
   position: absolute;
   flex: none;
-  width: var(--pal-w, 9.465%);
-  height: var(--pal-h, calc(5.367 / 56 * 100%));
+  width: var(--pal-w, 8.992%);
+  height: var(--pal-h, calc(5.099 / 56 * 100%));
   margin-left: 0;
   min-height: 0;
   padding: 0;
@@ -4468,8 +4468,8 @@ body.iso-yard .drag-ghost.is-pal.is-lift .pal-live {
 
 body.iso-yard .build-spot,
 body.iso-yard .recv-spot {
-  width: var(--pal-w, 9.465%);
-  height: var(--pal-h, calc(5.367 / 56 * 100%));
+  width: var(--pal-w, 8.992%);
+  height: var(--pal-h, calc(5.099 / 56 * 100%));
   margin-left: 0;
   min-height: 0;
   box-sizing: border-box;
@@ -4496,8 +4496,8 @@ body.iso-yard .wood-stack {
   left: 34%;
   top: 58%;
   bottom: auto;
-  width: var(--pal-w, 9.465%);
-  height: var(--pal-h, calc(5.367 / 56 * 100%));
+  width: var(--pal-w, 8.992%);
+  height: var(--pal-h, calc(5.099 / 56 * 100%));
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -4584,7 +4584,7 @@ body.iso-yard .wood-stack .stack-layer .pal-live {
 body.iso-yard .drag-ghost.is-pal {
   width: min(28vw, 150px);
   height: auto;
-  aspect-ratio: 9.465 / 5.367;
+  aspect-ratio: 8.992 / 5.099;
 }
 
 body.iso-yard .drag-ghost.is-pal .pal-live,
@@ -4647,8 +4647,8 @@ body.iso-yard .wood-stack .stack-layer {
   width: 100%;
   height: 100%;
   margin: 0;
-  /* Each next pallet −1.2 cells up (of pallet box height). */
-  transform: translateY(calc(var(--i, 0) * var(--stack-step, 1.2) / 5.367 * -100%));
+  /* Each next pallet −1.0 cell up (of pallet box height). */
+  transform: translateY(calc(var(--i, 0) * var(--stack-step, 1.0) / 5.099 * -100%));
   filter: drop-shadow(0 3px 4px rgba(8, 3, 0, 0.4));
 }
 

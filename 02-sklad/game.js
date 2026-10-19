@@ -38,14 +38,14 @@ const ROOMS = [
 ];
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
- * Spot coords = sprite Top-Left in grid cells; box 9.465×5.367 (+5% from 9.014×5.111).
+ * Spot coords = sprite Top-Left in grid cells; box 8.992×5.099 (−5% from 9.465×5.367).
  * First row TL: +3 right, −1 up from prior. Sprite yaw 0° (art as-is). CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
-/* Stack TL on yard: 34 / 58 as % of art (same size as floor pals). Layer step −1.2 cells up; max 10 drawn. */
-const STACK_PCT = { x: 34, y: 58 };
-const STACK_STEP_Y = 1.2;
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 8.992, palHCells: 5.099, rotDeg: 0 };
+/* Stack TL: 34 / 58% + 7 cells down. Layer step −1.0 cell up; max 10 drawn. */
+const STACK_PCT = { x: 34, y: 58 + (7 / 56) * 100 };
+const STACK_STEP_Y = 1.0;
 const STACK_VIS_MAX = 10;
 /* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
 /* Row 0 = spots 1–4 exact. Into base 1→5, plus 2-cell gap along that skew between rows. No 13–15. */
@@ -1122,8 +1122,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=189";
-const YARD_PIC = "art/yard.jpg?v=189";
+const EMPTY_PAL = "art/pal-empty.png?v=190";
+const YARD_PIC = "art/yard.jpg?v=190";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
