@@ -32,9 +32,9 @@ const SKUS = [
   { id: "cherry", name: "Вишня", tag: "ВИШНЯ", tone: "#6a3a40", liq: "#5a242c", cap: "#4a2024", paper: "#ead8d0", ink: "#3a181c", cost: 520 },
 ];
 const ROOMS = [
-  { id: "garage", name: "Гараж", slots: 15, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
-  { id: "hangar", name: "Ангар", slots: 15, price: 2400, pic: "room-hangar.jpg", inside: "" },
-  { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
+  { id: "garage", name: "Гараж", slots: 12, price: 800, pic: "room-garage.jpg", inside: "inside-garage.jpg" },
+  { id: "hangar", name: "Ангар", slots: 12, price: 2400, pic: "room-hangar.jpg", inside: "" },
+  { id: "depot", name: "Склад", slots: 12, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
@@ -44,7 +44,7 @@ const ROOMS = [
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
 /* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
-/* Row 0 = spots 1–4 exact. Rows 1–2 = same column + r×INTO (−5.3 / +2.7): 5←1, 9←5, 10←6←2, … */
+/* Row 0 = spots 1–4 exact. Into base 1→5, plus 2-cell gap along that skew between rows. No 13–15. */
 const YARD_ROW0 = [
   { tlx: 53.0, tly: 14.2 },
   { tlx: 56.9, tly: 16.5 },
@@ -56,7 +56,15 @@ const STEP_ALONG = {
   x: (YARD_ROW0[3].tlx - YARD_ROW0[0].tlx) / 3,
   y: (YARD_ROW0[3].tly - YARD_ROW0[0].tly) / 3,
 };
-const STEP_INTO = { x: -5.3, y: 2.7 };
+const INTO_BASE = { x: -5.3, y: 2.7 };
+const INTO_GAP_CELLS = 2;
+const STEP_INTO = (function () {
+  const len = Math.sqrt(INTO_BASE.x * INTO_BASE.x + INTO_BASE.y * INTO_BASE.y) || 1;
+  return {
+    x: INTO_BASE.x + (INTO_GAP_CELLS * INTO_BASE.x) / len,
+    y: INTO_BASE.y + (INTO_GAP_CELLS * INTO_BASE.y) / len,
+  };
+})();
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -80,15 +88,6 @@ const YARD_CELLS = (function () {
         tly: roundCell(base.tly + r * STEP_INTO.y),
       });
     }
-  }
-  /* 13–15: mid between columns of row0, then +3×INTO (same into chain). */
-  for (let c = 0; c < 3; c += 1) {
-    const a = YARD_ROW0[c];
-    const b = YARD_ROW0[c + 1];
-    cells.push({
-      tlx: roundCell((a.tlx + b.tlx) / 2 + 3 * STEP_INTO.x),
-      tly: roundCell((a.tly + b.tly) / 2 + 3 * STEP_INTO.y),
-    });
   }
   return cells;
 })();
@@ -1119,8 +1118,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=187";
-const YARD_PIC = "art/yard.jpg?v=187";
+const EMPTY_PAL = "art/pal-empty.png?v=188";
+const YARD_PIC = "art/yard.jpg?v=188";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
