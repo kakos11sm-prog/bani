@@ -4342,7 +4342,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=203") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=204") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4620,24 +4620,6 @@ body.iso-yard .pack-layout-grid b:nth-of-type(3) { left: 50%; transform: transla
 body.iso-yard .pack-layout-grid b:nth-of-type(4) { left: 75%; transform: translateX(-50%); }
 body.iso-yard .pack-layout-grid b:nth-of-type(5) { right: 1%; left: auto; }
 
-body.iso-yard .iso-pack.pak {
-  outline: 1px solid rgba(255, 240, 120, 0.65);
-  outline-offset: -1px;
-}
-
-body.iso-yard .iso-pack.pak::after {
-  content: attr(data-i);
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  z-index: 5;
-  font-size: 9px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 0 3px #000, 0 1px 0 #000;
-  pointer-events: none;
-}
-
 body.iso-yard .pal-stand,
 body.iso-yard .build-spot .pal-stand,
 body.iso-yard .recv-spot .pal-stand,
@@ -4749,9 +4731,24 @@ body.iso-yard .iso-pack.pak {
   height: auto !important;
   margin: 0 !important;
   background: transparent;
+  outline: 1px solid rgba(255, 240, 120, 0.65);
+  outline-offset: -1px;
   z-index: calc(2 + var(--dep, 0) + var(--lay, 0) * 6 + var(--col, 0));
   transition: left 0.28s cubic-bezier(0.2, 0.85, 0.2, 1), bottom 0.28s cubic-bezier(0.2, 0.85, 0.2, 1), transform 0.28s ease;
   pointer-events: auto;
+}
+
+body.iso-yard .iso-pack.pak::after {
+  content: attr(data-i);
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  z-index: 5;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 1px 0 #000;
+  pointer-events: none;
 }
 
 body.iso-yard .iso-pack img {
