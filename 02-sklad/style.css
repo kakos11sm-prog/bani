@@ -4263,12 +4263,28 @@ body.iso-yard .shelves {
 
 body.iso-yard .inside {
   pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  display: block;
+  overflow-x: hidden;
+  overflow-y: hidden;
   touch-action: none;
   background: #0c0a08;
+}
+
+body.iso-yard .inside.can-pan {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+
+body.iso-yard .inside.can-pan::-webkit-scrollbar {
+  display: none;
+}
+
+body.iso-yard .inside.is-drag {
+  overflow: hidden;
+  touch-action: none;
 }
 
 body.iso-yard .inside.yard-locked {
@@ -4278,7 +4294,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=133") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=134") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4291,11 +4307,13 @@ body.iso-yard .wood-stack.drag-source {
 
 body.iso-yard .inside-stage {
   position: relative;
-  flex: 0 0 auto;
+  display: block;
+  flex: none;
   width: auto;
-  height: auto;
+  height: 100%;
   min-width: 0;
   max-width: none;
+  margin: 0 auto;
   pointer-events: none;
 }
 

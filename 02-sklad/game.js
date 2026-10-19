@@ -1086,8 +1086,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=133";
-const YARD_PIC = "art/yard.jpg?v=133";
+const EMPTY_PAL = "art/pal-empty.png?v=134";
+const YARD_PIC = "art/yard.jpg?v=134";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1498,23 +1498,34 @@ function syncYardPan() {
     const vh = Math.max(1, inside.clientHeight);
     const vw = Math.max(1, inside.clientWidth);
     const aspect = nw / Math.max(1, nh);
-    /* Cover fullscreen: image fills the screen, centered crop, coords locked to art. */
-    let stageW;
-    let stageH;
-    if (vw / vh > aspect) {
-      stageW = vw;
-      stageH = stageW / aspect;
-    } else {
-      stageH = vh;
-      stageW = stageH * aspect;
-    }
+    /* Height fills screen; width follows art. Narrow screens pan sideways. */
+    const stageH = vh;
+    const stageW = stageH * aspect;
+    const maxScroll = Math.max(0, stageW - vw);
+    const prevMax = Number(inside.dataset.yardMaxScroll) || 0;
+    const prevLeft = inside.scrollLeft;
+    const ratio =
+      state.yardScrollRatio != null
+        ? state.yardScrollRatio
+        : prevMax > 1
+          ? prevLeft / prevMax
+          : 0.5;
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
     stage.style.margin = "0";
-    inside.classList.remove("can-pan");
-    inside.classList.add("yard-locked");
-    inside.scrollLeft = 0;
+    inside.classList.remove("yard-locked");
     inside.scrollTop = 0;
+    if (maxScroll > 2) {
+      inside.classList.add("can-pan");
+      inside.dataset.yardMaxScroll = String(maxScroll);
+      inside.scrollLeft = Math.round(maxScroll * Math.max(0, Math.min(1, ratio)));
+      state.yardScrollRatio = inside.scrollLeft / maxScroll;
+    } else {
+      inside.classList.remove("can-pan");
+      inside.dataset.yardMaxScroll = "0";
+      inside.scrollLeft = 0;
+      state.yardScrollRatio = 0.5;
+    }
     const box = gridBox();
     const palW = stageW * (box.w / GRID.cols);
     const palH = stageH * (box.h / GRID.rows);
@@ -4329,7 +4340,17 @@ document.getElementById("ship-pane").addEventListener("click", (e) => {
   if (e.target.id === "ship-pane") closeShip();
 });
 const yard = document.getElementById("inside");
-if (yard) yard.addEventListener("scroll", shadePals, { passive: true });
+if (yard) {
+  yard.addEventListener(
+    "scroll",
+    () => {
+      const max = Number(yard.dataset.yardMaxScroll) || Math.max(0, yard.scrollWidth - yard.clientWidth);
+      if (max > 1) state.yardScrollRatio = yard.scrollLeft / max;
+      shadePals();
+    },
+    { passive: true }
+  );
+}
 window.addEventListener("resize", syncYardPan);
 window.setInterval(tickShip, 250);
 
