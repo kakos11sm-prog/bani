@@ -38,11 +38,11 @@ const ROOMS = [
 ];
 /**
  * Yard grid 100×56 (origin = top-left of art).
- * Brief coords are sprite Top-Left; box is 10×6 cells.
+ * Brief coords are sprite Top-Left; box is 11×6 cells.
  * DOM uses that top-left; scale from transform-origin bottom-center.
  * Pivot bottom-center = (X_start+5, Y_start+6); z-index = bottomY*100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 10, palHCells: 6 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 11, palHCells: 6 };
 const STEP_ALONG = { x: 4.4, y: 2.05 };
 const STEP_INTO = { x: -5.2, y: 2.8 };
 const YARD_ORIGIN = { x: 51.0, y: 14.2 };
@@ -1506,7 +1506,7 @@ function syncYardPan() {
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Pallet box = 10×6 grid cells (same in layout test). */
+    /* Pallet box = 11×6 grid cells. */
     const box = gridBox();
     const palW = stageW * (box.w / GRID.cols);
     const palH = stageH * (box.h / GRID.rows);
@@ -3138,21 +3138,11 @@ function hideGhost() {
 }
 
 function palGrabFrom(e) {
-  const stand = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest(".pal-stand") : null;
-  const layer =
-    !stand && e.currentTarget && e.currentTarget.querySelector
-      ? e.currentTarget.querySelector(".stack-layer.top")
-      : null;
-  const el = stand || layer || e.currentTarget;
-  if (!el || !el.getBoundingClientRect) {
-    return { startX: e.clientX, startY: e.clientY, left: e.clientX - 54, top: e.clientY - 90 };
-  }
-  const box = el.getBoundingClientRect();
+  /* Hold from center of the pallet sprite. */
   return {
     startX: e.clientX,
     startY: e.clientY,
-    left: box.left,
-    top: box.top,
+    center: true,
   };
 }
 
@@ -3160,6 +3150,13 @@ function moveGhost(x, y) {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
   const grab = state.drag && state.drag.grab;
+  if (grab && grab.center && ghost.classList.contains("is-pal")) {
+    const w = ghost.offsetWidth || 120;
+    const h = ghost.offsetHeight || 110;
+    ghost.style.left = x - w / 2 + "px";
+    ghost.style.top = y - h / 2 + "px";
+    return;
+  }
   if (grab && grab.alignX != null) {
     ghost.style.left = grab.alignX + (x - grab.startX) + "px";
     ghost.style.top = grab.alignY + (y - grab.startY) + "px";
@@ -3217,7 +3214,16 @@ function beginGhost(html, x, y, skin) {
   if (skin) ghost.setAttribute("style", skin);
   ghost.innerHTML = html;
   const grab = state.drag && state.drag.grab;
-  if (grab && grab.startX != null) {
+  if (grab && grab.center && ghost.classList.contains("is-pal")) {
+    ghost.style.visibility = "hidden";
+    ghost.style.left = "0px";
+    ghost.style.top = "0px";
+    void ghost.offsetWidth;
+    ghost.style.visibility = "";
+    moveGhost(x, y);
+    return;
+  }
+  if (grab && grab.startX != null && grab.left != null) {
     ghost.style.left = "0px";
     ghost.style.top = "0px";
     const box = ghost.getBoundingClientRect();
