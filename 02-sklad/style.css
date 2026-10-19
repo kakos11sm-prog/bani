@@ -4366,7 +4366,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=237") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=238") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4883,7 +4883,25 @@ body.iso-yard .iso-pal.sealed-art .iso-sealed,
   object-fit: contain;
   object-position: 50% 100%;
   display: block;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+@keyframes wrapSealIn {
+  from {
+    opacity: 0.35;
+    transform: scale(1.06);
+    filter: brightness(1.25);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+body.iso-yard .iso-pal.sealed-art.wrap-in .iso-sealed {
+  animation: wrapSealIn 0.42s cubic-bezier(0.2, 0.85, 0.2, 1) both;
+  transform-origin: 50% 100%;
 }
 
 .shop-stand .iso-pal.sealed-art {

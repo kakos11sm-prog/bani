@@ -158,17 +158,15 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout: water sealed + orange pack-stacks on yard slots (same coords). */
+  /* Layout: 1 sealed water + 1 orange + empty woods to restack. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
-    progress.pallets = [];
-    for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({
-        id: i + 1,
-        sku: i === 0 ? "water" : "orange",
-        units: PALLET_PACKS,
-        spot: i,
-      });
+    progress.pallets = [
+      { id: 1, sku: "water", units: PALLET_PACKS, spot: 0 },
+      { id: 2, sku: "orange", units: PALLET_PACKS, spot: 1 },
+    ];
+    for (let i = 2; i < yardN; i += 1) {
+      progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -1178,11 +1176,11 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=237";
-const SEALED_PAL = "art/pal-sealed.png?v=237";
-const PACK_PIC = "art/pack.png?v=237";
-const PACK_ORANGE = "art/pack-orange.png?v=237";
-const YARD_PIC = "art/yard.jpg?v=237";
+const EMPTY_PAL = "art/pal-empty.png?v=238";
+const SEALED_PAL = "art/pal-sealed.png?v=238";
+const PACK_PIC = "art/pack.png?v=238";
+const PACK_ORANGE = "art/pack-orange.png?v=238";
+const YARD_PIC = "art/yard.jpg?v=238";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1658,15 +1656,18 @@ function palStandHtml(pal) {
   if (state.shipId && pal && pal.id === state.shipPalId) {
     return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(state.shipLoad);
   }
-  /* Layout: loose packs only while tuning a partial stack; full = sealed art. */
-  if (layoutMode() && pal && pal.units > 0 && pal.units < PALLET_PACKS) {
-    const ids = [];
-    const skuId = pal.sku || "water";
-    for (let i = 0; i < pal.units; i += 1) ids.push(skuId);
-    return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(ids);
-  }
   const sku = pal && pal.units && pal.sku ? skuOf(pal.sku) : null;
-  return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(sku, pal ? pal.units : 0);
+  const shade = "<i class=\"pal-shade\" aria-hidden=\"true\"></i>";
+  /* Full + wrap art → sealed film. Peel a pack → loose packs on wood. Refill → wrap again. */
+  if (pal && pal.units >= PALLET_PACKS && sku && sealedPic(sku)) {
+    return shade + palMarkup(sku, pal.units);
+  }
+  if (pal && pal.units > 0 && sku) {
+    const ids = [];
+    for (let i = 0; i < pal.units; i += 1) ids.push(sku.id);
+    return shade + mixPalMarkup(ids);
+  }
+  return shade + palMarkup(sku, pal ? pal.units : 0);
 }
 
 function shadePals() {
@@ -1760,7 +1761,9 @@ function onPalPointerDown(e, pal) {
     if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
     return;
   }
-  if (e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
+  const onPak = e.target.closest(".pak") && !e.target.closest(".pak.empty");
+  const onSealed = pal.units > 0 && e.target.closest(".sealed-art, .iso-sealed");
+  if ((onPak || onSealed) && pal.units > 0) {
     startPackDrag(e, pal.id, "floor");
     return;
   }
@@ -3960,6 +3963,7 @@ async function dropPackOn(pal, drag) {
   pal.units += 1;
   pal.sku = pal.sku || drag.sku;
   sfx("dropPak");
+  const justSealed = pal.units >= PALLET_PACKS && !!sealedPic(skuOf(pal.sku));
   if (pal.units >= PALLET_PACKS) sfx("full");
   progress.incoming = (progress.incoming || []).filter((item) => item.left > 0);
   saveProgress();
@@ -3970,6 +3974,10 @@ async function dropPackOn(pal, drag) {
     if (stand) {
       stand.classList.add("drop-bounce");
       if (pal.spot === RECV_SPOT && pal.units === 1) stand.classList.add("drop-in");
+      if (justSealed) {
+        const sealed = stand.querySelector(".sealed-art");
+        if (sealed) sealed.classList.add("wrap-in");
+      }
       puffAtEl(stand);
     }
   }
