@@ -10,9 +10,10 @@ const PALLET_LAYERS = 3;
 const PALLET_LAYER_SIZE = PALLET_COLS * PALLET_DEPTH; /* first row = 6 packs */
 const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
 /* First layer footprint on the wood (left%/bottom%). Upper layers = same + lay×lift. */
+/* Pack slots in % of pallet box (same as pack-layout-grid 0–100). */
 const PACK_LAYER0 = [
-  { x: 14.2, y: 15 },
-  { x: 44, y: 17 },
+  { x: 14.2, y: 15 }, /* 0: was 12/12 → +2.2 right, +3 up */
+  { x: 44, y: 17 }, /* 1: was 42/16 → +2 right, +1 up */
   { x: 18, y: 20 },
   { x: 48, y: 24 },
   { x: 24, y: 28 },
@@ -1172,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=204";
-const PACK_PIC = "art/pack.png?v=204";
-const YARD_PIC = "art/yard.jpg?v=204";
+const EMPTY_PAL = "art/pal-empty.png?v=205";
+const PACK_PIC = "art/pack.png?v=205";
+const YARD_PIC = "art/yard.jpg?v=205";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1245,11 +1246,20 @@ function mixPalMarkup(skuIds) {
   let load = "";
   list.forEach((id, i) => {
     const sku = skuOf(id);
+    const slot = i % PALLET_LAYER_SIZE;
+    const base = PACK_LAYER0[slot] || PACK_LAYER0[0];
+    const layer = Math.floor(i / PALLET_LAYER_SIZE);
+    const px = base.x;
+    const py = base.y + layer * PACK_LAYER_LIFT;
     load +=
       "<span class=\"pak iso-pack\" data-sku=\"" +
       sku.id +
       "\" data-i=\"" +
       i +
+      "\" data-xy=\"" +
+      px +
+      "/" +
+      py +
       "\" style=\"" +
       palSkin(sku) +
       ";" +

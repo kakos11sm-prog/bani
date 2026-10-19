@@ -4342,7 +4342,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=204") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=205") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4739,16 +4739,17 @@ body.iso-yard .iso-pack.pak {
 }
 
 body.iso-yard .iso-pack.pak::after {
-  content: attr(data-i);
+  content: "#" attr(data-i) " " attr(data-xy);
   position: absolute;
   left: 2px;
   top: 2px;
   z-index: 5;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   color: #fff;
   text-shadow: 0 0 3px #000, 0 1px 0 #000;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 body.iso-yard .iso-pack img {
