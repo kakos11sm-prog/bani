@@ -16,8 +16,8 @@ const PACK_LAYER0 = [
   { x: 60, y: 48 },
   { x: 22, y: 54 },
   { x: 43, y: 34 },
-  { x: 24, y: 28 },
-  { x: 54, y: 32 },
+  { x: 9, y: 58 },
+  { x: 27, y: 40 },
 ];
 const PACK_LAYER_LIFT = 11;
 const LAYOUT_PACK_TUNE = 6; /* how many packs shown while tuning */
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=221";
-const PACK_PIC = "art/pack.png?v=221";
-const YARD_PIC = "art/yard.jpg?v=221";
+const EMPTY_PAL = "art/pal-empty.png?v=220";
+const PACK_PIC = "art/pack.png?v=220";
+const YARD_PIC = "art/yard.jpg?v=220";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
