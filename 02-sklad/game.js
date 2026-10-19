@@ -42,7 +42,7 @@ const ROOMS = [
  * First row TL: +3 right, −1 up from prior. Sprite yaw 0° (art as-is). CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 8.992, palHCells: 5.099, rotDeg: 0 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0, palW: 8.992, palHCells: 5.099, rotDeg: 0 };
 /* Stack TL: 34 / 58% + 7 cells down. Layer step −1.0 cell up; max 10 drawn. */
 const STACK_PCT = { x: 34, y: 58 + (7 / 56) * 100 };
 const STACK_STEP_Y = 1.0;
@@ -1121,8 +1121,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=191";
-const YARD_PIC = "art/yard.jpg?v=191";
+const EMPTY_PAL = "art/pal-empty.png?v=192";
+const YARD_PIC = "art/yard.jpg?v=192";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
