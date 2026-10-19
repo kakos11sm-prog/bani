@@ -158,23 +158,20 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout: 1 sealed water + 1 orange + empty woods to restack. */
+  /* Layout: only 1 sealed water + 1 orange on floor; empty woods in stack. */
   if (layoutMode()) {
-    const yardN = YARD_CELLS.length;
     progress.pallets = [
       { id: 1, sku: "water", units: PALLET_PACKS, spot: 0 },
       { id: 2, sku: "orange", units: PALLET_PACKS, spot: 1 },
     ];
-    for (let i = 2; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
-    }
     progress.stack = [];
-    const need = Math.max(0, LAYOUT_COUNT - yardN);
+    const need = Math.max(0, LAYOUT_COUNT - progress.pallets.length);
     for (let i = 0; i < need; i += 1) {
-      progress.stack.push({ id: yardN + 1 + i, sku: "", units: 0, spot: -1 });
+      progress.stack.push({ id: 3 + i, sku: "", units: 0, spot: -1 });
     }
-    progress.nextPallet = yardN + 1 + need;
+    progress.nextPallet = 3 + need;
     progress.boughtWoods = Math.max(progress.boughtWoods || 0, LAYOUT_COUNT);
+    progress.layoutSeed = 239;
     return;
   }
   let onFloor = clearFloor
@@ -1176,11 +1173,11 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=238";
-const SEALED_PAL = "art/pal-sealed.png?v=238";
-const PACK_PIC = "art/pack.png?v=238";
-const PACK_ORANGE = "art/pack-orange.png?v=238";
-const YARD_PIC = "art/yard.jpg?v=238";
+const EMPTY_PAL = "art/pal-empty.png?v=239";
+const SEALED_PAL = "art/pal-sealed.png?v=239";
+const PACK_PIC = "art/pack.png?v=239";
+const PACK_ORANGE = "art/pack-orange.png?v=239";
+const YARD_PIC = "art/yard.jpg?v=239";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
