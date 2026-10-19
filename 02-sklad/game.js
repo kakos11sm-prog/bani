@@ -43,10 +43,20 @@ const ROOMS = [
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
-const YARD_ORIGIN = { x: 53.0, y: 14.2 };
-/* Steps fitted to measured spots 1–8. */
-const STEP_ALONG = { x: 4.0, y: 2.48 };
-const STEP_INTO = { x: -5.325, y: 2.75 };
+/* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
+const YARD_ROW0 = [
+  { tlx: 53.0, tly: 14.2 },
+  { tlx: 56.9, tly: 16.5 },
+  { tlx: 61.0, tly: 18.9 },
+  { tlx: 65.2, tly: 21.4 },
+];
+const YARD_P5 = { tlx: 47.8, tly: 16.7 };
+const YARD_ORIGIN = { x: YARD_ROW0[0].tlx, y: YARD_ROW0[0].tly };
+const STEP_ALONG = {
+  x: (YARD_ROW0[3].tlx - YARD_ROW0[0].tlx) / 3,
+  y: (YARD_ROW0[3].tly - YARD_ROW0[0].tly) / 3,
+};
+const STEP_INTO = { x: YARD_P5.tlx - YARD_ROW0[0].tlx, y: YARD_P5.tly - YARD_ROW0[0].tly };
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -62,26 +72,13 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
-  /* 1–8 measured; 9–12 = row2 of same lattice (row1 + STEP_INTO). */
-  const exact = [
-    { tlx: 53.0, tly: 14.2 },
-    { tlx: 56.9, tly: 16.5 },
-    { tlx: 61.0, tly: 18.9 },
-    { tlx: 65.2, tly: 21.4 },
-    { tlx: 47.8, tly: 16.7 },
-    { tlx: 51.7, tly: 19.2 },
-    { tlx: 55.7, tly: 21.7 },
-    { tlx: 59.6, tly: 24.4 },
-    { tlx: 42.5, tly: 19.5 },
-    { tlx: 46.4, tly: 22.0 },
-    { tlx: 50.4, tly: 24.7 },
-    { tlx: 54.3, tly: 27.4 },
-  ];
+  /* Keep 1–4 and 5 exact; 6–15 from along/into lattice. */
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      const i = r * 4 + c;
-      if (i < exact.length) {
-        cells.push({ tlx: exact[i].tlx, tly: exact[i].tly });
+      if (r === 0) {
+        cells.push({ tlx: YARD_ROW0[c].tlx, tly: YARD_ROW0[c].tly });
+      } else if (r === 1 && c === 0) {
+        cells.push({ tlx: YARD_P5.tlx, tly: YARD_P5.tly });
       } else {
         cells.push({
           tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
@@ -1126,8 +1123,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=177";
-const YARD_PIC = "art/yard.jpg?v=177";
+const EMPTY_PAL = "art/pal-empty.png?v=178";
+const YARD_PIC = "art/yard.jpg?v=178";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
