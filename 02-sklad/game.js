@@ -62,13 +62,17 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
-  /* Measured / nudged spots (1-based): 2↑0.1, 3↓0.2, 4↓0.4, 5↑0.2 */
+  /* Measured / nudged spots (1-based). */
   const exact = [
     { tlx: 53.0, tly: 14.2 },
     { tlx: 56.9, tly: 16.5 },
     { tlx: 61.0, tly: 18.9 },
     { tlx: 65.2, tly: 21.4 },
-    { tlx: 47.8, tly: 16.8 },
+    { tlx: 47.8, tly: 16.7 },
+    { tlx: 51.7, tly: 19.0 },
+    { tlx: 55.5, tly: 21.4 },
+    { tlx: 59.4, tly: 23.7 },
+    { tlx: 42.6, tly: 19.6 },
   ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
@@ -1119,8 +1123,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=171";
-const YARD_PIC = "art/yard.jpg?v=171";
+const EMPTY_PAL = "art/pal-empty.png?v=172";
+const YARD_PIC = "art/yard.jpg?v=172";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
