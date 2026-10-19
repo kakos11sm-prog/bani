@@ -1173,11 +1173,11 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=239";
-const SEALED_PAL = "art/pal-sealed.png?v=239";
-const PACK_PIC = "art/pack.png?v=239";
-const PACK_ORANGE = "art/pack-orange.png?v=239";
-const YARD_PIC = "art/yard.jpg?v=239";
+const EMPTY_PAL = "art/pal-empty.png?v=240";
+const SEALED_PAL = "art/pal-sealed.png?v=240";
+const PACK_PIC = "art/pack.png?v=240";
+const PACK_ORANGE = "art/pack-orange.png?v=240";
+const YARD_PIC = "art/yard.jpg?v=240";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
