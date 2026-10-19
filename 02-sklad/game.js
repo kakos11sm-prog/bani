@@ -38,15 +38,15 @@ const ROOMS = [
 ];
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
- * Spot coords = sprite Top-Left in grid cells; box 10×6 (TZ).
- * CSS left/top/width/height = cells / grid * 100% of the stage (not the screen).
+ * Spot coords = sprite Top-Left in grid cells; box 9.7×5.5.
+ * First spot TL = (51.8, 14.5). CSS % of stage = cells / grid.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 10, palHCells: 6 };
-/* Row step along the wall / into the yard — fitted to TZ pallets 1–6. */
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.7, palHCells: 5.5 };
+/* Iso steps kept from prior lattice; origin shifted to new first pallet. */
 const STEP_ALONG = { x: (64.1 - 51.0) / 3, y: (20.3 - 14.2) / 3 };
 const STEP_INTO = { x: 45.8 - 51.0, y: 17.0 - 14.2 };
-const YARD_ORIGIN = { x: 51.0, y: 14.2 };
+const YARD_ORIGIN = { x: 51.8, y: 14.5 };
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -62,26 +62,12 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
-  /* Exact first six from TZ, then fill the 3×4 diamond + front row. */
-  const exact = [
-    { tlx: 51.0, tly: 14.2 },
-    { tlx: 55.6, tly: 16.3 },
-    { tlx: 60.0, tly: 18.5 },
-    { tlx: 64.1, tly: 20.3 },
-    { tlx: 45.8, tly: 17.0 },
-    { tlx: 50.1, tly: 19.0 },
-  ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      const i = r * 4 + c;
-      if (i < exact.length) {
-        cells.push({ tlx: exact[i].tlx, tly: exact[i].tly });
-      } else {
-        cells.push({
-          tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
-          tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
-        });
-      }
+      cells.push({
+        tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
+        tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
+      });
     }
   }
   for (let c = 0; c < 3; c += 1) {
@@ -1120,8 +1106,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=136";
-const YARD_PIC = "art/yard.jpg?v=136";
+const EMPTY_PAL = "art/pal-empty.png?v=137";
+const YARD_PIC = "art/yard.jpg?v=137";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
