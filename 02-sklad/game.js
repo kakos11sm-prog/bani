@@ -1122,8 +1122,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=193";
-const YARD_PIC = "art/yard.jpg?v=193";
+const EMPTY_PAL = "art/pal-empty.png?v=194";
+const YARD_PIC = "art/yard.jpg?v=194";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1285,18 +1285,39 @@ function puffAtEl(el) {
   if (!el) return;
   const box = el.getBoundingClientRect();
   const pal = yardPalPx();
-  const w = Math.max(pal.w * 1.05, box.width * 1.02);
-  const h = Math.max(pal.h * 0.55, box.height * 0.42);
-  const puff = document.createElement("i");
-  puff.className = "drop-puff drop-puff-pal";
-  puff.style.width = w.toFixed(1) + "px";
-  puff.style.height = h.toFixed(1) + "px";
-  puff.style.marginLeft = (-w / 2).toFixed(1) + "px";
-  puff.style.marginTop = (-h / 2).toFixed(1) + "px";
-  puff.style.left = box.left + box.width * 0.5 + "px";
-  puff.style.top = box.top + box.height * 0.62 + "px";
-  document.body.appendChild(puff);
-  window.setTimeout(() => puff.remove(), 620);
+  const cx = box.left + box.width * 0.5;
+  const cy = box.top + box.height * 0.82;
+  const w = Math.max(pal.w * 1.15, box.width * 1.08);
+  const h = Math.max(pal.h * 0.38, box.height * 0.28);
+  const cloud = document.createElement("i");
+  cloud.className = "drop-puff drop-puff-pal";
+  cloud.style.width = w.toFixed(1) + "px";
+  cloud.style.height = h.toFixed(1) + "px";
+  cloud.style.marginLeft = (-w / 2).toFixed(1) + "px";
+  cloud.style.marginTop = (-h * 0.55).toFixed(1) + "px";
+  cloud.style.left = cx + "px";
+  cloud.style.top = cy + "px";
+  document.body.appendChild(cloud);
+  const n = 9;
+  for (let i = 0; i < n; i += 1) {
+    const mote = document.createElement("i");
+    mote.className = "drop-dust-mote";
+    const side = i % 2 === 0 ? -1 : 1;
+    const spread = 0.35 + (i / n) * 0.9;
+    const dx = side * (14 + spread * pal.w * 0.42) * (0.7 + Math.random() * 0.5);
+    const dy = -2 - Math.random() * 14 - spread * 6;
+    const size = 3 + Math.random() * 5;
+    mote.style.width = size.toFixed(1) + "px";
+    mote.style.height = (size * (0.55 + Math.random() * 0.35)).toFixed(1) + "px";
+    mote.style.left = cx + "px";
+    mote.style.top = cy + "px";
+    mote.style.setProperty("--dx", dx.toFixed(1) + "px");
+    mote.style.setProperty("--dy", dy.toFixed(1) + "px");
+    mote.style.animationDelay = (i * 0.018).toFixed(3) + "s";
+    document.body.appendChild(mote);
+    window.setTimeout(() => mote.remove(), 720);
+  }
+  window.setTimeout(() => cloud.remove(), 680);
 }
 
 function roomOf(id) {
@@ -1529,21 +1550,23 @@ function palStandHtml(pal) {
 
 function shadePals() {
   const stage = document.getElementById("inside-stage");
-  const stands = document.querySelectorAll("#slots .pal-stand");
+  const stands = document.querySelectorAll("#slots .pal-stand, #wood-stack .stack-layer");
   if (!stage || !stands.length) return;
   const box = stage.getBoundingClientRect();
   const mid = box.left + box.width / 2;
   const span = Math.max(140, box.width / 2);
   stands.forEach((stand) => {
     const r = stand.getBoundingClientRect();
+    /* Yard sun from upper-left → shadow drifts right/down a bit. */
     const k = Math.max(-1, Math.min(1, (r.left + r.width / 2 - mid) / span));
-    const sc = Number(stand.style.getPropertyValue("--sc")) || 1;
-    const dim = Math.min(1, Math.abs(k) * 0.92 + (sc < 1 ? (1 - sc) * 1.5 : 0));
-    stand.style.setProperty("--cast-x", (k * 28).toFixed(1) + "px");
-    stand.style.setProperty("--cast-y", (8 + Math.abs(k) * 8).toFixed(1) + "px");
+    const castX = 6 + k * 10;
+    const castY = 5 + Math.abs(k) * 3;
+    const dim = Math.min(0.55, Math.abs(k) * 0.35);
+    stand.style.setProperty("--cast-x", castX.toFixed(1) + "px");
+    stand.style.setProperty("--cast-y", castY.toFixed(1) + "px");
     stand.style.setProperty("--dim", dim.toFixed(3));
-    stand.style.setProperty("--shade-l", (0.1 + Math.max(0, -k) * 0.4).toFixed(3));
-    stand.style.setProperty("--shade-r", (0.1 + Math.max(0, k) * 0.4).toFixed(3));
+    stand.style.setProperty("--shade-l", (0.08 + Math.max(0, -k) * 0.22).toFixed(3));
+    stand.style.setProperty("--shade-r", (0.08 + Math.max(0, k) * 0.22).toFixed(3));
   });
 }
 
