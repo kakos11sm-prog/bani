@@ -1172,9 +1172,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=202";
-const PACK_PIC = "art/pack.png?v=202";
-const YARD_PIC = "art/yard.jpg?v=202";
+const EMPTY_PAL = "art/pal-empty.png?v=203";
+const PACK_PIC = "art/pack.png?v=203";
+const YARD_PIC = "art/yard.jpg?v=203";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1258,11 +1258,19 @@ function mixPalMarkup(skuIds) {
       PACK_PIC +
       "\" alt=\"\" decoding=\"async\"></span>";
   });
+  const grid = layoutMode()
+    ? "<div class=\"pack-layout-grid\" aria-hidden=\"true\">" +
+      "<i class=\"pack-grid-x\"></i><i class=\"pack-grid-y\"></i>" +
+      "<b>0</b><b>25</b><b>50</b><b>75</b><b>100</b>" +
+      "</div>"
+    : "";
   return (
     "<div class=\"pal-live ship-pal iso-pal stacked" +
     (full ? " sealed full" : "") +
+    (layoutMode() ? " pack-tune" : "") +
     "\">" +
     base +
+    grid +
     "<div class=\"iso-mix\">" +
     load +
     "</div></div>"
