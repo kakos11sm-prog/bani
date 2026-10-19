@@ -4263,18 +4263,32 @@ body.iso-yard .shelves {
 
 body.iso-yard .inside {
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+  background: #1a1410;
+}
+
+body.iso-yard .inside.yard-locked {
+  overflow: hidden;
+  touch-action: none;
 }
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=131") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=132") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
 body.iso-yard .inside-stage {
   position: relative;
-  height: 100%;
-  min-width: 100%;
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  max-width: none;
   pointer-events: none;
 }
 
@@ -4309,10 +4323,36 @@ body.iso-yard .pal-spot {
 
 body.iso-yard .pal-spot .pal-stand,
 body.iso-yard .wood-stack .stack-layer.top {
+  position: relative;
   touch-action: none;
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Fat finger hit box around the sprite */
+body.iso-yard .pal-spot .pal-stand::before,
+body.iso-yard .wood-stack::before {
+  content: "";
+  position: absolute;
+  left: -28%;
+  right: -28%;
+  top: -18%;
+  bottom: -22%;
+  z-index: 0;
+}
+
+body.iso-yard .pal-spot .pal-stand > *,
+body.iso-yard .wood-stack .stack-layer {
+  position: relative;
+  z-index: 1;
+}
+
+body.iso-yard .wood-stack {
+  touch-action: none;
+  padding: 18px 14px 28px;
+  margin: -18px -14px -28px;
+  box-sizing: content-box;
 }
 
 body.is-holding,

@@ -1086,8 +1086,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=131";
-const YARD_PIC = "art/yard.jpg?v=131";
+const EMPTY_PAL = "art/pal-empty.png?v=132";
+const YARD_PIC = "art/yard.jpg?v=132";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1498,25 +1498,29 @@ function syncYardPan() {
     const vh = Math.max(1, inside.clientHeight);
     const vw = Math.max(1, inside.clientWidth);
     const aspect = nw / Math.max(1, nh);
-    let stageH = vh;
-    let stageW = stageH * aspect;
-    if (stageW < vw) {
+    /* Contain: full image always visible, same crop on phone and tablet. */
+    let stageW;
+    let stageH;
+    if (vw / vh > aspect) {
+      stageH = vh;
+      stageW = stageH * aspect;
+    } else {
       stageW = vw;
       stageH = stageW / aspect;
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
-    /* Pallet box = 11×6 grid cells. */
+    stage.style.margin = "0";
+    inside.classList.remove("can-pan");
+    inside.classList.add("yard-locked");
+    inside.scrollLeft = 0;
+    inside.scrollTop = 0;
     const box = gridBox();
     const palW = stageW * (box.w / GRID.cols);
     const palH = stageH * (box.h / GRID.rows);
     stage.style.setProperty("--pal-w", palW.toFixed(2) + "px");
     stage.style.setProperty("--pal-h", palH.toFixed(2) + "px");
-    inside.classList.add("can-pan");
-    if (!state.yardCentered) {
-      inside.scrollLeft = Math.max(0, (stage.offsetWidth - inside.clientWidth) / 2);
-      state.yardCentered = true;
-    }
+    state.yardCentered = true;
     shadePals();
   };
   fit(1600, 900);
@@ -1531,17 +1535,24 @@ function syncYardPan() {
 }
 
 function bindStand(stand, pal) {
-  stand.addEventListener("pointerdown", (e) => {
-    if (state.bulkId) {
-      if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
-      return;
-    }
-    if (e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
-      startPackDrag(e, pal.id, "floor");
-      return;
-    }
-    startWoodDrag(e, pal.id, "floor");
-  });
+  stand.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (state.bulkId) {
+        if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
+        return;
+      }
+      if (!layoutMode() && e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
+        startPackDrag(e, pal.id, "floor");
+        return;
+      }
+      startWoodDrag(e, pal.id, "floor");
+    },
+    { passive: false }
+  );
 }
 
 function paintSlots() {
@@ -1667,6 +1678,9 @@ function paintStack() {
   host.appendChild(mark);
   if (list.length) {
     host.onpointerdown = (e) => {
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
       const top = list[list.length - 1];
       if (top && top.units > 0) {
         toast("На стопку только пустой поддон");
@@ -3244,6 +3258,8 @@ function startWoodDrag(e, palId, from) {
     toast("Сначала отгрузи товар");
     return;
   } else if (state.shipId && pal.units > 0 && pal.spot !== BUILD_SPOT && !state.bulkId) return;
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
   const grab = palGrabFrom(e);
   const yard = document.getElementById("inside");
   if (yard) yard.classList.add("is-drag");
@@ -3257,8 +3273,14 @@ function startWoodDrag(e, palId, from) {
   }
   bindDrag(e);
   beginGhost(palStandHtml(pal), e.clientX, e.clientY);
-  paintSlots();
   sfx("grabWood");
+  /* Defer repaint — destroying the touch target mid-gesture cancels drag on phones. */
+  const keepId = pal.id;
+  window.requestAnimationFrame(() => {
+    if (!state.drag || state.drag.palId !== keepId) return;
+    paintSlots();
+    paintLayoutBanner();
+  });
 }
 
 function startPackDrag(e, id, from) {
