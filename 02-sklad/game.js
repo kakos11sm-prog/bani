@@ -7,7 +7,18 @@ const START_COINS = 1200;
 const PALLET_COLS = 2;
 const PALLET_DEPTH = 3;
 const PALLET_LAYERS = 3;
-const PALLET_PACKS = PALLET_COLS * PALLET_DEPTH * PALLET_LAYERS;
+const PALLET_LAYER_SIZE = PALLET_COLS * PALLET_DEPTH; /* first row = 6 packs */
+const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
+/* First layer footprint on the wood (left%/bottom%). Upper layers = same + lay×lift. */
+const PACK_LAYER0 = [
+  { x: 12, y: 12 },
+  { x: 42, y: 16 },
+  { x: 18, y: 20 },
+  { x: 48, y: 24 },
+  { x: 24, y: 28 },
+  { x: 54, y: 32 },
+];
+const PACK_LAYER_LIFT = 11;
 const BUILD_SPOT = 99;
 const RECV_SPOT = 98;
 const SHIP_SLOTS = PALLET_PACKS;
@@ -145,12 +156,12 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout test: yard slots filled with water packs so pack placement can be tuned. */
+  /* Layout test: first pack layer only (6) — tune footprint, then stack layers by lift. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
     for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_PACKS, spot: i });
+      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_LAYER_SIZE, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -219,10 +230,28 @@ function gridProject(tlx, tly) {
 }
 
 function packSlotStyle(i) {
-  const col = i % PALLET_COLS;
-  const depth = Math.floor(i / PALLET_COLS) % PALLET_DEPTH;
-  const layer = Math.floor(i / (PALLET_COLS * PALLET_DEPTH));
-  return "--i:" + i + ";--col:" + col + ";--dep:" + depth + ";--lay:" + layer;
+  const slot = i % PALLET_LAYER_SIZE;
+  const layer = Math.floor(i / PALLET_LAYER_SIZE);
+  const col = slot % PALLET_COLS;
+  const depth = Math.floor(slot / PALLET_COLS);
+  const base = PACK_LAYER0[slot] || PACK_LAYER0[0];
+  const x = base.x;
+  const y = base.y + layer * PACK_LAYER_LIFT;
+  return (
+    "--i:" +
+    i +
+    ";--col:" +
+    col +
+    ";--dep:" +
+    depth +
+    ";--lay:" +
+    layer +
+    ";--pack-x:" +
+    x +
+    "%;--pack-y:" +
+    y +
+    "%"
+  );
 }
 const FIZ_NAMES = [
   "Коваль", "Мельник", "Шевченко", "Бондар", "Ткачук", "Кравчук", "Лысенко", "Романенко", "Савчук", "Пономаренко",
@@ -1138,9 +1167,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=198";
-const PACK_PIC = "art/pack.png?v=198";
-const YARD_PIC = "art/yard.jpg?v=198";
+const EMPTY_PAL = "art/pal-empty.png?v=199";
+const PACK_PIC = "art/pack.png?v=199";
+const YARD_PIC = "art/yard.jpg?v=199";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
