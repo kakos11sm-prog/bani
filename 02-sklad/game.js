@@ -81,11 +81,13 @@ const YARD_CELLS = (function () {
       });
     }
   }
+  /* 13–15: mid between columns of row0, then +3×INTO (same into chain). */
   for (let c = 0; c < 3; c += 1) {
-    const k = c + 0.5;
+    const a = YARD_ROW0[c];
+    const b = YARD_ROW0[c + 1];
     cells.push({
-      tlx: roundCell(YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x),
-      tly: roundCell(YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y),
+      tlx: roundCell((a.tlx + b.tlx) / 2 + 3 * STEP_INTO.x),
+      tly: roundCell((a.tly + b.tly) / 2 + 3 * STEP_INTO.y),
     });
   }
   return cells;
@@ -1117,8 +1119,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=185";
-const YARD_PIC = "art/yard.jpg?v=185";
+const EMPTY_PAL = "art/pal-empty.png?v=186";
+const YARD_PIC = "art/yard.jpg?v=186";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
