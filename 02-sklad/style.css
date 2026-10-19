@@ -4294,7 +4294,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=150") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=151") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4420,7 +4420,7 @@ body.iso-yard .recv-spot {
 
 body.iso-yard .build-spot {
   left: 37%;
-  top: calc(24 / 56 * 100%);
+  top: calc(27.5 / 56 * 100%);
   bottom: auto;
   z-index: 3000;
 }
@@ -4428,7 +4428,7 @@ body.iso-yard .build-spot {
 body.iso-yard .recv-spot {
   right: auto;
   left: 65%;
-  top: calc(22 / 56 * 100%);
+  top: calc(25.5 / 56 * 100%);
   bottom: auto;
   z-index: 2800;
 }
