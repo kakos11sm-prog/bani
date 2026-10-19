@@ -71,7 +71,7 @@ const YARD_CELLS = (function () {
     { tlx: 47.8, tly: 16.7 },
     { tlx: 51.7, tly: 19.2 },
     { tlx: 55.7, tly: 21.7 },
-    { tlx: 59.4, tly: 24.2 },
+    { tlx: 59.6, tly: 24.4 },
     { tlx: 42.6, tly: 19.6 },
   ];
   for (let r = 0; r < 3; r += 1) {
@@ -1123,8 +1123,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=174";
-const YARD_PIC = "art/yard.jpg?v=174";
+const EMPTY_PAL = "art/pal-empty.png?v=175";
+const YARD_PIC = "art/yard.jpg?v=175";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
