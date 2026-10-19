@@ -1119,8 +1119,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=170";
-const YARD_PIC = "art/yard.jpg?v=170";
+const EMPTY_PAL = "art/pal-empty.png?v=171";
+const YARD_PIC = "art/yard.jpg?v=171";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1264,15 +1264,32 @@ function sortYardDepth() {
   if (recv) recv.style.zIndex = "2200";
 }
 
+function yardPalPx() {
+  const stage = document.getElementById("inside-stage");
+  if (!stage) return { w: 120, h: 70 };
+  const box = stage.getBoundingClientRect();
+  return {
+    w: Math.max(36, box.width * (GRID.palW / GRID.cols)),
+    h: Math.max(22, box.height * (GRID.palHCells / GRID.rows)),
+  };
+}
+
 function puffAtEl(el) {
   if (!el) return;
   const box = el.getBoundingClientRect();
+  const pal = yardPalPx();
+  const w = Math.max(pal.w * 1.05, box.width * 1.02);
+  const h = Math.max(pal.h * 0.55, box.height * 0.42);
   const puff = document.createElement("i");
-  puff.className = "drop-puff";
+  puff.className = "drop-puff drop-puff-pal";
+  puff.style.width = w.toFixed(1) + "px";
+  puff.style.height = h.toFixed(1) + "px";
+  puff.style.marginLeft = (-w / 2).toFixed(1) + "px";
+  puff.style.marginTop = (-h / 2).toFixed(1) + "px";
   puff.style.left = box.left + box.width * 0.5 + "px";
-  puff.style.top = box.top + box.height * 0.88 + "px";
+  puff.style.top = box.top + box.height * 0.62 + "px";
   document.body.appendChild(puff);
-  window.setTimeout(() => puff.remove(), 520);
+  window.setTimeout(() => puff.remove(), 620);
 }
 
 function roomOf(id) {
@@ -3246,7 +3263,7 @@ function hideGhost() {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
   ghost.hidden = true;
-  ghost.classList.remove("is-pal");
+  ghost.classList.remove("is-pal", "is-lift");
   ghost.innerHTML = "";
   ghost.style.transition = "";
   ghost.removeAttribute("style");
@@ -3325,9 +3342,22 @@ function beginGhost(html, x, y, skin) {
   const ghost = document.getElementById("drag-ghost");
   ghost.hidden = false;
   ghost.classList.toggle("is-pal", html.indexOf("pal-live") >= 0);
+  ghost.classList.remove("is-lift");
   ghost.removeAttribute("style");
   if (skin) ghost.setAttribute("style", skin);
   ghost.innerHTML = html;
+  if (
+    ghost.classList.contains("is-pal") &&
+    document.body.classList.contains("iso-yard") &&
+    state.drag &&
+    state.drag.kind === "wood"
+  ) {
+    const pal = yardPalPx();
+    const lift = 0.68;
+    ghost.style.width = Math.round(pal.w * lift) + "px";
+    ghost.style.height = Math.round(pal.h * lift) + "px";
+    ghost.classList.add("is-lift");
+  }
   const grab = state.drag && state.drag.grab;
   if (grab && grab.center && ghost.classList.contains("is-pal")) {
     ghost.style.visibility = "hidden";

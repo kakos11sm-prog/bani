@@ -3001,6 +3001,15 @@ body.shipping .pal-stand.can-take {
   animation: dropPuff 0.5s ease-out forwards;
 }
 
+.drop-puff.drop-puff-pal {
+  border-radius: 46% / 40%;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(210, 185, 140, 0.7) 0%, rgba(160, 130, 90, 0.28) 42%, transparent 70%),
+    radial-gradient(ellipse at 35% 60%, rgba(230, 210, 170, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 68% 58%, rgba(200, 170, 120, 0.4) 0%, transparent 50%);
+  animation: dropPuffPal 0.58s ease-out forwards;
+}
+
 .drop-puff::before,
 .drop-puff::after {
   content: "";
@@ -3013,17 +3022,41 @@ body.shipping .pal-stand.can-take {
   animation: dropMote 0.48s ease-out forwards;
 }
 
+.drop-puff.drop-puff-pal::before,
+.drop-puff.drop-puff-pal::after {
+  width: 14%;
+  height: 22%;
+  min-width: 10px;
+  min-height: 8px;
+  bottom: 18%;
+  background: rgba(220, 195, 150, 0.55);
+  animation: dropMotePal 0.55s ease-out forwards;
+}
+
 .drop-puff::before { left: 8px; }
 .drop-puff::after { right: 8px; animation-delay: 0.04s; }
+.drop-puff.drop-puff-pal::before { left: 18%; }
+.drop-puff.drop-puff-pal::after { right: 18%; left: auto; }
 
 @keyframes dropPuff {
   from { opacity: 0.85; transform: scaleX(0.55) scaleY(0.4); }
   to { opacity: 0; transform: scaleX(1.35) scaleY(0.85) translateY(-6px); }
 }
 
+@keyframes dropPuffPal {
+  from { opacity: 0.9; transform: scale(0.55); }
+  40% { opacity: 0.75; transform: scale(1.05); }
+  to { opacity: 0; transform: scale(1.2) translateY(-4px); }
+}
+
 @keyframes dropMote {
   from { opacity: 0.7; transform: translateY(0) scale(1); }
   to { opacity: 0; transform: translateY(-14px) scale(0.4); }
+}
+
+@keyframes dropMotePal {
+  from { opacity: 0.75; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-18px) scale(0.35); }
 }
 
 .pal-stand .pal-live {
@@ -4294,7 +4327,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=170") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=171") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4356,7 +4389,7 @@ body.iso-yard .wood-stack .stack-layer.top {
   user-select: none;
 }
 
-/* Hit the visible pallet (bottom of cell), not a huge pad outside that steals neighbors. */
+/* Larger grab pad around the pallet sprite (still smaller than old -40% that stole neighbors). */
 body.iso-yard .pal-spot.has-pal {
   pointer-events: auto;
 }
@@ -4365,10 +4398,10 @@ body.iso-yard .pal-spot .pal-stand::before,
 body.iso-yard .wood-stack::before {
   content: "";
   position: absolute;
-  left: 4%;
-  right: 4%;
-  top: 18%;
-  bottom: 0;
+  left: -28%;
+  right: -28%;
+  top: -12%;
+  bottom: -22%;
   z-index: 3;
   pointer-events: auto;
 }
@@ -4392,8 +4425,8 @@ body.iso-yard .wood-stack .stack-layer.top {
 
 body.iso-yard .wood-stack {
   touch-action: none;
-  padding: 8px 6px 10px;
-  margin: -8px -6px -10px;
+  padding: 22px 18px 26px;
+  margin: -22px -18px -26px;
   box-sizing: content-box;
 }
 
@@ -4406,6 +4439,31 @@ body.is-holding .inside {
 body.is-holding .drag-ghost.is-pal {
   z-index: 80;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
+}
+
+body.iso-yard .drag-ghost.is-pal.is-lift {
+  z-index: 90;
+  filter:
+    drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+  animation: palLiftIn 0.16s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+body.iso-yard .drag-ghost.is-pal.is-lift .iso-pal,
+body.iso-yard .drag-ghost.is-pal.is-lift .pal-live {
+  transform: rotate(var(--pal-rot, 0deg));
+  transform-origin: 50% 55%;
+}
+
+@keyframes palLiftIn {
+  from {
+    opacity: 0.7;
+    transform: scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 body.iso-yard .build-spot,
@@ -4523,8 +4581,9 @@ body.iso-yard .wood-stack .stack-layer .pal-live {
 }
 
 body.iso-yard .drag-ghost.is-pal {
-  width: var(--pal-w, min(42vw, 220px));
-  height: var(--pal-h, auto);
+  width: min(28vw, 150px);
+  height: auto;
+  aspect-ratio: 9.465 / 5.367;
 }
 
 body.iso-yard .drag-ghost.is-pal .pal-live,
