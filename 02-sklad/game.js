@@ -1086,8 +1086,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=132";
-const YARD_PIC = "art/yard.jpg?v=132";
+const EMPTY_PAL = "art/pal-empty.png?v=133";
+const YARD_PIC = "art/yard.jpg?v=133";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1498,15 +1498,15 @@ function syncYardPan() {
     const vh = Math.max(1, inside.clientHeight);
     const vw = Math.max(1, inside.clientWidth);
     const aspect = nw / Math.max(1, nh);
-    /* Contain: full image always visible, same crop on phone and tablet. */
+    /* Cover fullscreen: image fills the screen, centered crop, coords locked to art. */
     let stageW;
     let stageH;
     if (vw / vh > aspect) {
-      stageH = vh;
-      stageW = stageH * aspect;
-    } else {
       stageW = vw;
       stageH = stageW / aspect;
+    } else {
+      stageH = vh;
+      stageW = stageH * aspect;
     }
     stage.style.width = Math.round(stageW) + "px";
     stage.style.height = Math.round(stageH) + "px";
@@ -1534,25 +1534,51 @@ function syncYardPan() {
   }
 }
 
+function buzzGrab() {
+  try {
+    if (navigator.vibrate) navigator.vibrate([12, 30, 18]);
+  } catch (_) {}
+}
+
+function onPalPointerDown(e, pal) {
+  if (!pal) return;
+  if (e.button != null && e.button !== 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (state.bulkId) {
+    if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
+    return;
+  }
+  if (!layoutMode() && e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
+    startPackDrag(e, pal.id, "floor");
+    return;
+  }
+  startWoodDrag(e, pal.id, "floor");
+}
+
 function bindStand(stand, pal) {
-  stand.addEventListener(
-    "pointerdown",
-    (e) => {
-      if (e.button != null && e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (state.bulkId) {
-        if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
-        return;
-      }
-      if (!layoutMode() && e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
-        startPackDrag(e, pal.id, "floor");
-        return;
-      }
-      startWoodDrag(e, pal.id, "floor");
-    },
-    { passive: false }
-  );
+  const opts = { passive: false };
+  if (window.PointerEvent) {
+    stand.addEventListener("pointerdown", (e) => onPalPointerDown(e, pal), opts);
+  } else {
+    stand.addEventListener("touchstart", (e) => {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      const t = e.changedTouches[0];
+      onPalPointerDown(
+        {
+          button: 0,
+          clientX: t.clientX,
+          clientY: t.clientY,
+          pointerId: t.identifier,
+          preventDefault: () => e.preventDefault(),
+          stopPropagation: () => e.stopPropagation(),
+          currentTarget: stand,
+          target: e.target,
+        },
+        pal
+      );
+    }, opts);
+  }
 }
 
 function paintSlots() {
@@ -1587,6 +1613,14 @@ function paintSlots() {
       stand.innerHTML = palStandHtml(pal);
       bindStand(stand, pal);
       cell.classList.add("has-pal");
+      cell.addEventListener(
+        "pointerdown",
+        (e) => {
+          if (e.target.closest(".pal-stand")) return;
+          onPalPointerDown(e, pal);
+        },
+        { passive: false }
+      );
       cell.appendChild(stand);
     }
     host.appendChild(cell);
@@ -1677,7 +1711,7 @@ function paintStack() {
   mark.textContent = list.length ? "×" + list.length : "пусто";
   host.appendChild(mark);
   if (list.length) {
-    host.onpointerdown = (e) => {
+    const grabTop = (e) => {
       if (e.button != null && e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
@@ -1688,8 +1722,29 @@ function paintStack() {
       }
       startWoodDrag(e, top.id, "stack");
     };
+    if (window.PointerEvent) {
+      host.onpointerdown = grabTop;
+      host.ontouchstart = null;
+    } else {
+      host.onpointerdown = null;
+      host.ontouchstart = (e) => {
+        if (!e.changedTouches || !e.changedTouches[0]) return;
+        const t = e.changedTouches[0];
+        grabTop({
+          button: 0,
+          clientX: t.clientX,
+          clientY: t.clientY,
+          pointerId: t.identifier,
+          preventDefault: () => e.preventDefault(),
+          stopPropagation: () => e.stopPropagation(),
+          currentTarget: host,
+          target: e.target,
+        });
+      };
+    }
   } else {
     host.onpointerdown = null;
+    host.ontouchstart = null;
   }
 }
 
@@ -3274,13 +3329,19 @@ function startWoodDrag(e, palId, from) {
   bindDrag(e);
   beginGhost(palStandHtml(pal), e.clientX, e.clientY);
   sfx("grabWood");
-  /* Defer repaint — destroying the touch target mid-gesture cancels drag on phones. */
-  const keepId = pal.id;
-  window.requestAnimationFrame(() => {
-    if (!state.drag || state.drag.palId !== keepId) return;
-    paintSlots();
-    paintLayoutBanner();
-  });
+  buzzGrab();
+  /* Hide source in place — full paintSlots mid-touch cancels the gesture on phones. */
+  if (from === "stack") {
+    const stack = document.getElementById("wood-stack");
+    if (stack) stack.classList.add("drag-source");
+  } else {
+    const stand = document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
+    const cell = stand && stand.closest(".pal-spot");
+    if (cell) cell.classList.add("drag-source");
+    else if (stand) stand.classList.add("drag-source");
+  }
+  paintHud();
+  paintLayoutBanner();
 }
 
 function startPackDrag(e, id, from) {

@@ -4268,7 +4268,7 @@ body.iso-yard .inside {
   justify-content: center;
   overflow: hidden;
   touch-action: none;
-  background: #1a1410;
+  background: #0c0a08;
 }
 
 body.iso-yard .inside.yard-locked {
@@ -4278,8 +4278,15 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=132") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=133") center center / 100% 100% no-repeat,
     #c4b48c;
+}
+
+body.iso-yard .pal-spot.drag-source,
+body.iso-yard .pal-stand.drag-source,
+body.iso-yard .wood-stack.drag-source {
+  opacity: 0;
+  pointer-events: none;
 }
 
 body.iso-yard .inside-stage {
@@ -4331,14 +4338,18 @@ body.iso-yard .wood-stack .stack-layer.top {
 }
 
 /* Fat finger hit box around the sprite */
+body.iso-yard .pal-spot.has-pal {
+  pointer-events: auto;
+}
+
 body.iso-yard .pal-spot .pal-stand::before,
 body.iso-yard .wood-stack::before {
   content: "";
   position: absolute;
-  left: -28%;
-  right: -28%;
-  top: -18%;
-  bottom: -22%;
+  left: -40%;
+  right: -40%;
+  top: -30%;
+  bottom: -35%;
   z-index: 0;
 }
 
