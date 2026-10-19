@@ -44,19 +44,15 @@ const ROOMS = [
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
 /* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
-const YARD_ROW0 = [
-  { tlx: 53.0, tly: 14.2 },
-  { tlx: 56.9, tly: 16.5 },
-  { tlx: 61.0, tly: 18.9 },
-  { tlx: 65.2, tly: 21.4 },
-];
+/* Anchors: 1, 4 (along), 5 (into). Spots 2–3 use mean along-step — intentional ~0.2 drift. */
+const YARD_ORIGIN = { x: 53.0, y: 14.2 };
+const YARD_P4 = { tlx: 65.2, tly: 21.4 };
 const YARD_P5 = { tlx: 47.7, tly: 16.9 };
-const YARD_ORIGIN = { x: YARD_ROW0[0].tlx, y: YARD_ROW0[0].tly };
 const STEP_ALONG = {
-  x: (YARD_ROW0[3].tlx - YARD_ROW0[0].tlx) / 3,
-  y: (YARD_ROW0[3].tly - YARD_ROW0[0].tly) / 3,
+  x: (YARD_P4.tlx - YARD_ORIGIN.x) / 3,
+  y: (YARD_P4.tly - YARD_ORIGIN.y) / 3,
 };
-const STEP_INTO = { x: YARD_P5.tlx - YARD_ROW0[0].tlx, y: YARD_P5.tly - YARD_ROW0[0].tly };
+const STEP_INTO = { x: YARD_P5.tlx - YARD_ORIGIN.x, y: YARD_P5.tly - YARD_ORIGIN.y };
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -72,19 +68,12 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
-  /* Keep 1–4 and 5 exact; 6–15 from along/into lattice. */
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      if (r === 0) {
-        cells.push({ tlx: YARD_ROW0[c].tlx, tly: YARD_ROW0[c].tly });
-      } else if (r === 1 && c === 0) {
-        cells.push({ tlx: YARD_P5.tlx, tly: YARD_P5.tly });
-      } else {
-        cells.push({
-          tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
-          tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
-        });
-      }
+      cells.push({
+        tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
+        tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
+      });
     }
   }
   for (let c = 0; c < 3; c += 1) {
@@ -1123,8 +1112,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=181";
-const YARD_PIC = "art/yard.jpg?v=181";
+const EMPTY_PAL = "art/pal-empty.png?v=182";
+const YARD_PIC = "art/yard.jpg?v=182";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
