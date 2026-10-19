@@ -38,11 +38,11 @@ const ROOMS = [
 ];
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
- * Spot coords = sprite Top-Left in grid cells; box 8.992×5.099 (−5% from 9.465×5.367).
+ * Spot coords = sprite Top-Left in grid cells; box 9.442×5.354 (+5% from 8.992×5.099).
  * First row TL: +3 right, −1 up from prior. Sprite yaw 0° (art as-is). CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0, palW: 8.992, palHCells: 5.099, rotDeg: 0 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0, palW: 9.442, palHCells: 5.354, rotDeg: 0 };
 /* Stack TL: 34 / 58% + 7 cells down. Layer step −1.0 cell up; max 10 drawn. */
 const STACK_PCT = { x: 34, y: 58 + (7 / 56) * 100 };
 const STACK_STEP_Y = 1.0;
@@ -173,7 +173,8 @@ function ensureLayoutStock() {
 }
 
 function gridScale(tly) {
-  return 1 + (tly - GRID.baseY) * GRID.scaleK;
+  /* No perspective size: all pallets same scale. */
+  return 1;
 }
 
 function gridBox() {
@@ -1121,8 +1122,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=192";
-const YARD_PIC = "art/yard.jpg?v=192";
+const EMPTY_PAL = "art/pal-empty.png?v=193";
+const YARD_PIC = "art/yard.jpg?v=193";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
