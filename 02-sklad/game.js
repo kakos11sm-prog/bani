@@ -237,6 +237,7 @@ function packSlotStyle(i) {
   const base = PACK_LAYER0[slot] || PACK_LAYER0[0];
   const x = base.x;
   const y = base.y + layer * PACK_LAYER_LIFT;
+  /* Inline left/bottom so pack nudges apply even if CSS cache is stale. */
   return (
     "--i:" +
     i +
@@ -250,7 +251,11 @@ function packSlotStyle(i) {
     x +
     "%;--pack-y:" +
     y +
-    "%"
+    "%;position:absolute;left:" +
+    x +
+    "%;bottom:" +
+    y +
+    "%;width:34%"
   );
 }
 const FIZ_NAMES = [
@@ -1167,9 +1172,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=201";
-const PACK_PIC = "art/pack.png?v=201";
-const YARD_PIC = "art/yard.jpg?v=201";
+const EMPTY_PAL = "art/pal-empty.png?v=202";
+const PACK_PIC = "art/pack.png?v=202";
+const YARD_PIC = "art/yard.jpg?v=202";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
