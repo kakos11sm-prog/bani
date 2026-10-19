@@ -20,6 +20,7 @@ const PACK_LAYER0 = [
   { x: 54, y: 32 },
 ];
 const PACK_LAYER_LIFT = 11;
+const LAYOUT_PACK_TUNE = 4; /* how many packs shown while tuning */
 const BUILD_SPOT = 99;
 const RECV_SPOT = 98;
 const SHIP_SLOTS = PALLET_PACKS;
@@ -157,12 +158,12 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout test: first 2 packs — tune, then fill the rest of the layer. */
+  /* Layout test: packs on every yard slot — always rewrite so save can't stick at 2. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
     for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "water", units: 2, spot: i });
+      progress.pallets.push({ id: i + 1, sku: "water", units: LAYOUT_PACK_TUNE, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -196,8 +197,7 @@ function seedLayoutYard(opts) {
 
 function ensureLayoutStock() {
   if (!layoutMode()) return;
-  const total = (progress.pallets || []).length + (progress.stack || []).length;
-  if (total < LAYOUT_COUNT) seedLayoutYard();
+  seedLayoutYard();
 }
 
 function gridScale(tly) {
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=213";
-const PACK_PIC = "art/pack.png?v=213";
-const YARD_PIC = "art/yard.jpg?v=213";
+const EMPTY_PAL = "art/pal-empty.png?v=214";
+const PACK_PIC = "art/pack.png?v=214";
+const YARD_PIC = "art/yard.jpg?v=214";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
