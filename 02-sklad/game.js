@@ -44,32 +44,18 @@ const ROOMS = [
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
 /* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
-/* Anchors 1, 4, 5. Along step grows +0.2 x / +0.1 y on each next pallet. */
+/* Anchors 1, 4, 5. Constant along/into steps — normal iso lattice (no per-pallet drift). */
 const YARD_ORIGIN = { x: 53.0, y: 14.2 };
 const YARD_P4 = { tlx: 65.2, tly: 21.4 };
 const YARD_P5 = { tlx: 47.7, tly: 16.9 };
-const ALONG_DRIFT = { x: 0.2, y: 0.1 };
-/* First step so that after 3 steps (with drift) we land on spot 4. */
-const ALONG_STEP0 = {
-  x: (YARD_P4.tlx - YARD_ORIGIN.x - ALONG_DRIFT.x * (0 + 1 + 2)) / 3,
-  y: (YARD_P4.tly - YARD_ORIGIN.y - ALONG_DRIFT.y * (0 + 1 + 2)) / 3,
+const STEP_ALONG = {
+  x: (YARD_P4.tlx - YARD_ORIGIN.x) / 3,
+  y: (YARD_P4.tly - YARD_ORIGIN.y) / 3,
 };
 const STEP_INTO = { x: YARD_P5.tlx - YARD_ORIGIN.x, y: YARD_P5.tly - YARD_ORIGIN.y };
-/* Mid along-step — dense layout / snap sizing. */
-const STEP_ALONG = {
-  x: ALONG_STEP0.x + ALONG_DRIFT.x,
-  y: ALONG_STEP0.y + ALONG_DRIFT.y,
-};
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
-}
-
-function alongOffset(c) {
-  return {
-    x: c * ALONG_STEP0.x + (ALONG_DRIFT.x * c * (c - 1)) / 2,
-    y: c * ALONG_STEP0.y + (ALONG_DRIFT.y * c * (c - 1)) / 2,
-  };
 }
 
 function cellToPctX(cellX) {
@@ -84,18 +70,17 @@ const YARD_CELLS = (function () {
   const cells = [];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      const along = alongOffset(c);
       cells.push({
-        tlx: roundCell(YARD_ORIGIN.x + along.x + r * STEP_INTO.x),
-        tly: roundCell(YARD_ORIGIN.y + along.y + r * STEP_INTO.y),
+        tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
+        tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
       });
     }
   }
   for (let c = 0; c < 3; c += 1) {
-    const along = alongOffset(c + 0.5);
+    const k = c + 0.5;
     cells.push({
-      tlx: roundCell(YARD_ORIGIN.x + along.x + 3 * STEP_INTO.x),
-      tly: roundCell(YARD_ORIGIN.y + along.y + 3 * STEP_INTO.y),
+      tlx: roundCell(YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x),
+      tly: roundCell(YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y),
     });
   }
   return cells;
@@ -123,12 +108,12 @@ function layoutCells() {
   const cells = [];
   const ox = 40.0;
   const oy = 12.0;
+  const stepC = { x: STEP_ALONG.x, y: STEP_ALONG.y };
   const stepR = { x: STEP_INTO.x, y: STEP_INTO.y };
   for (let r = 0; r < 16 && cells.length < LAYOUT_COUNT; r += 1) {
     for (let c = 0; c < 12 && cells.length < LAYOUT_COUNT; c += 1) {
-      const along = alongOffset(c);
-      const tlx = roundCell(ox + along.x + r * stepR.x);
-      const tly = roundCell(oy + along.y + r * stepR.y);
+      const tlx = roundCell(ox + c * stepC.x + r * stepR.x);
+      const tly = roundCell(oy + c * stepC.y + r * stepR.y);
       if (tlx < 4 || tlx + GRID.palW > 96 || tly < 8 || tly + GRID.palHCells > 50) continue;
       cells.push({ tlx: tlx, tly: tly });
     }
@@ -1127,8 +1112,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=183";
-const YARD_PIC = "art/yard.jpg?v=183";
+const EMPTY_PAL = "art/pal-empty.png?v=184";
+const YARD_PIC = "art/yard.jpg?v=184";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
