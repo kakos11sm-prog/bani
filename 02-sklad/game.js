@@ -13,7 +13,7 @@ const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
 /* Pack slots in % of pallet box (same as pack-layout-grid 0–100). */
 const PACK_LAYER0 = [
   { x: 40, y: 65 },
-  { x: 64, y: 43 },
+  { x: 60, y: 48 },
   { x: 18, y: 20 },
   { x: 48, y: 24 },
   { x: 24, y: 28 },
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=208";
-const PACK_PIC = "art/pack.png?v=208";
-const YARD_PIC = "art/yard.jpg?v=208";
+const EMPTY_PAL = "art/pal-empty.png?v=209";
+const PACK_PIC = "art/pack.png?v=209";
+const YARD_PIC = "art/yard.jpg?v=209";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
