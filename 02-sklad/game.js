@@ -19,8 +19,8 @@ const PACK_LAYER0 = [
   { x: 7, y: 42 },
   { x: 27, y: 22 },
 ];
-const PACK_LAYER_LIFT = 11;
-const LAYOUT_PACK_TUNE = 6; /* how many packs shown while tuning */
+const PACK_LAYER_LIFT = 45; /* second/third layer: same footprint, +lift on bottom % */
+const LAYOUT_PACK_TUNE = 12; /* two layers while tuning */
 const BUILD_SPOT = 99;
 const RECV_SPOT = 98;
 const SHIP_SLOTS = PALLET_PACKS;
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=229";
-const PACK_PIC = "art/pack.png?v=229";
-const YARD_PIC = "art/yard.jpg?v=229";
+const EMPTY_PAL = "art/pal-empty.png?v=230";
+const PACK_PIC = "art/pack.png?v=230";
+const YARD_PIC = "art/yard.jpg?v=230";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
