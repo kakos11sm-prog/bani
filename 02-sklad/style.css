@@ -4267,7 +4267,7 @@ body.iso-yard .inside {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=129") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=131") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4313,6 +4313,17 @@ body.iso-yard .wood-stack .stack-layer.top {
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+}
+
+body.is-holding,
+body.is-holding .inside {
+  touch-action: none !important;
+  overflow: hidden !important;
+}
+
+body.is-holding .drag-ghost.is-pal {
+  z-index: 80;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
 }
 
 body.iso-yard .build-spot,

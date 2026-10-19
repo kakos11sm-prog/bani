@@ -1086,8 +1086,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=124";
-const YARD_PIC = "art/yard.jpg?v=129";
+const EMPTY_PAL = "art/pal-empty.png?v=131";
+const YARD_PIC = "art/yard.jpg?v=131";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -3320,6 +3320,9 @@ const DRAG_LISTEN = { capture: true, passive: false };
 
 function bindDrag(e) {
   if (e && e.preventDefault) e.preventDefault();
+  document.body.classList.add("is-holding");
+  const yard = document.getElementById("inside");
+  if (yard) yard.classList.add("is-drag");
   if (e && e.pointerId != null) {
     try {
       document.body.setPointerCapture(e.pointerId);
@@ -3334,6 +3337,7 @@ function unbindDrag(e) {
   window.removeEventListener("pointermove", onDragMove, DRAG_LISTEN);
   window.removeEventListener("pointerup", onDragEnd, DRAG_LISTEN);
   window.removeEventListener("pointercancel", onDragEnd, DRAG_LISTEN);
+  document.body.classList.remove("is-holding");
   if (e && e.pointerId != null) {
     try {
       document.body.releasePointerCapture(e.pointerId);
