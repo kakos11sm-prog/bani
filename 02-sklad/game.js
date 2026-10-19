@@ -145,6 +145,22 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
+  /* Layout test: yard slots filled with water packs so pack placement can be tuned. */
+  if (layoutMode()) {
+    const yardN = YARD_CELLS.length;
+    progress.pallets = [];
+    for (let i = 0; i < yardN; i += 1) {
+      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_PACKS, spot: i });
+    }
+    progress.stack = [];
+    const need = Math.max(0, LAYOUT_COUNT - yardN);
+    for (let i = 0; i < need; i += 1) {
+      progress.stack.push({ id: yardN + 1 + i, sku: "", units: 0, spot: -1 });
+    }
+    progress.nextPallet = yardN + 1 + need;
+    progress.boughtWoods = Math.max(progress.boughtWoods || 0, LAYOUT_COUNT);
+    return;
+  }
   let onFloor = clearFloor
     ? []
     : (progress.pallets || []).filter((p) => p.spot !== BUILD_SPOT && p.spot !== RECV_SPOT);
@@ -1122,12 +1138,13 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=197";
-const YARD_PIC = "art/yard.jpg?v=197";
+const EMPTY_PAL = "art/pal-empty.png?v=198";
+const PACK_PIC = "art/pack.png?v=198";
+const YARD_PIC = "art/yard.jpg?v=198";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
-  "art/pack.png",
+  PACK_PIC,
   "art/pal-water.png",
   "art/pal-cans.png",
   "art/pal-soda.png",
@@ -1203,7 +1220,9 @@ function mixPalMarkup(skuIds) {
       palSkin(sku) +
       ";" +
       packSlotStyle(i) +
-      "\"><img src=\"art/pack.png\" alt=\"\" decoding=\"async\"></span>";
+      "\"><img src=\"" +
+      PACK_PIC +
+      "\" alt=\"\" decoding=\"async\"></span>";
   });
   return (
     "<div class=\"pal-live ship-pal iso-pal stacked" +
@@ -1543,6 +1562,13 @@ function palStandHtml(pal) {
   }
   if (state.shipId && pal && pal.id === state.shipPalId) {
     return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(state.shipLoad);
+  }
+  /* Layout: show individual packs on the wood for placement tuning. */
+  if (layoutMode() && pal && pal.units > 0) {
+    const ids = [];
+    const skuId = pal.sku || "water";
+    for (let i = 0; i < pal.units; i += 1) ids.push(skuId);
+    return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(ids);
   }
   const sku = pal && pal.units && pal.sku ? skuOf(pal.sku) : null;
   return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + palMarkup(sku, pal ? pal.units : 0);
