@@ -37,30 +37,58 @@ const ROOMS = [
   { id: "depot", name: "Склад", slots: 15, price: 6200, pic: "room-depot.jpg", inside: "" },
 ];
 /**
- * Yard grid 100×56 (origin = top-left of art).
- * Brief coords are sprite Top-Left; box is 11×6 cells.
- * DOM uses that top-left; scale from transform-origin bottom-center.
- * Pivot bottom-center = (X_start+5, Y_start+6); z-index = bottomY*100.
+ * Yard grid 100×56 over the art (origin = top-left of image).
+ * Spot coords = sprite Top-Left in grid cells; box 10×6 (TZ).
+ * CSS left/top/width/height = cells / grid * 100% of the stage (not the screen).
+ * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 11, palHCells: 6 };
-const STEP_ALONG = { x: 4.4, y: 2.05 };
-const STEP_INTO = { x: -5.2, y: 2.8 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 10, palHCells: 6 };
+/* Row step along the wall / into the yard — fitted to TZ pallets 1–6. */
+const STEP_ALONG = { x: (64.1 - 51.0) / 3, y: (20.3 - 14.2) / 3 };
+const STEP_INTO = { x: 45.8 - 51.0, y: 17.0 - 14.2 };
 const YARD_ORIGIN = { x: 51.0, y: 14.2 };
+
+function roundCell(n) {
+  return Math.round(n * 10) / 10;
+}
+
+function cellToPctX(cellX) {
+  return (cellX / GRID.cols) * 100;
+}
+
+function cellToPctY(cellY) {
+  return (cellY / GRID.rows) * 100;
+}
+
 const YARD_CELLS = (function () {
   const cells = [];
+  /* Exact first six from TZ, then fill the 3×4 diamond + front row. */
+  const exact = [
+    { tlx: 51.0, tly: 14.2 },
+    { tlx: 55.6, tly: 16.3 },
+    { tlx: 60.0, tly: 18.5 },
+    { tlx: 64.1, tly: 20.3 },
+    { tlx: 45.8, tly: 17.0 },
+    { tlx: 50.1, tly: 19.0 },
+  ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      cells.push({
-        tlx: YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x,
-        tly: YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y,
-      });
+      const i = r * 4 + c;
+      if (i < exact.length) {
+        cells.push({ tlx: exact[i].tlx, tly: exact[i].tly });
+      } else {
+        cells.push({
+          tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
+          tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
+        });
+      }
     }
   }
   for (let c = 0; c < 3; c += 1) {
     const k = c + 0.5;
     cells.push({
-      tlx: YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x,
-      tly: YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y,
+      tlx: roundCell(YARD_ORIGIN.x + k * STEP_ALONG.x + 3 * STEP_INTO.x),
+      tly: roundCell(YARD_ORIGIN.y + k * STEP_ALONG.y + 3 * STEP_INTO.y),
     });
   }
   return cells;
@@ -84,22 +112,26 @@ function layoutMode() {
 }
 
 function layoutCells() {
+  /* Same iso lattice as YARD_CELLS, denser — still in 100×56 cells. */
   const cells = [];
-  const ox = 18;
-  const oy = 11;
-  const stepC = { x: 5.8, y: 1.35 };
-  const stepR = { x: -2.4, y: 2.15 };
-  for (let r = 0; r < 14 && cells.length < LAYOUT_COUNT; r += 1) {
-    for (let c = 0; c < 10 && cells.length < LAYOUT_COUNT; c += 1) {
-      const tlx = ox + c * stepC.x + r * stepR.x;
-      const tly = oy + c * stepC.y + r * stepR.y;
-      if (tlx < 2 || tlx > 88 || tly < 6 || tly > 46) continue;
+  const ox = 40.0;
+  const oy = 12.0;
+  const stepC = { x: STEP_ALONG.x, y: STEP_ALONG.y };
+  const stepR = { x: STEP_INTO.x, y: STEP_INTO.y };
+  for (let r = 0; r < 16 && cells.length < LAYOUT_COUNT; r += 1) {
+    for (let c = 0; c < 12 && cells.length < LAYOUT_COUNT; c += 1) {
+      const tlx = roundCell(ox + c * stepC.x + r * stepR.x);
+      const tly = roundCell(oy + c * stepC.y + r * stepR.y);
+      if (tlx < 4 || tlx + GRID.palW > 96 || tly < 8 || tly + GRID.palHCells > 50) continue;
       cells.push({ tlx: tlx, tly: tly });
     }
   }
   while (cells.length < LAYOUT_COUNT) {
     const i = cells.length;
-    cells.push({ tlx: 20 + (i % 10) * 6, tly: 12 + Math.floor(i / 10) * 2.4 });
+    cells.push({
+      tlx: roundCell(20 + (i % 10) * GRID.palW * 0.55),
+      tly: roundCell(12 + Math.floor(i / 10) * (GRID.palHCells * 0.45)),
+    });
   }
   return cells.slice(0, LAYOUT_COUNT);
 }
@@ -158,8 +190,10 @@ function gridProject(tlx, tly) {
     gy: botY,
     wx: tlx + box.w / 2,
     wy: botY,
-    x: tlx,
-    t: (tly / GRID.rows) * 100,
+    x: cellToPctX(tlx),
+    t: cellToPctY(tly),
+    w: cellToPctX(box.w),
+    h: cellToPctY(box.h),
     depth: botY,
     s: s,
     z: Math.round(botY * 100),
@@ -1086,8 +1120,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=134";
-const YARD_PIC = "art/yard.jpg?v=134";
+const EMPTY_PAL = "art/pal-empty.png?v=135";
+const YARD_PIC = "art/yard.jpg?v=135";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1526,11 +1560,9 @@ function syncYardPan() {
       inside.scrollLeft = 0;
       state.yardScrollRatio = 0.5;
     }
-    const box = gridBox();
-    const palW = stageW * (box.w / GRID.cols);
-    const palH = stageH * (box.h / GRID.rows);
-    stage.style.setProperty("--pal-w", palW.toFixed(2) + "px");
-    stage.style.setProperty("--pal-h", palH.toFixed(2) + "px");
+    /* Size in % of stage (= art), never screen pixels — same on phone/tablet. */
+    stage.style.setProperty("--pal-w", cellToPctX(GRID.palW).toFixed(4) + "%");
+    stage.style.setProperty("--pal-h", cellToPctY(GRID.palHCells).toFixed(4) + "%");
     state.yardCentered = true;
     shadePals();
   };
@@ -1602,9 +1634,12 @@ function paintSlots() {
     cell.dataset.spot = String(i);
     cell.dataset.wx = String(spot.gx);
     cell.dataset.wy = String(spot.gy);
-    cell.style.left = spot.x + "%";
-    cell.style.top = spot.t + "%";
+    cell.style.left = spot.x.toFixed(4) + "%";
+    cell.style.top = spot.t.toFixed(4) + "%";
+    cell.style.width = (spot.w != null ? spot.w : cellToPctX(GRID.palW)).toFixed(4) + "%";
+    cell.style.height = (spot.h != null ? spot.h : cellToPctY(GRID.palHCells)).toFixed(4) + "%";
     cell.style.bottom = "auto";
+    cell.style.right = "auto";
     cell.style.marginLeft = "0";
     cell.style.setProperty("--sc", String(spot.s || 1));
     cell.style.transformOrigin = "50% 100%";

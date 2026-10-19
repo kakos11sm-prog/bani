@@ -4294,7 +4294,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=134") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=135") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4336,11 +4336,12 @@ body.iso-yard .floor-pals {
 body.iso-yard .pal-spot {
   position: absolute;
   flex: none;
-  width: var(--pal-w, 11%);
+  width: var(--pal-w, 10%);
   height: var(--pal-h, calc(6 / 56 * 100%));
   margin-left: 0;
   min-height: 0;
   padding: 0;
+  box-sizing: border-box;
   transform-origin: 50% 100%;
   touch-action: none;
   cursor: grab;
@@ -4397,10 +4398,11 @@ body.is-holding .drag-ghost.is-pal {
 
 body.iso-yard .build-spot,
 body.iso-yard .recv-spot {
-  width: var(--pal-w, 11%);
+  width: var(--pal-w, 10%);
   height: var(--pal-h, calc(6 / 56 * 100%));
   margin-left: 0;
   min-height: 0;
+  box-sizing: border-box;
   transform-origin: 50% 100%;
 }
 
@@ -4424,10 +4426,11 @@ body.iso-yard .wood-stack {
   left: 12%;
   top: calc(14 / 56 * 100%);
   bottom: auto;
-  width: var(--pal-w, 11%);
+  width: var(--pal-w, 10%);
   height: auto;
   min-height: var(--pal-h, calc(6 / 56 * 100%));
   margin-left: 0;
+  box-sizing: border-box;
   transform-origin: 50% 100%;
   z-index: 2000;
   touch-action: none;
