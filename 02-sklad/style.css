@@ -4342,7 +4342,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=231") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=232") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4576,50 +4576,6 @@ body.iso-yard .iso-mix {
   overflow: visible;
 }
 
-/* Percent grid on the wood while tuning pack slots */
-body.iso-yard .pack-layout-grid {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(
-      to right,
-      rgba(255, 60, 60, 0.55) 0,
-      rgba(255, 60, 60, 0.55) 1px,
-      transparent 1px,
-      transparent calc(10%)
-    ),
-    repeating-linear-gradient(
-      to top,
-      rgba(80, 180, 255, 0.5) 0,
-      rgba(80, 180, 255, 0.5) 1px,
-      transparent 1px,
-      transparent calc(10%)
-    );
-  background-size: 100% 100%;
-  box-shadow: inset 0 0 0 1px rgba(255, 220, 80, 0.75);
-}
-
-body.iso-yard .pack-layout-grid b {
-  position: absolute;
-  bottom: 1%;
-  font-size: 7px;
-  font-weight: 800;
-  color: #ffe28a;
-  text-shadow: 0 0 2px #000, 0 1px 0 #000;
-  line-height: 1;
-}
-
-body.iso-yard .pack-layout-grid b:nth-of-type(1) { left: 1%; }
-body.iso-yard .pack-layout-grid b:nth-of-type(2) { left: 25%; transform: translateX(-50%); }
-body.iso-yard .pack-layout-grid b:nth-of-type(3) { left: 50%; transform: translateX(-50%); }
-body.iso-yard .pack-layout-grid b:nth-of-type(4) { left: 75%; transform: translateX(-50%); }
-body.iso-yard .pack-layout-grid b:nth-of-type(5) { right: 1%; left: auto; }
-
 body.iso-yard .pal-stand,
 body.iso-yard .build-spot .pal-stand,
 body.iso-yard .recv-spot .pal-stand,
@@ -4731,25 +4687,14 @@ body.iso-yard .iso-pack.pak {
   height: auto !important;
   margin: 0 !important;
   background: transparent;
-  outline: 1px solid rgba(255, 240, 120, 0.65);
-  outline-offset: -1px;
+  outline: none;
   z-index: calc(2 + var(--dep, 0) + var(--lay, 0) * 6 + var(--col, 0));
   transition: left 0.28s cubic-bezier(0.2, 0.85, 0.2, 1), bottom 0.28s cubic-bezier(0.2, 0.85, 0.2, 1), transform 0.28s ease;
   pointer-events: auto;
 }
 
 body.iso-yard .iso-pack.pak::after {
-  content: "#" attr(data-i) " " attr(data-xy);
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  z-index: 5;
-  font-size: 8px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 0 3px #000, 0 1px 0 #000;
-  pointer-events: none;
-  white-space: nowrap;
+  display: none;
 }
 
 body.iso-yard .iso-pack img {

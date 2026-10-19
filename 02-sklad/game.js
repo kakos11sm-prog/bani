@@ -158,12 +158,13 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout test: packs on every yard slot — always rewrite so save can't stick at 2. */
+  /* Layout: one loaded pallet + empty woods on other slots to restack packs. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
-    for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "water", units: LAYOUT_PACK_TUNE, spot: i });
+    progress.pallets.push({ id: 1, sku: "water", units: LAYOUT_PACK_TUNE, spot: 0 });
+    for (let i = 1; i < yardN; i += 1) {
+      progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -1173,9 +1174,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=231";
-const PACK_PIC = "art/pack.png?v=231";
-const YARD_PIC = "art/yard.jpg?v=231";
+const EMPTY_PAL = "art/pal-empty.png?v=232";
+const PACK_PIC = "art/pack.png?v=232";
+const YARD_PIC = "art/yard.jpg?v=232";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1268,19 +1269,11 @@ function mixPalMarkup(skuIds) {
       PACK_PIC +
       "\" alt=\"\" decoding=\"async\"></span>";
   });
-  const grid = layoutMode()
-    ? "<div class=\"pack-layout-grid\" aria-hidden=\"true\">" +
-      "<i class=\"pack-grid-x\"></i><i class=\"pack-grid-y\"></i>" +
-      "<b>0</b><b>25</b><b>50</b><b>75</b><b>100</b>" +
-      "</div>"
-    : "";
   return (
     "<div class=\"pal-live ship-pal iso-pal stacked" +
     (full ? " sealed full" : "") +
-    (layoutMode() ? " pack-tune" : "") +
     "\">" +
     base +
-    grid +
     "<div class=\"iso-mix\">" +
     load +
     "</div></div>"
@@ -1717,7 +1710,7 @@ function onPalPointerDown(e, pal) {
     if (bulkPalOk(pal)) startWoodDrag(e, pal.id, "floor");
     return;
   }
-  if (!layoutMode() && e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
+  if (e.target.closest(".pak") && !e.target.closest(".pak.empty")) {
     startPackDrag(e, pal.id, "floor");
     return;
   }
@@ -3117,9 +3110,9 @@ function paintLayoutBanner() {
   }
   const n = (progress.stack || []).length + (progress.pallets || []).length;
   ban.textContent =
-    "Разметка: " +
+    "Разметка: тяни паки на пустые поддоны · " +
     n +
-    " поддонов в наличии · тяни со стопки на двор · заявки выкл · сброс запас не трогает";
+    " в наличии · заявки выкл";
 }
 
 function openFloor() {
@@ -3537,10 +3530,6 @@ function startWoodDrag(e, palId, from) {
 }
 
 function startPackDrag(e, id, from) {
-  if (layoutMode()) {
-    toast("В разметке только пустые поддоны");
-    return;
-  }
   if (state.busy || state.drag) return;
   if (from !== "dock" && wayOpen()) {
     shake(e.currentTarget);
