@@ -6,7 +6,7 @@ const LAYOUT_COUNT = 100;
 const START_COINS = 1200;
 const PALLET_COLS = 2;
 const PALLET_DEPTH = 3;
-const PALLET_LAYERS = 3;
+const PALLET_LAYERS = 4;
 const PALLET_LAYER_SIZE = PALLET_COLS * PALLET_DEPTH; /* first row = 6 packs */
 const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
 /* First layer footprint on the wood (left%/bottom%). Upper layers = same + lay×lift. */
@@ -19,8 +19,8 @@ const PACK_LAYER0 = [
   { x: 7, y: 42 },
   { x: 27, y: 22 },
 ];
-const PACK_LAYER_LIFT = 45; /* second/third layer: same footprint, +lift on bottom % */
-const LAYOUT_PACK_TUNE = 12; /* two layers while tuning */
+const PACK_LAYER_LIFT = 41; /* each next layer: same footprint, +lift on bottom % */
+const LAYOUT_PACK_TUNE = PALLET_PACKS; /* all 4 layers while tuning */
 const BUILD_SPOT = 99;
 const RECV_SPOT = 98;
 const SHIP_SLOTS = PALLET_PACKS;
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=230";
-const PACK_PIC = "art/pack.png?v=230";
-const YARD_PIC = "art/yard.jpg?v=230";
+const EMPTY_PAL = "art/pal-empty.png?v=231";
+const PACK_PIC = "art/pack.png?v=231";
+const YARD_PIC = "art/yard.jpg?v=231";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
