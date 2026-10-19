@@ -44,9 +44,9 @@ const ROOMS = [
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
 const YARD_ORIGIN = { x: 53.0, y: 14.2 };
-/* Along wall from spots 1→4; into yard kept from prior lattice until row 2 is measured. */
-const STEP_ALONG = { x: (62.1 - 50.5) / 3, y: (17.8 - 11.7) / 3 };
-const STEP_INTO = { x: -5.2, y: 2.8 };
+/* Steps fitted to measured spots 1–8. */
+const STEP_ALONG = { x: 4.0, y: 2.48 };
+const STEP_INTO = { x: -5.325, y: 2.75 };
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -62,7 +62,7 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
-  /* Measured / nudged spots (1-based). */
+  /* 1–8 measured; 9–12 = row2 of same lattice (row1 + STEP_INTO). */
   const exact = [
     { tlx: 53.0, tly: 14.2 },
     { tlx: 56.9, tly: 16.5 },
@@ -72,7 +72,10 @@ const YARD_CELLS = (function () {
     { tlx: 51.7, tly: 19.2 },
     { tlx: 55.7, tly: 21.7 },
     { tlx: 59.6, tly: 24.4 },
-    { tlx: 42.6, tly: 19.6 },
+    { tlx: 42.5, tly: 19.5 },
+    { tlx: 46.4, tly: 22.0 },
+    { tlx: 50.4, tly: 24.5 },
+    { tlx: 54.3, tly: 27.2 },
   ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
@@ -1123,8 +1126,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=175";
-const YARD_PIC = "art/yard.jpg?v=175";
+const EMPTY_PAL = "art/pal-empty.png?v=176";
+const YARD_PIC = "art/yard.jpg?v=176";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
