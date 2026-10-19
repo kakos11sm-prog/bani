@@ -12,10 +12,10 @@ const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
 /* First layer footprint on the wood (left%/bottom%). Upper layers = same + lay×lift. */
 /* Pack slots in % of pallet box (same as pack-layout-grid 0–100). */
 const PACK_LAYER0 = [
-  { x: 40, y: 65 },
+  { x: 41, y: 66 },
   { x: 60, y: 48 },
-  { x: 22, y: 55 },
-  { x: 42.1, y: 34.9 },
+  { x: 22, y: 54 },
+  { x: 43, y: 34 },
   { x: 24, y: 28 },
   { x: 54, y: 32 },
 ];
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=219";
-const PACK_PIC = "art/pack.png?v=219";
-const YARD_PIC = "art/yard.jpg?v=219";
+const EMPTY_PAL = "art/pal-empty.png?v=220";
+const PACK_PIC = "art/pack.png?v=220";
+const YARD_PIC = "art/yard.jpg?v=220";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
