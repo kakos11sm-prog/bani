@@ -2,7 +2,7 @@
   "name": "Склад",
   "short_name": "Склад",
   "description": "Сними помещение. Собери заявку. Отправь.",
-  "start_url": "./?layout=1&v=235",
+  "start_url": "./?layout=1&v=236",
   "display": "standalone",
   "background_color": "#14110d",
   "theme_color": "#14110d",
