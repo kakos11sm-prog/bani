@@ -38,12 +38,12 @@ const ROOMS = [
 ];
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
- * Spot coords = sprite Top-Left in grid cells; box 9.014×5.111 (−20% from 11.267×6.389).
- * First row TL from layout: 1–4 exact. Sprite yaw −5° (CCW). CSS % of stage.
+ * Spot coords = sprite Top-Left in grid cells; box 9.465×5.367 (+5% from 9.014×5.111).
+ * First row TL: +3 right, −1 up from prior. Sprite yaw −5° (CCW). CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.014, palHCells: 5.111, rotDeg: -5 };
-const YARD_ORIGIN = { x: 50.5, y: 15.2 }; /* was 11.7, +3.5 cells down */
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: -5 };
+const YARD_ORIGIN = { x: 53.5, y: 14.2 };
 /* Along wall from spots 1→4; into yard kept from prior lattice until row 2 is measured. */
 const STEP_ALONG = { x: (62.1 - 50.5) / 3, y: (17.8 - 11.7) / 3 };
 const STEP_INTO = { x: -5.2, y: 2.8 };
@@ -63,10 +63,10 @@ function cellToPctY(cellY) {
 const YARD_CELLS = (function () {
   const cells = [];
   const row0 = [
-    { tlx: 50.5, tly: 15.2 },
-    { tlx: 54.4, tly: 17.2 },
-    { tlx: 58.2, tly: 19.3 },
-    { tlx: 62.1, tly: 21.3 },
+    { tlx: 53.5, tly: 14.2 },
+    { tlx: 57.4, tly: 16.2 },
+    { tlx: 61.2, tly: 18.3 },
+    { tlx: 65.1, tly: 20.3 },
   ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
@@ -1116,8 +1116,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=151";
-const YARD_PIC = "art/yard.jpg?v=151";
+const EMPTY_PAL = "art/pal-empty.png?v=152";
+const YARD_PIC = "art/yard.jpg?v=152";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
