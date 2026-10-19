@@ -4294,7 +4294,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=155") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=156") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4455,7 +4455,7 @@ body.iso-yard .iso-pal {
   display: block;
   background: none;
   overflow: visible;
-  transform: rotate(var(--pal-rot, 5deg));
+  transform: rotate(var(--pal-rot, 0deg));
   transform-origin: 50% 55%;
   filter:
     drop-shadow(calc(var(--cast-x, 0px) * 0.25) 2px 1px rgba(0, 0, 0, 0.55))
@@ -4693,7 +4693,7 @@ body.iso-yard .floor-pals .pal-stand::after {
     transparent 82%
   );
   filter: blur(2px);
-  transform: translate(calc(var(--cast-x, 0px) * 0.35), 2%) rotate(var(--pal-rot, 5deg)) scale(calc(0.96 + var(--dim, 0) * 0.08));
+  transform: translate(calc(var(--cast-x, 0px) * 0.35), 2%) rotate(var(--pal-rot, 0deg)) scale(calc(0.96 + var(--dim, 0) * 0.08));
   transform-origin: 50% 50%;
   z-index: 0;
   pointer-events: none;

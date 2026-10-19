@@ -39,10 +39,10 @@ const ROOMS = [
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
  * Spot coords = sprite Top-Left in grid cells; box 9.465×5.367 (+5% from 9.014×5.111).
- * First row TL: +3 right, −1 up from prior. Sprite yaw +5° (CW). CSS % of stage.
+ * First row TL: +3 right, −1 up from prior. Sprite yaw 0° (art as-is). CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
-const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 5 };
+const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
 const YARD_ORIGIN = { x: 53.0, y: 14.2 };
 /* Along wall from spots 1→4; into yard kept from prior lattice until row 2 is measured. */
 const STEP_ALONG = { x: (62.1 - 50.5) / 3, y: (17.8 - 11.7) / 3 };
@@ -1116,8 +1116,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=155";
-const YARD_PIC = "art/yard.jpg?v=155";
+const EMPTY_PAL = "art/pal-empty.png?v=156";
+const YARD_PIC = "art/yard.jpg?v=156";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
