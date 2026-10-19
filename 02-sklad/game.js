@@ -51,7 +51,7 @@ const STACK_VIS_MAX = 10;
 const YARD_ROW0 = [
   { tlx: 53.0, tly: 14.2 },
   { tlx: 56.9, tly: 16.5 },
-  { tlx: 61.0, tly: 18.9 },
+  { tlx: 61.0, tly: 18.8 },
   { tlx: 65.2, tly: 21.4 },
 ];
 const YARD_ORIGIN = { x: YARD_ROW0[0].tlx, y: YARD_ROW0[0].tly };
@@ -1122,8 +1122,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=195";
-const YARD_PIC = "art/yard.jpg?v=195";
+const EMPTY_PAL = "art/pal-empty.png?v=196";
+const YARD_PIC = "art/yard.jpg?v=196";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
