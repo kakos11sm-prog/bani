@@ -14,8 +14,8 @@ const PALLET_PACKS = PALLET_LAYER_SIZE * PALLET_LAYERS;
 const PACK_LAYER0 = [
   { x: 40, y: 65 },
   { x: 60, y: 48 },
-  { x: 46, y: 73 },
-  { x: 66, y: 56 },
+  { x: 35, y: 58 },
+  { x: 42, y: 35 },
   { x: 24, y: 28 },
   { x: 54, y: 32 },
 ];
@@ -1173,9 +1173,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=214";
-const PACK_PIC = "art/pack.png?v=214";
-const YARD_PIC = "art/yard.jpg?v=214";
+const EMPTY_PAL = "art/pal-empty.png?v=215";
+const PACK_PIC = "art/pack.png?v=215";
+const YARD_PIC = "art/yard.jpg?v=215";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -3123,10 +3123,7 @@ function paintLayoutBanner() {
 }
 
 function openFloor() {
-  if (layoutMode()) {
-    if (!(progress.pallets || []).length && !(progress.stack || []).length) seedLayoutYard();
-    else ensureLayoutStock();
-  }
+  if (layoutMode()) seedLayoutYard();
   const room = roomOf(progress.room);
   document.getElementById("yard-name").textContent = layoutMode() ? "Разметка двора" : room ? room.name : "Склад";
   applyInside();
