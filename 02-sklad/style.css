@@ -3919,6 +3919,30 @@ body.shipping.loading .out-door.r { transform: rotateY(-62deg); }
   background: transparent;
 }
 
+.drag-ghost.is-pack {
+  width: 48px;
+  margin: 0;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4));
+}
+
+.drag-ghost.is-pack .ghost-pack,
+.drag-ghost.is-pack .iso-pack {
+  display: block;
+  width: 100%;
+  height: auto;
+  position: relative !important;
+  left: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  outline: none;
+}
+
+.drag-ghost.is-pack img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .drag-ghost.is-pal {
   width: 108px;
   margin: 0;
@@ -4342,7 +4366,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=232") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=233") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4451,7 +4475,8 @@ body.is-holding .inside {
   overflow: hidden !important;
 }
 
-body.is-holding .drag-ghost.is-pal {
+body.is-holding .drag-ghost.is-pal,
+body.is-holding .drag-ghost.is-pack {
   z-index: 80;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
 }

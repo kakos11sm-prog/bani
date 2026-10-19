@@ -1174,9 +1174,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=232";
-const PACK_PIC = "art/pack.png?v=232";
-const YARD_PIC = "art/yard.jpg?v=232";
+const EMPTY_PAL = "art/pal-empty.png?v=233";
+const PACK_PIC = "art/pack.png?v=233";
+const YARD_PIC = "art/yard.jpg?v=233";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1186,6 +1186,20 @@ const ART_URLS = [
   "art/pal-soda.png",
   "art/truck.png",
 ];
+
+/* Ghost while dragging: same pack.png as on the yard pallet. */
+function packGhostHtml(sku) {
+  if (document.body.classList.contains("iso-yard")) {
+    return (
+      "<span class=\"pak iso-pack ghost-pack\" data-sku=\"" +
+      (sku && sku.id ? sku.id : "") +
+      "\"><img src=\"" +
+      PACK_PIC +
+      "\" alt=\"\" decoding=\"async\"></span>"
+    );
+  }
+  return "<span class=\"pak\">" + pakInner(sku) + "</span>";
+}
 
 function preloadArt() {
   if (state.artReady) return Promise.resolve();
@@ -3372,7 +3386,7 @@ function hideGhost() {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
   ghost.hidden = true;
-  ghost.classList.remove("is-pal", "is-lift");
+  ghost.classList.remove("is-pal", "is-pack", "is-lift");
   ghost.innerHTML = "";
   ghost.style.transition = "";
   ghost.removeAttribute("style");
@@ -3391,9 +3405,13 @@ function moveGhost(x, y) {
   const ghost = document.getElementById("drag-ghost");
   if (!ghost) return;
   const grab = state.drag && state.drag.grab;
-  if (grab && grab.center && ghost.classList.contains("is-pal")) {
-    const w = ghost.offsetWidth || 120;
-    const h = ghost.offsetHeight || 110;
+  const centered =
+    grab &&
+    grab.center &&
+    (ghost.classList.contains("is-pal") || ghost.classList.contains("is-pack"));
+  if (centered) {
+    const w = ghost.offsetWidth || (ghost.classList.contains("is-pack") ? 48 : 120);
+    const h = ghost.offsetHeight || (ghost.classList.contains("is-pack") ? 56 : 110);
     ghost.style.left = x - w / 2 + "px";
     ghost.style.top = y - h / 2 + "px";
     return;
@@ -3423,24 +3441,46 @@ function hitEl(x, y, sel, pad) {
   return null;
 }
 
-function palFromPoint(x, y) {
-  const p = 32;
+function palFromPoint(x, y, opts) {
+  /* Pack aim: hit the visual deck (finger = ghost center), not a point under the wood. */
+  const packAim = !!(opts && opts.pack);
+  const padX = packAim ? 44 : 32;
+  const padTop = packAim ? 96 : 32;
+  const padBot = packAim ? 36 : 32;
+  let best = null;
+  let bestD = Infinity;
+  const consider = (host, pal) => {
+    if (!host || !pal) return;
+    const stand = host.classList.contains("pal-stand") ? host : host.querySelector(".pal-stand");
+    const box = (stand || host).getBoundingClientRect();
+    if (box.width < 2 || box.height < 2) return;
+    const top = box.top - padTop - (packAim ? box.height * 0.85 : 0);
+    const bot = box.bottom + padBot;
+    const left = box.left - padX;
+    const right = box.right + padX;
+    if (x < left || x > right || y < top || y > bot) return;
+    const cx = (box.left + box.right) / 2;
+    const cy = packAim ? box.top + box.height * 0.42 : (box.top + box.bottom) / 2;
+    const d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+    if (d < bestD) {
+      bestD = d;
+      best = pal;
+    }
+  };
   const recv = document.getElementById("recv-spot");
   if (recv && recv.classList.contains("has-pal")) {
-    const box = recv.getBoundingClientRect();
-    if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) {
-      const pal = progress.pallets.find((row) => row.spot === RECV_SPOT);
-      if (pal) return pal;
-    }
+    consider(recv, progress.pallets.find((row) => row.spot === RECV_SPOT));
   }
   const build = document.getElementById("build-spot");
   if (build && build.classList.contains("has-pal")) {
-    const box = build.getBoundingClientRect();
-    if (x >= box.left - p && x <= box.right + p && y >= box.top - p && y <= box.bottom + p) {
-      const pal = progress.pallets.find((row) => row.spot === BUILD_SPOT);
-      if (pal) return pal;
-    }
+    consider(build, progress.pallets.find((row) => row.spot === BUILD_SPOT));
   }
+  document.querySelectorAll("#slots .pal-spot.has-pal").forEach((spot) => {
+    const id = Number((spot.querySelector(".pal-stand") || {}).dataset.id);
+    consider(spot, progress.pallets.find((p) => p.id === id));
+  });
+  if (best) return best;
+  if (packAim) return null;
   const spot = hitEl(x, y, ".pal-spot.has-pal", 32);
   const stand = (spot && spot.querySelector(".pal-stand")) || hitEl(x, y, "#slots .pal-stand", 32);
   if (!stand) return null;
@@ -3451,6 +3491,7 @@ function beginGhost(html, x, y, skin) {
   const ghost = document.getElementById("drag-ghost");
   ghost.hidden = false;
   ghost.classList.toggle("is-pal", html.indexOf("pal-live") >= 0);
+  ghost.classList.toggle("is-pack", html.indexOf("ghost-pack") >= 0 || html.indexOf("iso-pack") >= 0);
   ghost.classList.remove("is-lift");
   ghost.removeAttribute("style");
   if (skin) ghost.setAttribute("style", skin);
@@ -3467,8 +3508,19 @@ function beginGhost(html, x, y, skin) {
     ghost.style.height = Math.round(pal.h * lift) + "px";
     ghost.classList.add("is-lift");
   }
+  if (ghost.classList.contains("is-pack") && document.body.classList.contains("iso-yard")) {
+    const pal = yardPalPx();
+    /* Same relative width as packs on the wood (34% of pallet box). */
+    ghost.style.width = Math.max(28, Math.round(pal.w * 0.34)) + "px";
+    ghost.style.height = "auto";
+    ghost.classList.add("is-lift");
+  }
   const grab = state.drag && state.drag.grab;
-  if (grab && grab.center && ghost.classList.contains("is-pal")) {
+  if (
+    grab &&
+    grab.center &&
+    (ghost.classList.contains("is-pal") || ghost.classList.contains("is-pack"))
+  ) {
     ghost.style.visibility = "hidden";
     ghost.style.left = "0px";
     ghost.style.top = "0px";
@@ -3546,8 +3598,15 @@ function startPackDrag(e, id, from) {
     }
     if (e.currentTarget.parentNode) e.currentTarget.remove();
     item.left -= 1;
-    state.drag = { kind: "pack", from: "dock", dockId: item.id, sku: item.sku, held: true };
-    beginGhost("<span class=\"pak\">" + pakInner(skuOf(item.sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(item.sku)));
+    state.drag = {
+      kind: "pack",
+      from: "dock",
+      dockId: item.id,
+      sku: item.sku,
+      held: true,
+      grab: { startX: e.clientX, startY: e.clientY, center: true },
+    };
+    beginGhost(packGhostHtml(skuOf(item.sku)), e.clientX, e.clientY, palSkin(skuOf(item.sku)));
   } else {
     const pal = progress.pallets.find((p) => p.id === id);
     if (!pal) return;
@@ -3555,8 +3614,15 @@ function startPackDrag(e, id, from) {
       const sku = takeShipPack(e);
       if (!sku) return;
       syncOrderFill(currentOrder());
-      state.drag = { kind: "pack", from: "ship", palId: pal.id, sku: sku, held: true };
-      beginGhost("<span class=\"pak\">" + pakInner(skuOf(sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(sku)));
+      state.drag = {
+        kind: "pack",
+        from: "ship",
+        palId: pal.id,
+        sku: sku,
+        held: true,
+        grab: { startX: e.clientX, startY: e.clientY, center: true },
+      };
+      beginGhost(packGhostHtml(skuOf(sku)), e.clientX, e.clientY, palSkin(skuOf(sku)));
       const stand = e.currentTarget.closest(".pal-stand") || e.currentTarget;
       stand.innerHTML = palStandHtml(pal);
     } else {
@@ -3568,8 +3634,15 @@ function startPackDrag(e, id, from) {
       pal.units -= 1;
       const sku = pal.sku;
       if (pal.units < 1) pal.sku = "";
-      state.drag = { kind: "pack", from: "floor", palId: pal.id, sku: sku, held: true };
-      beginGhost("<span class=\"pak\">" + pakInner(skuOf(sku)) + "</span>", e.clientX, e.clientY, palSkin(skuOf(sku)));
+      state.drag = {
+        kind: "pack",
+        from: "floor",
+        palId: pal.id,
+        sku: sku,
+        held: true,
+        grab: { startX: e.clientX, startY: e.clientY, center: true },
+      };
+      beginGhost(packGhostHtml(skuOf(sku)), e.clientX, e.clientY, palSkin(skuOf(sku)));
       const stand = e.currentTarget.closest(".pal-stand") || e.currentTarget;
       stand.innerHTML = palStandHtml(pal);
     }
@@ -3677,7 +3750,7 @@ function onDragMove(e) {
     ) {
       recv.classList.add("hot");
     } else {
-      const pal = palFromPoint(e.clientX, e.clientY);
+      const pal = palFromPoint(e.clientX, e.clientY, { pack: true });
       const stand = pal && document.querySelector('.pal-stand[data-id="' + pal.id + '"]');
       if (pal && stand && canDropPackOn(pal, state.drag.sku)) {
         stand.classList.add("hot");
@@ -3805,7 +3878,7 @@ async function onDragEnd(e) {
     }
     return;
   }
-  let pal = palFromPoint(x, y);
+  let pal = palFromPoint(x, y, { pack: true });
   if (!pal && drag.from === "dock" && !state.shipId && hitEl(x, y, ".recv-spot:not(.has-pal)", 28)) {
     pal = takeWoodToRecv();
   }
