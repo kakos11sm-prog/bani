@@ -4366,7 +4366,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=233") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=234") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4854,7 +4854,7 @@ body.iso-yard .pal-spot.hot:not(.has-pal)::before {
   50% { opacity: 1; transform: scaleY(0.55) scaleX(1.05); }
 }
 
-body.iso-yard .iso-pal.sealed::after {
+body.iso-yard .iso-pal.sealed:not(.sealed-art)::after {
   content: "";
   position: absolute;
   inset: 6% 8% 14%;
@@ -4862,4 +4862,38 @@ body.iso-yard .iso-pal.sealed::after {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 40%, rgba(40, 30, 10, 0.08));
   pointer-events: none;
+}
+
+/* Full sealed wrap: one sprite, feet glued to the same bottom as empty wood. */
+body.iso-yard .iso-pal.sealed-art,
+.shop-stand .iso-pal.sealed-art {
+  overflow: visible;
+}
+
+body.iso-yard .iso-pal.sealed-art .iso-sealed,
+.shop-stand .iso-pal.sealed-art .iso-sealed {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  object-position: 50% 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.shop-stand .iso-pal.sealed-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9.442 / 12;
+}
+
+.shop-stand .iso-pal.sealed-art .iso-sealed {
+  position: relative;
+  width: 100%;
+  height: auto;
 }

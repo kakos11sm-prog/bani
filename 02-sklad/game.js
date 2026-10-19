@@ -158,13 +158,12 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout: one loaded pallet + empty woods on other slots to restack packs. */
+  /* Layout: sealed full pallets on yard slots (same coords, L→R) to tune size. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
-    progress.pallets.push({ id: 1, sku: "water", units: LAYOUT_PACK_TUNE, spot: 0 });
-    for (let i = 1; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "", units: 0, spot: i });
+    for (let i = 0; i < yardN; i += 1) {
+      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_PACKS, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -1174,12 +1173,14 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=233";
-const PACK_PIC = "art/pack.png?v=233";
-const YARD_PIC = "art/yard.jpg?v=233";
+const EMPTY_PAL = "art/pal-empty.png?v=234";
+const SEALED_PAL = "art/pal-sealed.jpg?v=234";
+const PACK_PIC = "art/pack.png?v=234";
+const YARD_PIC = "art/yard.jpg?v=234";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
+  SEALED_PAL,
   PACK_PIC,
   "art/pal-water.png",
   "art/pal-cans.png",
@@ -1234,12 +1235,23 @@ function palMarkup(sku, packs) {
   if (!sku || !n) {
     return "<div class=\"pal-live empty-wood iso-pal\">" + base + "</div>";
   }
+  /* Full pallet = sealed wrap sprite (same art in shop). */
+  if (n >= PALLET_PACKS) {
+    return (
+      "<div class=\"pal-live iso-pal stacked full sealed sealed-art sku-" +
+      sku.id +
+      "\" style=\"" +
+      palSkin(sku) +
+      "\"><img class=\"iso-img iso-sealed\" src=\"" +
+      SEALED_PAL +
+      "\" alt=\"\" decoding=\"async\"></div>"
+    );
+  }
   const fill = n / PALLET_PACKS;
   return (
     "<div class=\"pal-live iso-pal stacked sku-" +
     sku.id +
-    (n >= PALLET_PACKS ? " full sealed" : " part") +
-    "\" style=\"--fill:" +
+    " part\" style=\"--fill:" +
     fill.toFixed(3) +
     ";" +
     palSkin(sku) +
@@ -1622,8 +1634,8 @@ function palStandHtml(pal) {
   if (state.shipId && pal && pal.id === state.shipPalId) {
     return "<i class=\"pal-shade\" aria-hidden=\"true\"></i>" + mixPalMarkup(state.shipLoad);
   }
-  /* Layout: show individual packs on the wood for placement tuning. */
-  if (layoutMode() && pal && pal.units > 0) {
+  /* Layout: loose packs only while tuning a partial stack; full = sealed art. */
+  if (layoutMode() && pal && pal.units > 0 && pal.units < PALLET_PACKS) {
     const ids = [];
     const skuId = pal.sku || "water";
     for (let i = 0; i < pal.units; i += 1) ids.push(skuId);
