@@ -1116,8 +1116,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=161";
-const YARD_PIC = "art/yard.jpg?v=161";
+const EMPTY_PAL = "art/pal-empty.png?v=162";
+const YARD_PIC = "art/yard.jpg?v=162";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
