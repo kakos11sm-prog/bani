@@ -43,6 +43,10 @@ const ROOMS = [
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 9.465, palHCells: 5.367, rotDeg: 0 };
+/* Stack TL on yard: 34 / 58 as % of art (same size as floor pals). Layer step −1.2 cells up; max 10 drawn. */
+const STACK_PCT = { x: 34, y: 58 };
+const STACK_STEP_Y = 1.2;
+const STACK_VIS_MAX = 10;
 /* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
 /* Row 0 = spots 1–4 exact. Into base 1→5, plus 2-cell gap along that skew between rows. No 13–15. */
 const YARD_ROW0 = [
@@ -1118,8 +1122,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=188";
-const YARD_PIC = "art/yard.jpg?v=188";
+const EMPTY_PAL = "art/pal-empty.png?v=189";
+const YARD_PIC = "art/yard.jpg?v=189";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
@@ -1256,7 +1260,11 @@ function sortYardDepth() {
     if (spot) cell.style.zIndex = String(spot.z || Math.round(spot.gy * 100));
   });
   const stack = document.getElementById("wood-stack");
-  if (stack) stack.style.zIndex = "1600";
+  if (stack) {
+    const stackTly = (STACK_PCT.y / 100) * GRID.rows;
+    const spot = gridProject(STACK_PCT.x, stackTly);
+    stack.style.zIndex = String(spot.z || Math.round(spot.gy * 100));
+  }
   const build = document.getElementById("build-spot");
   if (build) build.style.zIndex = "2400";
   const recv = document.getElementById("recv-spot");
@@ -1756,8 +1764,22 @@ function paintStack() {
   host.innerHTML = "";
   host.classList.toggle("empty", !list.length);
   host.classList.toggle("can-drop", true);
-  host.style.setProperty("--stack-n", String(list.length));
-  const show = list.slice(-6);
+  const visN = Math.min(STACK_VIS_MAX, list.length);
+  host.style.setProperty("--stack-n", String(visN));
+  host.style.setProperty("--stack-step", String(STACK_STEP_Y));
+  host.style.left = STACK_PCT.x + "%";
+  host.style.top = STACK_PCT.y + "%";
+  host.style.width = cellToPctX(GRID.palW).toFixed(4) + "%";
+  host.style.height = cellToPctY(GRID.palHCells).toFixed(4) + "%";
+  host.style.bottom = "auto";
+  host.style.right = "auto";
+  const stackTly = (STACK_PCT.y / 100) * GRID.rows;
+  const spot = gridProject(STACK_PCT.x, stackTly);
+  host.style.setProperty("--sc", String(spot.s || 1));
+  host.style.transformOrigin = "50% 100%";
+  host.style.transform = "scale(" + (spot.s || 1).toFixed(4) + ")";
+  host.style.zIndex = String(spot.z || Math.round(spot.gy * 100));
+  const show = list.slice(-STACK_VIS_MAX);
   show.forEach((pal, i) => {
     const layer = document.createElement("div");
     layer.className = "stack-layer" + (i === show.length - 1 ? " top" : "");
@@ -1766,9 +1788,6 @@ function paintStack() {
     layer.innerHTML = palStandHtml(pal);
     host.appendChild(layer);
   });
-  const title = document.createElement("b");
-  title.textContent = "Стопка";
-  host.appendChild(title);
   const mark = document.createElement("em");
   mark.textContent = list.length ? "×" + list.length : "пусто";
   host.appendChild(mark);
