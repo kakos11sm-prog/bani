@@ -156,12 +156,12 @@ function seedLayoutYard(opts) {
   progress.giftedPal = true;
   progress.orders = [];
   progress.incoming = [];
-  /* Layout test: first pack layer only (6) — tune footprint, then stack layers by lift. */
+  /* Layout test: first 2 packs — tune, then fill the rest of the layer. */
   if (layoutMode()) {
     const yardN = YARD_CELLS.length;
     progress.pallets = [];
     for (let i = 0; i < yardN; i += 1) {
-      progress.pallets.push({ id: i + 1, sku: "water", units: PALLET_LAYER_SIZE, spot: i });
+      progress.pallets.push({ id: i + 1, sku: "water", units: 2, spot: i });
     }
     progress.stack = [];
     const need = Math.max(0, LAYOUT_COUNT - yardN);
@@ -1167,9 +1167,9 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=199";
-const PACK_PIC = "art/pack.png?v=199";
-const YARD_PIC = "art/yard.jpg?v=199";
+const EMPTY_PAL = "art/pal-empty.png?v=200";
+const PACK_PIC = "art/pack.png?v=200";
+const YARD_PIC = "art/yard.jpg?v=200";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
