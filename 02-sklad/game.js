@@ -1087,8 +1087,9 @@ function palWood(name) {
 }
 
 const EMPTY_PAL = "art/pal-empty.png?v=124";
+const YARD_PIC = "art/yard.jpg?v=129";
 const ART_URLS = [
-  "art/yard.jpg",
+  YARD_PIC,
   EMPTY_PAL,
   "art/pack.png",
   "art/pal-water.png",
@@ -1523,7 +1524,7 @@ function syncYardPan() {
     const img = new Image();
     state.yardImg = img;
     img.onload = () => fit(img.naturalWidth || 1600, img.naturalHeight || 900);
-    img.src = "art/yard.jpg";
+    img.src = YARD_PIC;
   } else if (state.yardImg.naturalWidth) {
     fit(state.yardImg.naturalWidth, state.yardImg.naturalHeight);
   }
@@ -2061,7 +2062,7 @@ function applyInside() {
   document.body.classList.toggle("in-depot", progress.room === "depot");
   const pic = document.getElementById("inside-pic");
   if (!pic) return;
-  pic.style.backgroundImage = "url(\"art/yard.jpg\")";
+  pic.style.backgroundImage = "url(\"" + YARD_PIC + "\")";
 }
 
 function cartCountSku(id) {
