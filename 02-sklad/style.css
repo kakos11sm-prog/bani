@@ -4342,7 +4342,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=194") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=195") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4531,9 +4531,8 @@ body.iso-yard .iso-pal {
   overflow: visible;
   transform: rotate(var(--pal-rot, 0deg));
   transform-origin: 50% 55%;
-  filter:
-    drop-shadow(calc(var(--cast-x, 0px) * 0.45) calc(var(--cast-y, 5px) * 0.35) 1px rgba(12, 6, 0, 0.35))
-    drop-shadow(calc(var(--cast-x, 0px) * 0.2) 2px 2px rgba(12, 6, 0, 0.22));
+  /* No drop-shadow — ground contact shade does the work (avoids floating blob). */
+  filter: none;
 }
 
 body.iso-yard .iso-img {
@@ -4767,26 +4766,25 @@ body.iso-yard .recv-spot:not(.has-pal)::after {
   display: none !important;
 }
 
-/* Contact blob under feet + soft ambient cast */
+/* One flat contact ellipse glued to the feet — no second blob, no float gap. */
 body.iso-yard .pal-shade {
   display: block !important;
   position: absolute;
-  left: 14%;
-  right: 10%;
+  left: 18%;
+  right: 18%;
   top: auto;
-  bottom: 1%;
-  height: 22%;
+  bottom: 0;
+  height: 12%;
   border-radius: 50%;
   background: radial-gradient(
-    ellipse at 45% 40%,
-    rgba(18, 10, 2, 0.62) 0%,
-    rgba(18, 10, 2, 0.32) 40%,
-    rgba(18, 10, 2, 0.1) 68%,
-    transparent 82%
+    ellipse at 50% 45%,
+    rgba(10, 6, 0, 0.5) 0%,
+    rgba(10, 6, 0, 0.22) 48%,
+    transparent 78%
   );
-  filter: blur(1.2px);
-  transform: translate(calc(var(--cast-x, 0px) * 0.55), calc(var(--cast-y, 5px) * 0.15)) scaleX(1.08) scaleY(0.62);
-  transform-origin: 50% 50%;
+  filter: blur(0.8px);
+  transform: translate(calc(var(--cast-x, 0px) * 0.2), 1%) scaleY(0.55);
+  transform-origin: 50% 100%;
   z-index: 0;
   pointer-events: none;
 }
@@ -4796,31 +4794,12 @@ body.iso-yard .build-spot .pal-stand::after,
 body.iso-yard .recv-spot .pal-stand::after,
 body.iso-yard .floor-pals .pal-stand::after,
 body.iso-yard .wood-stack .stack-layer::after {
-  content: "";
-  display: block !important;
-  position: absolute;
-  left: 8%;
-  right: 4%;
-  top: auto;
-  bottom: -2%;
-  height: 34%;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 48% 42%,
-    rgba(12, 6, 0, 0.38) 0%,
-    rgba(12, 6, 0, 0.18) 45%,
-    rgba(12, 6, 0, 0.06) 70%,
-    transparent 86%
-  );
-  filter: blur(4px);
-  transform: translate(calc(var(--cast-x, 0px) * 0.7), calc(var(--cast-y, 5px) * 0.25)) scaleX(1.12) scaleY(0.7);
-  transform-origin: 50% 50%;
-  z-index: 0;
-  pointer-events: none;
+  display: none !important;
 }
 
 body.iso-yard .wood-stack .stack-layer .pal-shade {
-  opacity: calc(0.35 + var(--i, 0) * 0.04);
+  opacity: 0.85;
+  bottom: 0;
 }
 
 body.iso-yard .pal-spot.hot:not(.has-pal)::before {
