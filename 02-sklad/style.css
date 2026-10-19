@@ -4366,7 +4366,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=242") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=243") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4870,7 +4870,7 @@ body.iso-yard .iso-pal.sealed-art,
   overflow: visible;
 }
 
-/* Sealed: same height as before; only −5% on width (scaleX), feet stay. */
+/* Sealed: same box as empty wood — width/height match the pallet slot. */
 body.iso-yard .iso-pal.sealed-art > .iso-sealed.iso-img {
   position: absolute;
   left: 0;
@@ -4883,19 +4883,19 @@ body.iso-yard .iso-pal.sealed-art > .iso-sealed.iso-img {
   object-position: 50% 100%;
   display: block;
   pointer-events: auto;
-  transform: scaleX(0.95);
+  transform: none;
   transform-origin: 50% 100%;
 }
 
 @keyframes wrapSealIn {
   from {
     opacity: 0.35;
-    transform: scaleX(0.95) scale(1.04);
+    transform: scale(1.04);
     filter: brightness(1.25);
   }
   to {
     opacity: 1;
-    transform: scaleX(0.95);
+    transform: none;
     filter: none;
   }
 }
