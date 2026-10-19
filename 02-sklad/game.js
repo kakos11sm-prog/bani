@@ -39,14 +39,14 @@ const ROOMS = [
 /**
  * Yard grid 100×56 over the art (origin = top-left of image).
  * Spot coords = sprite Top-Left in grid cells; box 14.084×7.986 (+10% from 12.804×7.26).
- * First spot TL = (50.5, 11.7). CSS % of stage = cells / grid.
+ * First row TL from layout: 1–4 exact. Box 14.084×7.986. CSS % of stage.
  * Scale from transform-origin bottom-center; z-index = bottomY * 100.
  */
 const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 14.084, palHCells: 7.986 };
-/* Iso steps kept from prior lattice; origin shifted to new first pallet. */
-const STEP_ALONG = { x: (64.1 - 51.0) / 3, y: (20.3 - 14.2) / 3 };
-const STEP_INTO = { x: 45.8 - 51.0, y: 17.0 - 14.2 };
 const YARD_ORIGIN = { x: 50.5, y: 11.7 };
+/* Along wall from spots 1→4; into yard kept from prior lattice until row 2 is measured. */
+const STEP_ALONG = { x: (62.1 - 50.5) / 3, y: (17.8 - 11.7) / 3 };
+const STEP_INTO = { x: -5.2, y: 2.8 };
 
 function roundCell(n) {
   return Math.round(n * 10) / 10;
@@ -62,12 +62,22 @@ function cellToPctY(cellY) {
 
 const YARD_CELLS = (function () {
   const cells = [];
+  const row0 = [
+    { tlx: 50.5, tly: 11.7 },
+    { tlx: 54.4, tly: 13.7 },
+    { tlx: 58.2, tly: 15.8 },
+    { tlx: 62.1, tly: 17.8 },
+  ];
   for (let r = 0; r < 3; r += 1) {
     for (let c = 0; c < 4; c += 1) {
-      cells.push({
-        tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
-        tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
-      });
+      if (r === 0) {
+        cells.push({ tlx: row0[c].tlx, tly: row0[c].tly });
+      } else {
+        cells.push({
+          tlx: roundCell(YARD_ORIGIN.x + c * STEP_ALONG.x + r * STEP_INTO.x),
+          tly: roundCell(YARD_ORIGIN.y + c * STEP_ALONG.y + r * STEP_INTO.y),
+        });
+      }
     }
   }
   for (let c = 0; c < 3; c += 1) {
@@ -1106,8 +1116,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=144";
-const YARD_PIC = "art/yard.jpg?v=144";
+const EMPTY_PAL = "art/pal-empty.png?v=145";
+const YARD_PIC = "art/yard.jpg?v=145";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
