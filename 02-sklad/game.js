@@ -47,8 +47,7 @@ const GRID = { cols: 100, rows: 56, baseY: 17, scaleK: 0.018, palW: 8.992, palHC
 const STACK_PCT = { x: 34, y: 58 + (7 / 56) * 100 };
 const STACK_STEP_Y = 1.0;
 const STACK_VIS_MAX = 10;
-/* Anchor: carefully placed 1–4 along the wall + 5 = into-yard offset from #1. */
-/* Row 0 = spots 1–4 exact. Into base 1→5, plus 2-cell gap along that skew between rows. No 13–15. */
+/* Row 0 = spots 1–4 exact (thousandths). Rows 1–2 = column + r×INTO (base 1→5 + 2-cell skew gap). */
 const YARD_ROW0 = [
   { tlx: 53.0, tly: 14.2 },
   { tlx: 56.9, tly: 16.5 },
@@ -71,7 +70,7 @@ const STEP_INTO = (function () {
 })();
 
 function roundCell(n) {
-  return Math.round(n * 10) / 10;
+  return Math.round(n * 1000) / 1000;
 }
 
 function cellToPctX(cellX) {
@@ -1122,8 +1121,8 @@ function palWood(name) {
   );
 }
 
-const EMPTY_PAL = "art/pal-empty.png?v=190";
-const YARD_PIC = "art/yard.jpg?v=190";
+const EMPTY_PAL = "art/pal-empty.png?v=191";
+const YARD_PIC = "art/yard.jpg?v=191";
 const ART_URLS = [
   YARD_PIC,
   EMPTY_PAL,
