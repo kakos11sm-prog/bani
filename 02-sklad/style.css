@@ -4366,7 +4366,7 @@ body.iso-yard .inside.yard-locked {
 
 body.iso-yard .inside-pic {
   background:
-    url("art/yard.jpg?v=243") center center / 100% 100% no-repeat,
+    url("art/yard.jpg?v=244") center center / 100% 100% no-repeat,
     #c4b48c;
 }
 
@@ -4870,39 +4870,41 @@ body.iso-yard .iso-pal.sealed-art,
   overflow: visible;
 }
 
-/* Sealed: same box as empty wood — width/height match the pallet slot. */
+/*
+  Sealed sprite is tall (wood + stack). Do NOT fit it into the short spot box
+  (that shrinks the wood). Match spot WIDTH, glue feet to bottom, overflow up.
+*/
 body.iso-yard .iso-pal.sealed-art > .iso-sealed.iso-img {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: 50% 100%;
-  display: block;
-  pointer-events: auto;
-  transform: none;
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: 50% 100% !important;
+  display: block !important;
+  pointer-events: auto !important;
+  transform: none !important;
   transform-origin: 50% 100%;
 }
 
 @keyframes wrapSealIn {
   from {
     opacity: 0.35;
-    transform: scale(1.04);
     filter: brightness(1.25);
   }
   to {
     opacity: 1;
-    transform: none;
     filter: none;
   }
 }
 
 body.iso-yard .iso-pal.sealed-art.wrap-in > .iso-sealed.iso-img {
-  animation: wrapSealIn 0.42s cubic-bezier(0.2, 0.85, 0.2, 1) both;
-  transform-origin: 50% 100%;
+  animation: wrapSealIn 0.42s ease both;
 }
 
 .shop-stand .iso-pal.sealed-art {
